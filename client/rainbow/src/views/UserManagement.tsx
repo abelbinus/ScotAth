@@ -96,17 +96,17 @@ const User = () => {
         {
           id: 1,
           name: 'Michael Greer',
+          username: 'mg',
           email: 'test.user@example.com',
           role: 'admin',
-          department: null,
           password: '12345678',
         },
         {
           id: 2,
+          username: 'mg',
           name: 'Michael Greer',
           email: 'test.user@example.com',
           role: 'staff',
-          department: null,
           password: '12345678',
 
         }
@@ -147,10 +147,10 @@ const User = () => {
       const userParams = {
         id: user.id,
         name: user.name,
+        username: user.username,
         password: user.password,
         email: user.email,
         type: user.role,
-        department: user.department,
       };
 
       await addUserAPI(userParams);
@@ -178,7 +178,7 @@ const User = () => {
       name: user.name,
       email: user.email,
       role: user.role,
-      department: user.department,
+      username: user.username,
       password: null,
     });
   };
@@ -198,7 +198,7 @@ const User = () => {
         password: user.password,
         email: user.email,
         type: user.role,
-        department: user.department,
+        username: user.username,
       };
 
       await updateUserAPI(userParams);

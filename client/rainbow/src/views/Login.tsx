@@ -18,34 +18,18 @@ const LoginPage = () => {
         setLoading(true);
 
         try {
-            // login 
-            //const response: any = await loginAPI(values);
-        
-            // save authToken
-            //const authToken = response.headers["AUTHORIZATION"] || response.headers["authorization"] || response.headers["Authorization"];
-            //if (authToken) {
-                // save token to localStorage
-                //localStorage.setItem("AUTH_TOKEN", authToken);
-            //}
+            // login
+            const response: any = await loginAPI(values);
 
-            // change obj to IUser
-            // const loginUser: IUser = {
-            //     id: response.data.obj.id,
-            //     name: response.data.obj.name,
-            //     email: response.data.obj.email,
-            //     role: response.data.obj.type,
-            //     department: response.data.obj.department,
-            //     password: null,
-            // };
-
+            // Convert the response to IUser format
             const loginUser: IUser = {
-                id: 1, // Replace with a desired unique ID for your test user
-                name: 'Michael Greer', // Replace with a desired test user name
-                email: 'test.user@example.com', // Replace with a desired test user email
-                role: 'admin', // Replace with a desired test user role (e.g., 'admin', 'user')
-                department: null, // Replace with a desired test user department (optional)
-                password: '12345678', // As in the original code
-              };
+                id: response.data.user.id,
+                name: `${response.data.user.first_name} ${response.data.user.last_name}`, // Assuming 'name' is a combination of first_name and last_name
+                username: response.data.user.username,
+                email: '', // You need to handle this if email is not provided in the response
+                role: response.data.user.role,
+                password: null, // Assuming you do not store password in loginUser object
+            };
 
             message.success("Login successfully");
 
@@ -92,12 +76,12 @@ const LoginPage = () => {
                             onFinish={onFinish}
                         >
                             <Form.Item
-                                data-testid="userid"
-                                name="userId"
-                                rules={[{ required: true, message: "Please input your ID!" }]}
+                                data-testid="username"
+                                name="username"
+                                rules={[{ required: true, message: "Please input your username!" }]}
                                 style={{ marginBottom: "20px" }}
                             >
-                                <Input prefix={<UserOutlined className="site-form-item-icon" />} placeholder="User ID" />
+                                <Input prefix={<UserOutlined className="site-form-item-icon" />} placeholder="User Name" />
                             </Form.Item>
                             <Form.Item
                                 data-testid="password"

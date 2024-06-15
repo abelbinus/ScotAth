@@ -1,13 +1,22 @@
 import { request } from "./index.ts"
 import { ILoginValues } from "../types/LoginValues";
 
-// all user
+// // all user
+// export function loginAPI(loginValues: ILoginValues) {
+//     return request({
+//         url: "/api/authentication/login",
+//         method: "POST",
+//         data: loginValues,
+//     });
+// }
+
+// Login API endpoint
 export function loginAPI(loginValues: ILoginValues) {
-    return request({
-        url: "/api/authentication/login",
-        method: "POST",
-        data: loginValues,
-    });
+  return request({
+    method: 'POST',
+    url: '/api/login', // Adjust URL if necessary
+    data: loginValues,
+  });
 }
 
 // all user
@@ -69,7 +78,7 @@ export function deleteUserAPI(userId: number) {
 }
 
 // staff
-export function getProjectsAPI(userId: number) {
+export function getMeetsAPI(userId: number) {
     return request({
         url: `/api/projectshare/projects/${userId}`,
         method: "GET",
@@ -77,27 +86,27 @@ export function getProjectsAPI(userId: number) {
 }
 
 // staff
-export function addProjectAPI(project: any) {
+export function addMeetAPI(meet: any) {
     return request({
         url: `/api/projectshare/project`,
         method: "POST",
-        data: project,
+        data: meet,
     })
 }
 
 // staff
-export function updateProjectAPI(project: any, userId: number) {
+export function updateMeetAPI(meet: any, userId: number) {
     return request({
         url: `/api/projectshare/project/${userId}`,
         method: "PUT",
-        data: project,
+        data: meet,
     })
 }
 
 // staff
-export function deleteProjectAPI(projectId: number, staffId: number, userId: number) {
+export function deleteMeetAPI(meetId: number, userId: number) {
     return request({
-        url: `/api/projectshare/project/${projectId}/${staffId}/${userId}`,
+        url: `/api/projectshare/project/${meetId}/${userId}`,
         method: "DELETE",
     })
 }

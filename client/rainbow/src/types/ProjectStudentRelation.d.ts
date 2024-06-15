@@ -1,4 +1,4 @@
-import { IProject } from "./Project";
+import { IProject } from "./Meet";
 import { IStudent } from "./Student";
 
 export interface IProjectStudentRelation {

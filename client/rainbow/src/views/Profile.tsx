@@ -43,7 +43,6 @@ const ProfilePage = () => {
       id: user.id,
       name: user.name,
       email: user.email,
-      department: user.department,
       role: user.role,
     });
   };
@@ -56,7 +55,6 @@ const ProfilePage = () => {
         password: user.password,
         email: user.email,
         type: user.role,
-        department: user.department,
       };
 
       await updateUserAPI(userParams);
@@ -74,8 +72,8 @@ const ProfilePage = () => {
         name: response.data.obj.name,
         email: response.data.obj.email,
         role: response.data.obj.type,
-        department: response.data.obj.department,
         password: null,
+        username: response.data.obj.username,
       };
 
       // UserContext
@@ -150,7 +148,6 @@ const ProfilePage = () => {
           <Descriptions.Item label="Name" >{userContext?.user?.name}</Descriptions.Item>
           <Descriptions.Item label="Email" >{userContext?.user?.email}</Descriptions.Item>
           <Descriptions.Item label="Role" >{userContext?.user?.role}</Descriptions.Item>
-          <Descriptions.Item label="Department" >{userContext?.user?.department}</Descriptions.Item>
         </Descriptions>
         <Divider />
         <Space>

@@ -4,5 +4,5 @@ export interface IUser {
     password: string | null;
     email: string | null;
     role: string;
-    department: string | null;
+    username:string;
 }

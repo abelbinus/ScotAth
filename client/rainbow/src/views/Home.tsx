@@ -33,7 +33,7 @@ const Home: React.FC = () => {
         { label: "Staff Management", icon: <UserOutlined />, key: "/user", "data-testid": "menu-item-admin" },
         { label: "Modify Meet", icon: <UserOutlined />, key: "/meet-admin", "data-testid": "menu-item-meet-admin" }
       );
-    } else if (userContext?.user?.role === "staff") {
+    } else if (userContext?.user?.role === "volunteer") {
       baseItems.push(
         //{ label: "Meet", icon: <ReadOutlined />, key: "/project-staff", "data-testid": "menu-item-meet-staff" },
         //{ label: "Project Allocation", icon: <SolutionOutlined />, key: "/project-allocation-staff", "data-testid": "menu-item-project-allocation-staff" }
