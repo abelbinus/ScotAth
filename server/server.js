@@ -24,7 +24,7 @@ const db = new sqlite3.Database(path.join(__dirname, '/../sqlite/trackjudging.db
 });
 
 // API endpoint to fetch all users
-app.get('/api/users', (req, res) => {
+app.get('/api/rainbow/users', (req, res) => {
     const query = 'SELECT * FROM tblusers';
     db.all(query, [], (err, rows) => {
         if (err) {
@@ -36,7 +36,7 @@ app.get('/api/users', (req, res) => {
 });
 
 // API endpoint to fetch all meets
-app.get('/api/meets', (req, res) => {
+app.get('/api/rainbow/meets', (req, res) => {
     const query = 'SELECT * FROM tblmeets';
     db.all(query, [], (err, rows) => {
         if (err) {
@@ -46,6 +46,18 @@ app.get('/api/meets', (req, res) => {
         res.json(rows);
     });
 });
+
+// // API endpoint to fetch select users
+// app.get('/api/rainbow/users', (req, res) => {
+//     const query = 'SELECT * FROM tblusers WHERE user';
+//     db.all(query, [], (err, rows) => {
+//         if (err) {
+//             res.status(500).json({ error: err.message });
+//             return;
+//         }
+//         res.json(rows);
+//     });
+// });
 
 // API endpoint to fetch all users
 app.get('/api/meets', (req, res) => {

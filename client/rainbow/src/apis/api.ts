@@ -38,7 +38,7 @@ export function changePasswordAPI(oldPass: string, newPass: string, userId: numb
 // user
 export function getUserByIdAPI(userId: number) {
     return request({
-        url: `/api/projectshare/user/${userId}`,
+        url: `/api/rainbow/user/${userId}`,
         method: "GET",
     });
 }
@@ -46,7 +46,7 @@ export function getUserByIdAPI(userId: number) {
 // admin
 export function getAllUsersAPI() {
     return request({
-        url: "/api/projectshare/users",
+        url: "/api/rainbow/users",
         method: "GET",
     });
 }
@@ -78,9 +78,9 @@ export function deleteUserAPI(userId: number) {
 }
 
 // staff
-export function getMeetsAPI(userId: number) {
+export function getMeetsAPI() {
     return request({
-        url: `/api/projectshare/projects/${userId}`,
+        url: `/api/rainbow/meets`,
         method: "GET",
     });
 }

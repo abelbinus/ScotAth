@@ -17,25 +17,29 @@ interface EditFormValues {
     edit: boolean;
 }
 
-const ProjectListAdmin = () => {
+const MeetListAdmin = () => {
   const [meetList, setMeetList] = useState<IMeet[]>([]);
   // userInfo
   const userContext = useContext(UserContext);
 
   // edit
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [editingProject, setEditingProject] = useState<IMeet | null>(null);
+  const [editingMeet, setEditingMeet] = useState<IMeet | null>(null);
   const [editForm] = Form.useForm();
 
   // auth confirm
   if (userContext?.user?.role !== "admin") {
     return <div>No access permission</div>;
   }
+//   // useEffect
+//   useEffect(() => {
+//     getMeetList();
+//   }, [userContext])
 
-  // get project list
+  // get meet list
   const getMeetList = async () => {
     try {
-      const response: any = await getMeetsAPI(userContext!.user!.id);
+      const response: any = await getMeetsAPI();
       const meetList: MeetList[] = response.data.obj;
 
       let meets = meetList.map((i): IMeet => {
@@ -155,7 +159,7 @@ const ProjectListAdmin = () => {
   // edit click
   const onEditClick = (meet: IMeet) => {
     // display existing info
-    setEditingProject(meet);
+    setEditingMeet(meet);
     setIsEditModalVisible(true);
 
     editForm.setFieldsValue({
@@ -188,9 +192,9 @@ const ProjectListAdmin = () => {
       message.success("Meet updated successfully");
 
       setIsEditModalVisible(false);
-      setEditingProject(null);
+      setEditingMeet(null);
 
-      // re-get project list
+      // re-get meet list
       getMeetList();
     } catch (error: any) {
       const errMsg = error.response?.data?.msg || "Update meet failed";
@@ -202,7 +206,7 @@ const ProjectListAdmin = () => {
   // edit cancel
   const handleEditCancel = () => {
     setIsEditModalVisible(false);
-    setEditingProject(null);
+    setEditingMeet(null);
   };
 
   // delete click
@@ -211,7 +215,7 @@ const ProjectListAdmin = () => {
       await deleteMeetAPI(meet.meetid, userContext.user!.id);
       message.success("Meet deleted successfully");
 
-      // re-get project list
+      // re-get meet list
       getMeetList();
     } catch (error: any) {
       const errMsg = error.response?.data?.msg || "Delete meet failed";
@@ -228,9 +232,9 @@ const ProjectListAdmin = () => {
       {/*Table area*/}
       <Tabs defaultActiveKey="1" onChange={onTabChange} items={tabItems} />
 
-      {/*Edit a project dialog box*/}
+      {/*Edit a meet dialog box*/}
       <Modal
-        title="Edit Project"
+        title="Edit Meet"
         open={isEditModalVisible}
         onOk={() => editForm.submit()}
         onCancel={handleEditCancel}
@@ -257,4 +261,4 @@ const ProjectListAdmin = () => {
   )
 }
 
-export default ProjectListAdmin
+export default MeetListAdmin
