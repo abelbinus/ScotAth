@@ -1,59 +1,87 @@
+import * as React from 'react';
 import { useState, useEffect, useContext } from "react";
 import { Divider, Input, Col, Row, Space, Tag, Table, Button, Form, Modal, Select, Popconfirm, message, Tabs } from "antd";
 import { ColumnsType } from "antd/es/table";
 import { UserContext } from "../App.tsx";
 import { IMeet } from "../types/Meet";
-import { MeetList } from "../types/MeetList";
 import { getMeetsAPI, deleteMeetAPI, updateMeetAPI } from "../apis/api.ts";
+import { FolderOpenOutlined } from "@mui/icons-material";
 
 interface EditFormValues {
-    meetid: number;
+    meetId: number;
     meetName: string;
-    description: string;
+    meetDesc: string;
     pfFolder: string;
     pfOutput: string;
     eventList: string;
-    extFolder: string;
+    intFolder: string;
     edit: boolean;
 }
 
 const MeetListAdmin = () => {
+  //const folderInput= React.useRef(null);
   const [meetList, setMeetList] = useState<IMeet[]>([]);
   // userInfo
   const userContext = useContext(UserContext);
 
-  // edit
+  //add Meet
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
+  const [addform] = Form.useForm();
+  
+  // edit Meet
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingMeet, setEditingMeet] = useState<IMeet | null>(null);
   const [editForm] = Form.useForm();
 
-  // auth confirm
-  if (userContext?.user?.role !== "admin") {
-    return <div>No access permission</div>;
-  }
-//   // useEffect
-//   useEffect(() => {
-//     getMeetList();
-//   }, [userContext])
+  const [selectedFolder, setSelectedFolder] = useState('');
+
+  // Function to handle folder selection
+  const handleFolderSelect = async () => {
+    try {
+      const dirHandle = await window.showDirectoryPicker();
+    
+      // Access the directory handle properties or perform operations
+      console.log("Selected directory:", dirHandle);
+      
+      // Example: List directory contents
+      for await (const entry of dirHandle.values()) {
+        console.log(entry.name, entry.kind);
+      }
+
+      // Example: Set selected folder path to state or form field
+      setSelectedFolder(dirHandle.name);
+      editForm.setFieldsValue({ pfFolder: dirHandle.name });
+    } catch (error) {
+      console.error("Error selecting directory:", error);
+      // Handle error as needed
+    }
+  };
+  
+  // useEffect
+  useEffect(() => {
+    getMeetList();
+  }, [userContext])
 
   // get meet list
   const getMeetList = async () => {
     try {
       const response: any = await getMeetsAPI();
-      const meetList: MeetList[] = response.data.obj;
+      const meetList: IMeet[] = response.data.meet; // Assuming response.data contains the array
+      console.log(meetList);
 
       let meets = meetList.map((i): IMeet => {
         return {
-          meetid: i.meetid,
+          meetId: i.meetId, // Adjusting the keys to match the response
           meetName: i.meetName,
-          description: i.description,
+          meetDesc: i.meetDesc ?? '', // If description can be null, provide a default value
           pfFolder: i.pfFolder,
           pfOutput: i.pfOutput,
           eventList: i.eventList,
-          extFolder: i.extFolder,
-          edit: i.edit,
+          intFolder: i.intFolder,
+          edit: i.edit ?? false,
         }
       });
+
       setMeetList(meets);
 
       const allMeets = meets;
@@ -69,8 +97,8 @@ const MeetListAdmin = () => {
   const baseColumns: ColumnsType<IMeet> = [
     {
       title: "Meet ID",
-      dataIndex: "meetid",
-      key: "id",
+      dataIndex: "meetId",
+      key: "meetId",
     },
     {
       title: "Meet Name",
@@ -79,8 +107,8 @@ const MeetListAdmin = () => {
     },
     {
         title: "Description",
-        dataIndex: "description",
-        key: "description",
+        dataIndex: "meetDesc",
+        key: "meetDesc",
         render: text => <span>{text.length > 300 ? `${text.substring(0, 300)}...` : text}</span>,
     },
     {
@@ -99,9 +127,9 @@ const MeetListAdmin = () => {
       dataIndex: "pfOutput",
     },
     {
-        title: "ExtFolder",
-        key: "extFolder",
-        dataIndex: "extFolder",
+        title: "Interface Folder",
+        key: "intFolder",
+        dataIndex: "intFolder",
     },
     {
         title: "Edit",
@@ -143,7 +171,7 @@ const MeetListAdmin = () => {
       key: "2",
       children: (
         <Table
-          rowKey={record => `${record.meetid}`}
+          rowKey={record => `${record.meetId}`}
           columns={meetColumns}
           dataSource={meetList}
         />
@@ -158,37 +186,39 @@ const MeetListAdmin = () => {
 
   // edit click
   const onEditClick = (meet: IMeet) => {
+    console.log(meet);
     // display existing info
     setEditingMeet(meet);
     setIsEditModalVisible(true);
 
     editForm.setFieldsValue({
-      meetid: meet.meetid,
+      meetId: meet.meetId,
       meetName: meet.meetName,
       pfFolder: meet.pfFolder,
       pfOutput: meet.pfOutput,
-      description: meet.description,
-      extFolder: meet.extFolder,
-      edit: meet.edit,
+      meetDesc: meet.meetDesc,
+      intFolder: meet.intFolder,
+      edit: meet.edit ? "Yes" : "No",
       eventList: meet.eventList
     });
+    setSelectedFolder(meet.pfFolder);
   };
 
   // edit submit
   const handleEditSubmit = async (meet: EditFormValues) => {
     try {
       const meetParams = {
-        meetid: meet.meetid,
+        meetId: meet.meetId,
         meetName: meet.meetName,
         pfFolder: meet.pfFolder,
         pfOutput: meet.pfOutput,
-        description: meet.description,
-        extFolder: meet.extFolder,
+        meetDesc: meet.meetDesc,
+        intFolder: meet.intFolder,
         edit: meet.edit,
         eventList: meet.eventList
       };
 
-      await updateMeetAPI(meetParams, userContext.user!.id);
+      await updateMeetAPI(meetParams);
       message.success("Meet updated successfully");
 
       setIsEditModalVisible(false);
@@ -212,7 +242,7 @@ const MeetListAdmin = () => {
   // delete click
   const onDeleteClick = async (meet: IMeet) => {
     try {
-      await deleteMeetAPI(meet.meetid, userContext.user!.id);
+      await deleteMeetAPI(meet.meetId, userContext.user!.id);
       message.success("Meet deleted successfully");
 
       // re-get meet list
@@ -240,25 +270,73 @@ const MeetListAdmin = () => {
         onCancel={handleEditCancel}
       >
         <Form form={editForm} layout="vertical" onFinish={handleEditSubmit}>
-          <Form.Item name="meetid" label="Meet ID" rules={[{ required: true, message: "Id is required" }]}>
+          <Form.Item name="meetId" label="Meet ID" rules={[{ required: true, message: "Id is required" }]}>
             <Input disabled />
           </Form.Item>
           <Form.Item name="meetName" label="Meet name" rules={[{ required: true, message: "Please input the meet name!" }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="supervisorId" label="Supervisor" rules={[{ required: true, message: "Please input new supervisor to  be assigned to" }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="maxStudents" label="MaxStudents" rules={[{ required: true, message: "MaxStudents is required" }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="description" label="Description">
+          <Form.Item name="meetDesc" label="Description">
             <Input.TextArea rows={4} />
+          </Form.Item>
+          <Form.Item label="PFFolder">
+            <Input.Group compact>
+              <Form.Item
+                name="pfFolder"
+                noStyle
+              >
+                <Input style={{ width: 'calc(100% - 24px)' }} value={selectedFolder}  />
+              </Form.Item>
+              <label htmlFor="folderInput">
+                <Button onClick={handleFolderSelect}>Select Folder</Button>
+              </label>
+            </Input.Group>
+          </Form.Item>
+          <Form.Item name="pfOutput" label="PF Output">
+            <Select defaultValue={editingMeet?.pfOutput || 'lif'}>
+              <Select.Option value="lif">LIF</Select.Option>
+              <Select.Option value="cl">CL</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="Interface Folder">
+            <Input.Group compact>
+              <Form.Item
+                name="intFolder"
+                noStyle
+              >
+                <Input style={{ width: 'calc(100% - 24px)' }} value={selectedFolder}  />
+              </Form.Item>
+              <label htmlFor="folderInput">
+                <Button onClick={handleFolderSelect}>Select Folder</Button>
+              </label>
+            </Input.Group>
+          </Form.Item>
+          <Form.Item name="eventList" label="Event List">
+            <Select defaultValue={editingMeet?.pfOutput || 'FL'}>
+              <Select.Option value="FL">FL</Select.Option>
+              <Select.Option value="OMEGA">OMEGA</Select.Option>
+              <Select.Option value="HYTEK OMEGA">HYTEK OMEGA</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item name="edit" label="Edit" initialValue={editingMeet?.edit ? "true" : "false"}>
+            <Select defaultValue={editingMeet?.edit || false}>
+              <Select.Option value={true}>Yes</Select.Option>
+              <Select.Option value={false}>No</Select.Option>
+            </Select>
           </Form.Item>
         </Form>
       </Modal>
     </div>
   )
+}
+
+declare module 'react' {
+  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+    // extends React's HTMLAttributes
+    directory?: string;        // remember to make these attributes optional....
+    webkitdirectory?: string;
+    window?: any;
+  }
 }
 
 export default MeetListAdmin

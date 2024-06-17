@@ -27,6 +27,32 @@ export function logoutAPI() {
     });
 }
 
+// Update a specific user
+export function updateUserAPI(user: any, userId: number) {
+    return request({
+        url: `/api/rainbow/users/${userId}`,
+        method: "PUT",
+        data: user,
+    })
+}
+
+// Get all meets list
+export function getMeetsAPI() {
+    return request({
+        url: `/api/rainbow/meets`,
+        method: "GET",
+    });
+}
+
+// Update a specific meet
+export function updateMeetAPI(meet: any) {
+    return request({
+        url: `/api/rainbow/meets`,
+        method: "PUT",
+        data: meet,
+    })
+}
+
 // user
 export function changePasswordAPI(oldPass: string, newPass: string, userId: number) {
     return request({
@@ -38,7 +64,7 @@ export function changePasswordAPI(oldPass: string, newPass: string, userId: numb
 // user
 export function getUserByIdAPI(userId: number) {
     return request({
-        url: `/api/rainbow/user/${userId}`,
+        url: `/api/rainbow/users/${userId}`,
         method: "GET",
     });
 }
@@ -61,15 +87,6 @@ export function addUserAPI(user: any) {
 }
 
 // admin
-export function updateUserAPI(user: any) {
-    return request({
-        url: "/api/projectshare/user",
-        method: "PUT",
-        data: user,
-    });
-}
-
-// admin
 export function deleteUserAPI(userId: number) {
     return request({
         url: `/api/projectshare/user/${userId}`,
@@ -78,27 +95,10 @@ export function deleteUserAPI(userId: number) {
 }
 
 // staff
-export function getMeetsAPI() {
-    return request({
-        url: `/api/rainbow/meets`,
-        method: "GET",
-    });
-}
-
-// staff
 export function addMeetAPI(meet: any) {
     return request({
         url: `/api/projectshare/project`,
         method: "POST",
-        data: meet,
-    })
-}
-
-// staff
-export function updateMeetAPI(meet: any, userId: number) {
-    return request({
-        url: `/api/projectshare/project/${userId}`,
-        method: "PUT",
         data: meet,
     })
 }

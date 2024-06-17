@@ -35,6 +35,18 @@ app.get('/api/rainbow/users', (req, res) => {
     });
 });
 
+// API endpoint to fetch a specific user based on userId
+app.get('/api/rainbow/users/:userId', (req, res) => {
+    const query = 'SELECT * FROM tblusers WHERE userId = ?';
+    db.get(query, [userId], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json(rows);
+    });
+  });
+
 // API endpoint to fetch all meets
 app.get('/api/rainbow/meets', (req, res) => {
     const query = 'SELECT * FROM tblmeets';
@@ -43,9 +55,35 @@ app.get('/api/rainbow/meets', (req, res) => {
             res.status(500).json({ error: err.message });
             return;
         }
-        res.json(rows);
+        res.json({meet: rows});
     });
 });
+
+// API endpoint to update a meet based on meetId
+app.put('/api/rainbow/meets', (req, res) => {
+    const { meetId, meetName, meetDesc, pfFolder, pfOutput, eventList, intFolder, edit } = req.body;
+  
+    const query = `
+      UPDATE tblmeets
+      SET MeetName = ?,
+          MeetDesc = ?,
+          PFFolder = ?,
+          PFOutput = ?,
+          EventList = ?,
+          intFolder = ?,
+          Edit = ?
+      WHERE MeetID = ?;
+    `;
+    
+    db.run(query, [meetName, meetDesc, pfFolder, pfOutput, eventList, intFolder, edit, meetId], function(err) {
+      if (err) {
+        console.log(err);
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json({ message: 'Meet updated successfully.', changes: this.changes });
+    });
+  });
 
 // // API endpoint to fetch select users
 // app.get('/api/rainbow/users', (req, res) => {
@@ -58,18 +96,6 @@ app.get('/api/rainbow/meets', (req, res) => {
 //         res.json(rows);
 //     });
 // });
-
-// API endpoint to fetch all users
-app.get('/api/meets', (req, res) => {
-    const query = 'SELECT * FROM tblsettings';
-    db.all(query, [], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.json(rows);
-    });
-});
 
 
 // Login API endpoint

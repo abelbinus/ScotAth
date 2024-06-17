@@ -1,12 +1,10 @@
-import { IVlounteer } from "./Volunteer";
-
 export interface IMeet {
-  meetid: number;
+  meetId: integer;
   meetName: string;
-  description: string;
+  meetDesc?: string;
   pfFolder: string;
   pfOutput: string;
   eventList: string;
-  extFolder: string;
-  edit: boolean;
+  intFolder: string;
+  edit?: boolean;
 }
