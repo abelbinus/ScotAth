@@ -12,8 +12,8 @@ const router = createBrowserRouter([
     children: [
       // { index: true, element: <Project />, },
       { path: "/profile", element: <ProfilePage />, },
-      { path: "/user", element: <User />, },
-      { path: "/meet-admin", element: <Meet/>},
+      { path: "/admin-dashboard", element: <User />, },
+      { path: "/meet-management", element: <Meet/>},
     ],
   },
   { path: "login", element: <LoginPage /> }, // super router

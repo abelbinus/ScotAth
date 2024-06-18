@@ -30,8 +30,8 @@ const Home: React.FC = () => {
   
     if (userContext?.user?.userRole === "admin") {
       baseItems.push(
-        { label: "User Management", icon: <UserOutlined />, key: "/user", "data-testid": "menu-item-admin" },
-        { label: "Modify Meet", icon: <UserOutlined />, key: "/meet-admin", "data-testid": "menu-item-meet-admin" }
+        { label: "User Management", icon: <UserOutlined />, key: "/admin-dashboard", "data-testid": "menu-item-admin" },
+        { label: "Modify Meet", icon: <UserOutlined />, key: "/meet-management", "data-testid": "menu-item-meet-management" }
       );
     } else if (userContext?.user?.userRole === "volunteer") {
       baseItems.push(
