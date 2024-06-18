@@ -62,7 +62,7 @@ const LoginPage = () => {
         <Layout style={{ minHeight: '100vh', backgroundColor: '#162c66', backgroundSize: 'cover' }}>
             <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '50px 20px' }}>
                 <div style={{ maxWidth: '400px', width: '100%', textAlign: 'center' }}>
-                    <div style={{ marginBottom: '20px', marginLeft: '50px' }}>
+                    <div style={{ marginBottom: '20px', }}>
                         <img src="/images/logo.png" alt="Logo" style={{ height: '100px' }} />
                     </div>
                     <h1 data-testid="title" style={{ color: "#fff", marginBottom: '30px' }}>Rainbow</h1>

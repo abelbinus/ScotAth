@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import { Divider, Input, Col, Row, Button, Space, Table, Modal, Form, message, Popconfirm, Tag, Radio, Select, Tabs } from "antd";
+import { Divider, Input, Col, Row, Button, Space, Table, Modal, Form, message, Popconfirm, Tag, Radio, Select, Tabs, Grid} from "antd";
 import type { TableColumnsType } from "antd";
 import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import { UserContext } from "../App";
@@ -8,6 +8,8 @@ import { getAllUsersAPI, addUserAPI, updateUserAPI, deleteUserAPI } from "../api
 const User = () => {
   // userInfo
   const userContext = useContext(UserContext);
+  const { useBreakpoint } = Grid; // Ant Design hook for screen size detection
+  const screens = useBreakpoint();
 
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
@@ -22,7 +24,9 @@ const User = () => {
   const columns: TableColumnsType<IUser> = [
     { title: "User ID", dataIndex: "userId", key: "userId" },
     { title: "Name", dataIndex: "userName", key: "userName" },
-    { title: "Email", dataIndex: "userEmail", key: "userEmail" },
+    ...(screens.xs ? [] : [
+      { title: "Email", dataIndex: "userEmail", key: "userEmail" },
+    ]),
     {
       title: "Role", dataIndex: "userRole", key: "userRole",
       render: (_, { userRole }) => (
@@ -252,19 +256,30 @@ const User = () => {
     },
   ];
 
+  // Custom validator function for integer validation
+  const validateInteger = (_, value: any) => {
+    if (!value || /^\d+$/.test(value)) {
+      return Promise.resolve();
+    }
+    return Promise.reject(new Error('Please enter a valid integer.'));
+  };
+
   return (
     <div>
-      <p style={{ fontWeight: "bold" }}>User Management</p>
-      <Divider />
+      
+      
 
       {/*Add button area */}
       <Row>
+        <Col span={8}>
+          <p style={{ fontWeight: "bold" }}>User Management</p>        
+        </Col>
         <Col span={8}></Col>
-        <Col span={8}></Col>
-        <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>
+        <Col span={8} style={{ display: "flex", marginTop: "10px", justifyContent: "flex-end" }}>
           <Button type="primary" onClick={onAddClick}>Add</Button>
         </Col>
       </Row>
+      <Divider />
 
       {/*Table area */}
       <Tabs defaultActiveKey="1" items={tabItems} />
@@ -279,10 +294,16 @@ const User = () => {
           onCancel={handleAddCancel}
         >
           <Form form={addform} layout="vertical" onFinish={handleAddFormSubmit} >
-            <Form.Item name="id" label="User ID" rules={[{ required: true, message: "Please input the user id!" }]}>
+            <Form.Item name="firstName" label="First Name" rules={[{ required: true, message: "Please input your first name!" }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="name" label="Name" rules={[{ required: true, message: "Please input the user name!" }]}>
+            <Form.Item name="middleName" label="Middle Name">
+              <Input />
+            </Form.Item>
+            <Form.Item name="lastName" label="Last Name" rules={[{ required: true, message: "Please input your last name!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="userName" label="Username" rules={[{ required: true, message: "Please input the user name!" }]}>
               <Input />
             </Form.Item>
             <Form.Item name="password" label="Password"
@@ -299,15 +320,24 @@ const User = () => {
                 }
               />
             </Form.Item>
-            <Form.Item name="email" label="Email" rules={[{ required: true, message: "Please input the email!" }]}>
+            <Form.Item name="userRole" label="Role" rules={[{ required: true, message: "Please select the role!" }]}>
+              <Select defaultValue={'admin'}>
+                <Select.Option value={'admin'}>Admin</Select.Option>
+                <Select.Option value={'volunteer'}>Volunteer</Select.Option>
+              </Select>
+            </Form.Item>
+            <Form.Item name="userEmail" label="Email">
               <Input type="email" />
             </Form.Item>
-            <Form.Item name="role" label="Role" rules={[{ required: true, message: "Please select the role!" }]}>
-              <Radio.Group>
-                <Radio value="student">Student</Radio>
-                <Radio value="staff">Staff</Radio>
-              </Radio.Group>
+            <Form.Item name="userAddress" label="Address">
+              <Input.TextArea rows={4} />
             </Form.Item>
+            <Form.Item name="userMob" label="Mobile Number" rules={[
+                { required: false, message: 'Please enter an integer.' },
+                { validator: validateInteger }
+              ]}>
+              <Input type="" />
+            </Form.Item>            
           </Form>
         </Modal>
 

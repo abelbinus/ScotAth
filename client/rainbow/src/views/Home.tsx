@@ -1,7 +1,6 @@
-import React, { useContext } from "react";
-import type { MenuProps } from "antd";
-import { Layout, Menu, theme, Tooltip, message } from "antd";
-import { ReadOutlined, UserOutlined, SolutionOutlined, LogoutOutlined } from "@ant-design/icons";
+import React, { useContext, useState } from "react";
+import { Layout, Menu, Tooltip, Drawer, message, Grid, theme } from "antd";
+import { UserOutlined, LogoutOutlined } from "@ant-design/icons";
 import { Outlet, useNavigate } from "react-router-dom";
 import { UserContext } from "../App";
 import useProtectedRoute from "../router/ProtectedRoute";
@@ -11,23 +10,25 @@ const { Header, Content, Sider } = Layout;
 const Home: React.FC = () => {
   useProtectedRoute();
 
-  const {
-    token: { colorBgContainer, borderRadiusLG },
-  } = theme.useToken();
+  const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
+  const { useBreakpoint } = Grid;
 
   const navigate = useNavigate();
-  const onMenuClick: MenuProps["onClick"] = (route) => {
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const userContext = useContext(UserContext);
+  const screens = useBreakpoint();
+
+  const onMenuClick = (route: any) => {
     const path = route.key;
     navigate(path);
+    if (screens.xs) {
+      closeDrawer();
+    }
   };
 
-  // userInfo
-  const userContext = useContext(UserContext);
-
-  // generate menus by role
   const getMenuItems = () => {
     const baseItems = [];
-  
+
     if (userContext?.user?.userRole === "admin") {
       baseItems.push(
         { label: "User Management", icon: <UserOutlined />, key: "/admin-dashboard", "data-testid": "menu-item-admin" },
@@ -39,17 +40,14 @@ const Home: React.FC = () => {
         //{ label: "Project Allocation", icon: <SolutionOutlined />, key: "/project-allocation-staff", "data-testid": "menu-item-project-allocation-staff" }
       );
     }
-  
+
     return baseItems;
   };
-  
 
-  // profile
   const handleUserInfoClick = () => {
     navigate("/profile");
   };
 
-  // logout
   const handleLogoutClick = async () => {
     try {
       //await logoutAPI();
@@ -62,19 +60,25 @@ const Home: React.FC = () => {
     }
   };
 
+  const toggleDrawer = () => {
+    setDrawerVisible(!drawerVisible);
+  };
+
+  const closeDrawer = () => {
+    setDrawerVisible(false);
+  };
+
   return (
     <Layout style={{ minHeight: "100vh", backgroundColor: "#162c66", backgroundSize: "cover" }}>
       <Header data-testid="header" style={{ display: "flex", justifyContent: "space-between", paddingInline: 20, alignItems: "center", color: "#fff", backgroundColor: "#162c66", fontWeight: "bold", fontSize: "25px" }}>
-          <div style={{ display: "flex", alignItems: "center"}}>
-              {/* Logo */}
-              <img data-testid="logo" src="/images/logo.png" alt="Logo" style={{ height: "70px" }} />
-              {/* title */}
-              <h1 data-testid="title" style={{ color: "#fff", marginLeft: "10px", marginBottom: "5" }}>
-                  Rainbow
-              </h1>
-          </div>
+        <div style={{ display: "flex", alignItems: "center" }}>
+          {/* Logo */}
+          <img data-testid="logo" src="/images/logo.png" alt="Logo" style={{ height: "70px" }} />
+          {/* Title */}
+          <h1 data-testid="title" style={{ color: "#fff", marginLeft: "10px", marginBottom: "5" }}>Rainbow</h1>
+        </div>
 
-        {/* loginUser */}
+        {/* Login User Info */}
         {userContext ? (
           <div style={{ display: "flex", alignItems: "center", marginRight: "20px" }}>
             <Tooltip title="My Profile">
@@ -91,30 +95,41 @@ const Home: React.FC = () => {
         ) : (
           <div>Login</div>
         )}
-      </Header>
-      <Layout>
-        {/*Left sider area*/}
-        <Sider data-testid="sider" width={250} style={{ background: colorBgContainer }}>
-          <Menu mode="inline" defaultSelectedKeys={["/"]} onClick={onMenuClick} style={{ height: "100%", borderRight: 0 }} items={getMenuItems()} />
-        </Sider>
 
+        {/* Burger Menu (Drawer) for Mobile */}
+        {screens.xs && (
+          <div className="burger-menu">
+            <Drawer
+              title="Menu"
+              placement="right"
+              closable={true}
+              onClose={closeDrawer}
+              visible={drawerVisible}
+              bodyStyle={{ padding: 0 }}
+            >
+              <Menu mode="inline" defaultSelectedKeys={["/"]} onClick={onMenuClick} style={{ height: "100%", borderRight: 0 }} items={getMenuItems()} />
+            </Drawer>
+          </div>
+        )}
+      </Header>
+
+      <Layout>
+        {/* Left Sider Area for Desktop */}
+        {!screens.xs && (
+          <Sider data-testid="sider" width={250} style={{ background: colorBgContainer }}>
+            <Menu mode="inline" defaultSelectedKeys={["/"]} onClick={onMenuClick} style={{ height: "100%", borderRight: 0 }} items={getMenuItems()} />
+          </Sider>
+        )}
+
+        {/* Main Content Area */}
         <Layout style={{ padding: "0 24px 24px" }}>
-          {/*Right content area*/}
-          <Content
-            style={{
-              padding: 24,
-              marginTop: "20px",
-              minHeight: 280,
-              background: colorBgContainer,
-              borderRadius: borderRadiusLG,
-            }}
-          >
+          <Content style={{ padding: 24, marginTop: "20px", minHeight: 280, background: colorBgContainer, borderRadius: borderRadiusLG }}>
             <Outlet />
           </Content>
         </Layout>
       </Layout>
     </Layout>
   );
-}
+};
 
-export default Home
+export default Home;

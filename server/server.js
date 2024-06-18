@@ -47,6 +47,34 @@ app.get('/api/rainbow/users/:userId', (req, res) => {
     });
   });
 
+  // Endpoint to add a user
+app.post('/api/rainbow/user', (req, res) => {
+    const user = req.body;
+
+    // Insert user into database
+    const sql = `INSERT INTO tblusers (userId, userName, userEmail, userRole, userPass, userMob, userAddress) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const values = [
+        user.userId,
+        user.userName,
+        user.userEmail,
+        user.userRole,
+        user.userPass,
+        user.userMob,
+        user.userAddress
+    ];
+
+    db.run(sql, values, function(err) {
+        if (err) {
+            console.error(err.message);
+            return res.status(500).json({ error: 'Failed to add user' });
+        }
+
+        console.log(`A user with ID ${this.lastID} has been added`);
+        res.json({ message: 'User added successfully' });
+    });
+});
+
 // API endpoint to fetch all meets
 app.get('/api/rainbow/meet', (req, res) => {
     const query = 'SELECT * FROM tblmeets';
