@@ -348,8 +348,8 @@ const User = () => {
             </Form.Item>
             <Form.Item name="role" label="Role" rules={[{ message: "Please select the role!" }]}>
               <Radio.Group disabled>
-                <Radio value="student">Student</Radio>
-                <Radio value="staff">Staff</Radio>
+                <Radio value="admin">Admin</Radio>
+                <Radio value="volunteer">Volunteer</Radio>
               </Radio.Group>
             </Form.Item>
           </Form>
