@@ -320,10 +320,10 @@ const User = () => {
                 }
               />
             </Form.Item>
-            <Form.Item name="userRole" label="Role" rules={[{ required: true, message: "Please select the role!" }]}>
-              <Select defaultValue={'admin'}>
-                <Select.Option value={'admin'}>Admin</Select.Option>
-                <Select.Option value={'volunteer'}>Volunteer</Select.Option>
+            <Form.Item name="userRole" label="Role" rules={[{ required: true, message: "Please select the role!" }]} initialValue="admin">
+              <Select defaultValue={"admin"}>
+                <Select.Option value={"admin"}>Admin</Select.Option>
+                <Select.Option value={"volunteer"}>Volunteer</Select.Option>
               </Select>
             </Form.Item>
             <Form.Item name="userEmail" label="Email">

@@ -364,7 +364,7 @@ const MeetListAdmin = () => {
               </Input.Group>
             </Form.Item>
             <Form.Item name="eventList" label="Event List">
-              <Select defaultValue={'FL'}>
+              <Select defaultValue={"FL"}>
                 <Select.Option value="FL">FL</Select.Option>
                 <Select.Option value="OMEGA">OMEGA</Select.Option>
                 <Select.Option value="HYTEK OMEGA">HYTEK OMEGA</Select.Option>

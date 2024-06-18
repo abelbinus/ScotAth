@@ -52,10 +52,13 @@ app.post('/api/rainbow/user', (req, res) => {
     const user = req.body;
 
     // Insert user into database
-    const sql = `INSERT INTO tblusers (userId, userName, userEmail, userRole, userPass, userMob, userAddress) 
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `INSERT INTO tblusers (userId, firstName, middleName, lastName, userName, userEmail, userRole, userPass, userMob, userAddress) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
     const values = [
         user.userId,
+        user.firstName,
+        user.middleName,
+        user.lastName,
         user.userName,
         user.userEmail,
         user.userRole,
