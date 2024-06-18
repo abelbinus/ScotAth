@@ -4,7 +4,7 @@ import { Divider, Input, Col, Row, Space, Tag, Table, Button, Form, Modal, Selec
 import { ColumnsType } from "antd/es/table";
 import { UserContext } from "../App.tsx";
 import { IMeet } from "../types/Meet";
-import { getMeetsAPI, deleteMeetAPI, updateMeetAPI } from "../apis/api.ts";
+import { getMeetsAPI, deleteMeetAPI, updateMeetAPI, addMeetAPI } from "../apis/api.ts";
 import { FolderOpenOutlined } from "@mui/icons-material";
 
 interface EditFormValues {
@@ -21,46 +21,79 @@ interface EditFormValues {
 const MeetListAdmin = () => {
   //const folderInput= React.useRef(null);
   const [meetList, setMeetList] = useState<IMeet[]>([]);
-  // userInfo
-  const userContext = useContext(UserContext);
-
+  const [editingMeet, setEditingMeet] = useState<IMeet | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState('');
+  
   //add Meet
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [addform] = Form.useForm();
   
   // edit Meet
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
-  const [editingMeet, setEditingMeet] = useState<IMeet | null>(null);
   const [editForm] = Form.useForm();
 
-  const [selectedFolder, setSelectedFolder] = useState('');
+  // userInfo
+  const userContext = useContext(UserContext);
+ 
 
   // Function to handle folder selection
-  const handleFolderSelect = async () => {
-    try {
-      const dirHandle = await window.showDirectoryPicker();
+  // const handleFolderSelect = async () => {
+  //   try {
+  //     const dirHandle = await window.showDirectoryPicker();
     
-      // Access the directory handle properties or perform operations
-      console.log("Selected directory:", dirHandle);
+  //     // Access the directory handle properties or perform operations
+  //     console.log("Selected directory:", dirHandle);
       
-      // Example: List directory contents
-      for await (const entry of dirHandle.values()) {
-        console.log(entry.name, entry.kind);
-      }
+  //     // Example: List directory contents
+  //     for await (const entry of dirHandle.values()) {
+  //       console.log(entry.name, entry.kind);
+  //     }
 
-      // Example: Set selected folder path to state or form field
-      setSelectedFolder(dirHandle.name);
-      editForm.setFieldsValue({ pfFolder: dirHandle.name });
-    } catch (error) {
-      console.error("Error selecting directory:", error);
-      // Handle error as needed
+  //     // Example: Set selected folder path to state or form field
+  //     setSelectedFolder(dirHandle.name);
+  //     editForm.setFieldsValue({ pfFolder: dirHandle.name });
+  //   } catch (error) {
+  //     console.error("Error selecting directory:", error);
+  //     // Handle error as needed
+  //   }
+  // };
+
+  // add
+  const onAddClick = () => {
+    setIsAddModalVisible(true);
+  };
+
+  // add
+  const handleAddCancel = () => {
+    setIsAddModalVisible(false);
+  };
+
+  // add
+  const handleAddFormSubmit = async (meet: IMeet) => {
+    try {
+      const meetParams = {
+        meetId: meet.meetId,
+        meetName: meet.meetName,
+        meetDesc: meet.meetDesc ?? '', // If description can be null, provide a default value
+        pfFolder: meet.pfFolder,
+        pfOutput: meet.pfOutput,
+        eventList: meet.eventList,
+        intFolder: meet.intFolder,
+        edit: meet.edit ?? false,
+      };
+
+      await addMeetAPI(meetParams);
+      message.success("Meet added successfully");
+
+      setIsAddModalVisible(false);
+      addform.resetFields();
+      getMeetList();
+    } catch (error: any) {
+      const errMsg = error.response?.data?.msg || "Add meet failed";
+      console.error(errMsg);
+      message.error(errMsg);
     }
   };
-  
-  // useEffect
-  useEffect(() => {
-    getMeetList();
-  }, [userContext])
 
   // get meet list
   const getMeetList = async () => {
@@ -71,7 +104,7 @@ const MeetListAdmin = () => {
 
       let meets = meetList.map((i): IMeet => {
         return {
-          meetId: i.meetId, // Adjusting the keys to match the response
+          meetId: i.meetId,
           meetName: i.meetName,
           meetDesc: i.meetDesc ?? '', // If description can be null, provide a default value
           pfFolder: i.pfFolder,
@@ -92,6 +125,17 @@ const MeetListAdmin = () => {
       message.error(errMsg);
     }
   };
+
+   // useEffect
+   useEffect(() => {
+    getMeetList();
+  }, [userContext])
+  
+  // admin
+  if (userContext?.user?.userRole !== "admin") {
+    // return <Navigate to="/" replace />;
+    return <div>No access permission</div>;
+  }
 
   // list columns
   const baseColumns: ColumnsType<IMeet> = [
@@ -242,7 +286,7 @@ const MeetListAdmin = () => {
   // delete click
   const onDeleteClick = async (meet: IMeet) => {
     try {
-      await deleteMeetAPI(meet.meetId, userContext.user!.id);
+      await deleteMeetAPI(meet.meetId);
       message.success("Meet deleted successfully");
 
       // re-get meet list
@@ -259,9 +303,81 @@ const MeetListAdmin = () => {
       <p style={{ fontWeight: "bold" }}>Meets</p>
       <Divider />
 
+      {/*Add button area */}
+      <Row>
+        <Col span={8}></Col>
+        <Col span={8}></Col>
+        <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>
+          <Button type="primary" onClick={onAddClick}>Add</Button>
+        </Col>
+      </Row>
+
       {/*Table area*/}
       <Tabs defaultActiveKey="1" onChange={onTabChange} items={tabItems} />
-
+      {/*Add a user dialog box*/}
+      <Modal
+          title="Add Meet"
+          open={isAddModalVisible}
+          onOk={() => addform.submit()}
+          onCancel={handleAddCancel}
+        >
+          <Form form={addform} layout="vertical" onFinish={handleAddFormSubmit}>
+            <Form.Item name="meetId" label="Meet ID" rules={[{ required: true, message: "Id is required" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="meetName" label="Meet name" rules={[{ required: true, message: "Please input the meet name!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="meetDesc" label="Description">
+              <Input.TextArea rows={4} />
+            </Form.Item>
+            <Form.Item label="PFFolder">
+              <Input.Group compact>
+                <Form.Item
+                  name="pfFolder"
+                  noStyle
+                >
+                  <Input style={{ width: 'calc(100% - 24px)' }} value={selectedFolder}  />
+                </Form.Item>
+                <label htmlFor="folderInput">
+                  {/* <Button onClick={handleFolderSelect}>Select Folder</Button> */}
+                </label>
+              </Input.Group>
+            </Form.Item>
+            <Form.Item name="pfOutput" label="PF Output">
+              <Select defaultValue={'lif'}>
+                <Select.Option value="lif">LIF</Select.Option>
+                <Select.Option value="cl">CL</Select.Option>
+              </Select>
+            </Form.Item>
+            <Form.Item label="Interface Folder">
+              <Input.Group compact>
+                <Form.Item
+                  name="intFolder"
+                  noStyle
+                >
+                  <Input style={{ width: 'calc(100% - 24px)' }} value={selectedFolder}  />
+                </Form.Item>
+                <label htmlFor="folderInput">
+                  {/* <Button onClick={handleFolderSelect}>Select Folder</Button> */}
+                </label>
+              </Input.Group>
+            </Form.Item>
+            <Form.Item name="eventList" label="Event List">
+              <Select defaultValue={'FL'}>
+                <Select.Option value="FL">FL</Select.Option>
+                <Select.Option value="OMEGA">OMEGA</Select.Option>
+                <Select.Option value="HYTEK OMEGA">HYTEK OMEGA</Select.Option>
+              </Select>
+            </Form.Item>
+            <Form.Item name="edit" label="Edit">
+              <Select defaultValue={true}>
+                <Select.Option value={true}>Yes</Select.Option>
+                <Select.Option value={false}>No</Select.Option>
+              </Select>
+            </Form.Item>
+          </Form>
+        </Modal>
       {/*Edit a meet dialog box*/}
       <Modal
         title="Edit Meet"
@@ -288,7 +404,7 @@ const MeetListAdmin = () => {
                 <Input style={{ width: 'calc(100% - 24px)' }} value={selectedFolder}  />
               </Form.Item>
               <label htmlFor="folderInput">
-                <Button onClick={handleFolderSelect}>Select Folder</Button>
+                {/* <Button onClick={handleFolderSelect}>Select Folder</Button> */}
               </label>
             </Input.Group>
           </Form.Item>
@@ -307,7 +423,7 @@ const MeetListAdmin = () => {
                 <Input style={{ width: 'calc(100% - 24px)' }} value={selectedFolder}  />
               </Form.Item>
               <label htmlFor="folderInput">
-                <Button onClick={handleFolderSelect}>Select Folder</Button>
+                {/* <Button onClick={handleFolderSelect}>Select Folder</Button> */}
               </label>
             </Input.Group>
           </Form.Item>

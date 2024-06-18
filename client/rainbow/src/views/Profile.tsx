@@ -2,7 +2,6 @@ import { useContext, useState } from "react";
 import { Card, Descriptions, Modal, Form, Input, Space, Button, message, Select, Divider } from "antd";
 import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import { UserContext } from "../App";
-import { DEPARTMENTS } from "../types/Departments";
 import { IUser } from "../types/User";
 import { changePasswordAPI, updateUserAPI, getUserByIdAPI } from "../apis/api";
 
@@ -26,12 +25,6 @@ const ProfilePage = () => {
   const [isPasswordVisibleRetype, setIsPasswordVisibleRetype] = useState(false);
   const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] = useState(false);
 
-  // department list
-  const departmentOptions = DEPARTMENTS.map(dept => ({
-    label: dept,
-    value: dept,
-  }));
-
   const handleEditCancel = () => {
     setIsEditModalVisible(false);
   };
@@ -40,21 +33,32 @@ const ProfilePage = () => {
     setEditingUser(user);
     setIsEditModalVisible(true);
     editForm.setFieldsValue({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
+      userId: user.userId,
+      firstName: user.firstName,
+      middleName: user.middleName || '',
+      lastName: user.lastName,
+      userName: user.userName,
+      userPass: user.userPass,
+      userEmail: user.userEmail || '',
+      userRole: user.userRole,
+      userMob: user.userMob || '',
+      userAddress: user.userAddress || ''
     });
   };
 
   const handleEditSubmit = async (user: IUser) => {
     try {
       const userParams = {
-        id: user.id,
-        name: user.name,
-        password: user.password,
-        email: user.email,
-        type: user.role,
+        userId: user.userId,
+        firstName: user.firstName,
+        middleName: user.middleName,
+        lastName: user.lastName,
+        userName: user.userName,
+        userPass: user.userPass,
+        userEmail: user.userEmail,
+        userRole: user.userRole,
+        userMob: user.userMob,
+        userAddress: user.userAddress
       };
 
       await updateUserAPI(userParams);
@@ -64,16 +68,20 @@ const ProfilePage = () => {
       setEditingUser(null);
 
       // re-get user info
-      const response = await getUserByIdAPI(userContext.user!.id);
+      const response = await getUserByIdAPI(userContext.user!.userId);
 
       // change obj to IUser
       const loginUser: IUser = {
-        id: response.data.obj.id,
-        name: response.data.obj.name,
-        email: response.data.obj.email,
-        role: response.data.obj.type,
-        password: null,
-        username: response.data.obj.username,
+        userId: response.data.user.id,
+        firstName: response.data.user.first_name,
+        middleName: response.data.user.middle_name || '',
+        lastName: response.data.user.last_name,
+        userName: response.data.user.username,
+        userEmail: response.data.user.userEmail || '', // You need to handle this if email is not provided in the response
+        userRole: response.data.user.role,
+        userPass: null,
+        userAddress: response.data.user.address || '',
+        userMob: response.data.user.userMob || ''
       };
 
       // UserContext
@@ -98,7 +106,7 @@ const ProfilePage = () => {
     }
 
     try {
-      const response = await changePasswordAPI(values.oldPassword, values.newPassword, userContext!.user!.id); // Call the changePasswordAPI function
+      const response = await changePasswordAPI(values.oldPassword, values.newPassword, userContext!.user!.userId); // Call the changePasswordAPI function
       const responseMessage = response?.data?.msg;
       if (response.data.suc) {
           message.success(responseMessage);
@@ -144,10 +152,10 @@ const ProfilePage = () => {
     <div style={{ padding: 24 }} data-testid="profile-container">
       <Card title="My Profile" bordered={false} data-testid="profile-card">
         <Descriptions layout="vertical" column={1} colon={false}>
-          <Descriptions.Item label="User ID">{userContext?.user?.id}</Descriptions.Item>
-          <Descriptions.Item label="Name" >{userContext?.user?.name}</Descriptions.Item>
-          <Descriptions.Item label="Email" >{userContext?.user?.email}</Descriptions.Item>
-          <Descriptions.Item label="Role" >{userContext?.user?.role}</Descriptions.Item>
+          <Descriptions.Item label="User ID">{userContext?.user?.userId}</Descriptions.Item>
+          <Descriptions.Item label="Name" >{userContext?.user?.userName}</Descriptions.Item>
+          <Descriptions.Item label="Email" >{userContext?.user?.userEmail}</Descriptions.Item>
+          <Descriptions.Item label="Role" >{userContext?.user?.userRole}</Descriptions.Item>
         </Descriptions>
         <Divider />
         <Space>
@@ -175,9 +183,6 @@ const ProfilePage = () => {
           </Form.Item>
           <Form.Item label="Role" name="role" rules={[{ required: true, message: "Please select the role!" }]}>
             <Input disabled data-testid="edit-user-role" />
-          </Form.Item>
-          <Form.Item name="department" label="Department" rules={[{ required: true, message: "Please input the project department!" }]}>
-            <Select placeholder="Select a department" options={departmentOptions} disabled data-testid="edit-user-department" />
           </Form.Item>
           <Form.Item>
             <Space>

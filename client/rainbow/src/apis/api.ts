@@ -30,7 +30,7 @@ export function logoutAPI() {
 // Update a specific user
 export function updateUserAPI(user: any, userId: number) {
     return request({
-        url: `/api/rainbow/users/${userId}`,
+        url: `/api/rainbow/user/${userId}`,
         method: "PUT",
         data: user,
     })
@@ -39,7 +39,7 @@ export function updateUserAPI(user: any, userId: number) {
 // Get all meets list
 export function getMeetsAPI() {
     return request({
-        url: `/api/rainbow/meets`,
+        url: `/api/rainbow/meet`,
         method: "GET",
     });
 }
@@ -47,7 +47,7 @@ export function getMeetsAPI() {
 // Update a specific meet
 export function updateMeetAPI(meet: any) {
     return request({
-        url: `/api/rainbow/meets`,
+        url: `/api/rainbow/meet`,
         method: "PUT",
         data: meet,
     })
@@ -56,7 +56,7 @@ export function updateMeetAPI(meet: any) {
 // user
 export function changePasswordAPI(oldPass: string, newPass: string, userId: number) {
     return request({
-        url: `/api/projectshare/user/changePassword/${oldPass}/${newPass}/${userId}`,
+        url: `/api/rainbow/user/changePassword/${oldPass}/${newPass}/${userId}`,
         method: "PUT",
     });
 }
@@ -64,7 +64,7 @@ export function changePasswordAPI(oldPass: string, newPass: string, userId: numb
 // user
 export function getUserByIdAPI(userId: number) {
     return request({
-        url: `/api/rainbow/users/${userId}`,
+        url: `/api/rainbow/user/${userId}`,
         method: "GET",
     });
 }
@@ -72,7 +72,7 @@ export function getUserByIdAPI(userId: number) {
 // admin
 export function getAllUsersAPI() {
     return request({
-        url: "/api/rainbow/users",
+        url: "/api/rainbow/user",
         method: "GET",
     });
 }
@@ -80,7 +80,7 @@ export function getAllUsersAPI() {
 // admin
 export function addUserAPI(user: any) {
     return request({
-        url: "/api/projectshare/user",
+        url: "/api/rainbow/user",
         method: "POST",
         data: user,
     });
@@ -97,16 +97,16 @@ export function deleteUserAPI(userId: number) {
 // staff
 export function addMeetAPI(meet: any) {
     return request({
-        url: `/api/projectshare/project`,
+        url: `/api/rainbow/meet`,
         method: "POST",
         data: meet,
     })
 }
 
 // staff
-export function deleteMeetAPI(meetId: number, userId: number) {
+export function deleteMeetAPI(meetId: number) {
     return request({
-        url: `/api/projectshare/project/${meetId}/${userId}`,
+        url: `/api/rainbow/meet/${meetId}`,
         method: "DELETE",
     })
 }

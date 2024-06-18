@@ -24,7 +24,7 @@ const db = new sqlite3.Database(path.join(__dirname, '/../sqlite/trackjudging.db
 });
 
 // API endpoint to fetch all users
-app.get('/api/rainbow/users', (req, res) => {
+app.get('/api/rainbow/user', (req, res) => {
     const query = 'SELECT * FROM tblusers';
     db.all(query, [], (err, rows) => {
         if (err) {
@@ -48,7 +48,7 @@ app.get('/api/rainbow/users/:userId', (req, res) => {
   });
 
 // API endpoint to fetch all meets
-app.get('/api/rainbow/meets', (req, res) => {
+app.get('/api/rainbow/meet', (req, res) => {
     const query = 'SELECT * FROM tblmeets';
     db.all(query, [], (err, rows) => {
         if (err) {
@@ -59,8 +59,33 @@ app.get('/api/rainbow/meets', (req, res) => {
     });
 });
 
+// POST endpoint to add a new meet
+app.post('/api/rainbow/meet', (req, res) => {
+    const { meetId, meetName, meetDesc, pfFolder, pfOutput, eventList, intFolder, edit } = req.body;
+
+    // Validation: Check if all required fields are provided
+    if (!meetId || !meetName) {
+        res.status(400).json({ error: 'Missing required fields' });
+        return;
+    }
+
+    // Insert the new meet into the tblmeets table
+    const query = `
+        INSERT INTO tblmeets (meetId, meetName, meetDesc, pfFolder, pfOutput, eventList, intFolder, edit)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    db.run(query, [meetId, meetName, meetDesc, pfFolder, pfOutput, eventList, intFolder, edit], function(err) {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.status(201).json({ message: 'Meet added successfully', meetId: this.lastID });
+    });
+});
+
 // API endpoint to update a meet based on meetId
-app.put('/api/rainbow/meets', (req, res) => {
+app.put('/api/rainbow/meet', (req, res) => {
     const { meetId, meetName, meetDesc, pfFolder, pfOutput, eventList, intFolder, edit } = req.body;
   
     const query = `
@@ -85,24 +110,39 @@ app.put('/api/rainbow/meets', (req, res) => {
     });
   });
 
-// // API endpoint to fetch select users
-// app.get('/api/rainbow/users', (req, res) => {
-//     const query = 'SELECT * FROM tblusers WHERE user';
-//     db.all(query, [], (err, rows) => {
-//         if (err) {
-//             res.status(500).json({ error: err.message });
-//             return;
-//         }
-//         res.json(rows);
-//     });
-// });
+// DELETE endpoint to delete a meet by meetId
+app.delete('/api/rainbow/meet/:meetId', (req, res) => {
+    const { meetId } = req.params;
+
+    // Check if the meet exists before attempting to delete
+    db.get('SELECT * FROM tblmeets WHERE MeetID = ?', [meetId], (err, row) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        if (!row) {
+            res.status(404).json({ message: 'Meet not found' });
+            return;
+        }
+
+        // Delete the meet
+        const deleteQuery = 'DELETE FROM tblmeets WHERE MeetID = ?';
+        db.run(deleteQuery, [meetId], function (err) {
+            if (err) {
+                res.status(500).json({ error: err.message });
+                return;
+            }
+            res.json({ message: 'Meet deleted successfully', changes: this.changes });
+        });
+    });
+}); 
 
 
 // Login API endpoint
 app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    const query = 'SELECT * FROM tblusers WHERE username = ? AND password = ?';
-    db.get(query, [username, password], (err, row) => {
+    const { userName, userPass } = req.body;
+    const query = 'SELECT * FROM tblusers WHERE userName = ? AND userPass = ?';
+    db.get(query, [userName, userPass], (err, row) => {
         if (err) {
             res.status(500).json({ error: err.message });
             return;

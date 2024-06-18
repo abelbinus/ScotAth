@@ -23,12 +23,16 @@ const LoginPage = () => {
 
             // Convert the response to IUser format
             const loginUser: IUser = {
-                id: response.data.user.id,
-                name: `${response.data.user.first_name} ${response.data.user.last_name}`, // Assuming 'name' is a combination of first_name and last_name
-                username: response.data.user.username,
-                email: '', // You need to handle this if email is not provided in the response
-                role: response.data.user.role,
-                password: null, // Assuming you do not store password in loginUser object
+                userId: response.data.user.userId,
+                firstName: response.data.user.firstName,
+                middleName: response.data.user.middleName,
+                lastName: response.data.user.lastName,
+                userName: response.data.user.userName,
+                userEmail: response.data.user.userEmail || '', // You need to handle this if email is not provided in the response
+                userRole: response.data.user.userRole,
+                userPass: null, // Assuming you do not store password in loginUser object
+                userAddress: response.data.user.userAddress,
+                userMob: response.data.user.userMob
             };
 
             message.success("Login successfully");
@@ -38,12 +42,10 @@ const LoginPage = () => {
             setLoading(false);
 
             // display by role
-            if (loginUser.role === "admin") {
+            if (loginUser.userRole === "admin") {
                 navigate("/user");
-            } else if (loginUser.role === "staff") {
+            } else if (loginUser.userRole === "volunteer") {
                 navigate("/project-staff");
-            } else if (loginUser.role === "student") {
-                navigate("/project-student");
             } else { }
         } catch (error: any) {
             const errMsg = error.response?.data?.msg || "Login failed";
@@ -76,16 +78,16 @@ const LoginPage = () => {
                             onFinish={onFinish}
                         >
                             <Form.Item
-                                data-testid="username"
-                                name="username"
+                                data-testid="userName"
+                                name="userName"
                                 rules={[{ required: true, message: "Please input your username!" }]}
                                 style={{ marginBottom: "20px" }}
                             >
                                 <Input prefix={<UserOutlined className="site-form-item-icon" />} placeholder="User Name" />
                             </Form.Item>
                             <Form.Item
-                                data-testid="password"
-                                name="password"
+                                data-testid="userPass"
+                                name="userPass"
                                 rules={[{ required: true, message: "Please input your Password!" }]}
                             >
                                 <Input

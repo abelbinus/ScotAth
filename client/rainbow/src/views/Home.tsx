@@ -28,20 +28,15 @@ const Home: React.FC = () => {
   const getMenuItems = () => {
     const baseItems = [];
   
-    if (userContext?.user?.role === "admin") {
+    if (userContext?.user?.userRole === "admin") {
       baseItems.push(
-        { label: "Staff Management", icon: <UserOutlined />, key: "/user", "data-testid": "menu-item-admin" },
+        { label: "User Management", icon: <UserOutlined />, key: "/user", "data-testid": "menu-item-admin" },
         { label: "Modify Meet", icon: <UserOutlined />, key: "/meet-admin", "data-testid": "menu-item-meet-admin" }
       );
-    } else if (userContext?.user?.role === "volunteer") {
+    } else if (userContext?.user?.userRole === "volunteer") {
       baseItems.push(
         //{ label: "Meet", icon: <ReadOutlined />, key: "/project-staff", "data-testid": "menu-item-meet-staff" },
         //{ label: "Project Allocation", icon: <SolutionOutlined />, key: "/project-allocation-staff", "data-testid": "menu-item-project-allocation-staff" }
-      );
-    } else if (userContext?.user?.role === "student") {
-      baseItems.push(
-        { label: "Project Selection", icon: <ReadOutlined />, key: "/project-student", "data-testid": "menu-item-project-student" },
-        { label: "Apply History", icon: <SolutionOutlined />, key: "/project-allocation-student", "data-testid": "menu-item-apply-history" }
       );
     }
   
@@ -85,7 +80,7 @@ const Home: React.FC = () => {
             <Tooltip title="My Profile">
               <div data-testid="tooltip-my-profile" onClick={handleUserInfoClick} style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
                 <UserOutlined style={{ marginRight: 10, color: "#fff" }} />
-                <span style={{ fontSize: "18px", color: "#fff" }}>{userContext?.user?.name}</span>
+                <span style={{ fontSize: "18px", color: "#fff" }}>{userContext?.user?.firstName}</span>
               </div>
             </Tooltip>
             <span style={{ borderLeft: "1px solid #fff", height: "20px", marginRight: "20px", marginLeft: "20px" }}></span>
