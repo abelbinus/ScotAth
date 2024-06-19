@@ -2,9 +2,11 @@ const express = require('express');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
+const bcrypt = require('bcrypt');
+const fs = require('fs');
 
 const app = express();
-const port = 5000;
+const port = process.env.PORT || 5000;
 const cors = require('cors');
 
 // Middleware
@@ -12,6 +14,11 @@ app.use(express.static(path.join(__dirname, '/../client/rainbow/build')));
 app.use(bodyParser.json());
 // Enable CORS for all routes
 app.use(cors());
+
+// Start the server
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
+});
 
 
 // Connect to SQLite database
@@ -47,9 +54,16 @@ app.get('/api/rainbow/users/:userId', (req, res) => {
     });
   });
 
-  // Endpoint to add a user
-app.post('/api/rainbow/user', (req, res) => {
+// Endpoint to add a user
+app.post('/api/rainbow/user', async (req, res) => {
     const user = req.body;
+
+    // // Hash the user's password
+    // try {
+    //     user.userPass = await bcrypt.hash(user.userPass, 10);
+    // } catch (error) {
+    //     return res.status(500).json({ error: 'Failed to hash password' });
+    // }
 
     // Insert user into database
     const sql = `INSERT INTO tblusers (userId, firstName, middleName, lastName, userName, userEmail, userRole, userPass, userMob, userAddress) 
@@ -70,6 +84,16 @@ app.post('/api/rainbow/user', (req, res) => {
     db.run(sql, values, function(err) {
         if (err) {
             console.error(err.message);
+
+            // Determine the type of SQLite constraint error
+            if (err.message.includes('NOT NULL')) {
+                const field = err.message.split(': ')[2].split('.')[1];
+                return res.status(400).json({ error: `Failed to add user. The field '${field}' cannot be null.` });
+            } else if (err.message.includes('UNIQUE')) {
+                const field = err.message.split(': ')[2].split('.')[1];
+                return res.status(400).json({ error: `Failed to add user. The value for '${field}' must be unique.` });
+            }
+
             return res.status(500).json({ error: 'Failed to add user' });
         }
 
@@ -77,6 +101,58 @@ app.post('/api/rainbow/user', (req, res) => {
         res.json({ message: 'User added successfully' });
     });
 });
+
+// Endpoint to update a user
+app.put('/api/rainbow/user', async (req, res) => {
+    const user = req.body;
+  
+    // // Check if the password needs to be hashed
+    // let hashedPassword = user.userPass;
+    // if (user.userPass) {
+    //   try {
+    //     const salt = await bcrypt.genSalt(10);
+    //     hashedPassword = await bcrypt.hash(user.userPass, salt);
+    //   } catch (err) {
+    //     console.error('Error hashing password:', err);
+    //     return res.status(500).json({ error: 'Failed to hash password' });
+    //   }
+    // }
+  
+    // Update user in the database
+    const sql = `
+      UPDATE tblusers
+      SET firstName = ?, middleName = ?, lastName = ?, userName = ?, userEmail = ?, userRole = ?, userPass = ?, userMob = ?, userAddress = ?
+      WHERE userId = ?
+    `;
+    const values = [
+      user.firstName,
+      user.middleName,
+      user.lastName,
+      user.userName,
+      user.userEmail,
+      user.userRole,
+      hashedPassword,
+      user.userMob,
+      user.userAddress,
+      user.userId,
+    ];
+  
+    db.run(sql, values, function (err) {
+      if (err) {
+        console.error(err.message);
+        return res.status(500).json({ error: `Failed to update user\n${err.message}` });
+      }
+  
+      if (this.changes === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+  
+      console.log(`User with ID ${user.userId} has been updated`);
+      res.json({ message: 'User updated successfully' });
+    });
+  });
+
+  
 
 // API endpoint to fetch all meets
 app.get('/api/rainbow/meet', (req, res) => {
@@ -141,6 +217,28 @@ app.put('/api/rainbow/meet', (req, res) => {
     });
   });
 
+
+// Endpoint to delete a user
+app.delete('/api/rainbow/user/:userId', (req, res) => {
+    const userId = req.params.userId;
+
+    const sql = 'DELETE FROM tblusers WHERE userId = ?';
+
+    db.run(sql, [userId], function(err) {
+        if (err) {
+            console.error(err.message);
+            return res.status(500).json({ error: 'Failed to delete user\n' + err.message });
+        }
+
+        if (this.changes === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        console.log(`User with ID ${userId} has been deleted`);
+        res.json({ message: 'User deleted successfully' });
+    });
+});
+
 // DELETE endpoint to delete a meet by meetId
 app.delete('/api/rainbow/meet/:meetId', (req, res) => {
     const { meetId } = req.params;
@@ -188,12 +286,26 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+app.post('/api/rainbow/event', (req, res) => {
+    const { pfFolder } = req.body;
+    console.log(req.body);
+    if (!pfFolder) {
+      return res.status(400).json({ error: 'pfFolder path is required' });
+    }
+  
+    const folderPath = path.resolve(pfFolder);
+  
+    fs.readdir(folderPath, (err, files) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Failed to read directory' });
+      }
+  
+      res.json({ files });
+    });
+  });
+
 // All other requests go to React app
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname + '/../client/rainbow/build/index.html'));
-});
-
-// Start the server
-app.listen(port, '0.0.0.0', () => {
-    console.log(`Server is running on http://localhost:${port}`);
 });

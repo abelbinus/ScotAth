@@ -28,9 +28,9 @@ export function logoutAPI() {
 }
 
 // Update a specific user
-export function updateUserAPI(user: any, userId: number) {
+export function updateUserAPI(user: any) {
     return request({
-        url: `/api/rainbow/user/${userId}`,
+        url: `/api/rainbow/user/`,
         method: "PUT",
         data: user,
     })
@@ -89,7 +89,7 @@ export function addUserAPI(user: any) {
 // admin
 export function deleteUserAPI(userId: number) {
     return request({
-        url: `/api/projectshare/user/${userId}`,
+        url: `/api/rainbow/user/${userId}`,
         method: "DELETE",
     });
 }
@@ -111,54 +111,11 @@ export function deleteMeetAPI(meetId: number) {
     })
 }
 
-// staff
-export function getStaffOwnProjectsAPI(staffId: number) {
+// get all event details from folder
+export function getEventFiles(pfFolder: any) {
     return request({
-        url: `/api/projectshare/project-allocation/staff/${staffId}`,
-        method: "GET",
-    });
-}
-
-// staff
-export function approveProjectAPI(studentId: number, projectId: number) {
-    return request({
-        url: "/api/projectshare/approve-project",
+        url: `/api/rainbow/event/`,
         method: "POST",
-        data: {
-            studentId: studentId,
-            projectId: projectId,
-        },
-    });
-}
-
-// staff
-export function rejectProjectAPI(studentId: number, projectId: number) {
-    return request({
-        url: "/api/projectshare/reject-project",
-        method: "POST",
-        data: {
-            studentId: studentId,
-            projectId: projectId,
-        },
-    });
-}
-
-// student
-export function getStudentAppliedProjectsAPI(studentID: number) {
-    return request({
-        url: `/api/projectshare/projects/student/${studentID}`,
-        method: "GET",
-    });
-}
-
-// student
-export function applyProjectAPI(studentId: number, projectId: number) {
-    return request({
-        url: "/api/projectshare/apply-project",
-        method: "POST",
-        data: {
-            studentId: studentId,
-            projectId: projectId,
-        },
-    });
+        data: pfFolder,
+    })
 }

@@ -36,8 +36,6 @@ const LoginPage = () => {
                 userMob: response.data.user.userMob
             };
 
-
-
             message.success("Login successful");
 
             // Update user context
@@ -48,7 +46,7 @@ const LoginPage = () => {
             if (loginUser.userRole === "admin") {
                 navigate("/admin-dashboard");
             } else {
-                navigate("/user-dashboard");
+                navigate("/event-management");
             }
         } catch (error: any) {
             const errMsg = error.response?.data?.msg || "Login failed";
@@ -95,7 +93,6 @@ const LoginPage = () => {
                                     style={{ height: '50px', fontSize: '16px' }} // Increased height and font size
                                 />
                             </Form.Item>
-
                             <Form.Item>
                                 <Button
                                     type="primary"

@@ -300,17 +300,18 @@ const MeetListAdmin = () => {
 
   return (
     <div>
-      <p style={{ fontWeight: "bold" }}>Meets</p>
-      <Divider />
 
       {/*Add button area */}
-      <Row>
-        <Col span={8}></Col>
+      <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
+        <Col span={8}>
+          <p style={{ fontWeight: "bold", marginBottom: 0 }}> Meet Management</p>
+        </Col>
         <Col span={8}></Col>
         <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>
           <Button type="primary" onClick={onAddClick}>Add</Button>
         </Col>
       </Row>
+      <Divider style={{ marginTop: 20, marginBottom: 10 }} />
 
       {/*Table area*/}
       <Tabs defaultActiveKey="1" onChange={onTabChange} items={tabItems} />

@@ -1,12 +1,11 @@
 import React, { useContext, useState } from "react";
 import { Layout, Menu, Tooltip, Drawer, message, Grid, theme } from "antd";
-import { UserOutlined, LogoutOutlined } from "@ant-design/icons";
+import { UserOutlined, LogoutOutlined, ReadOutlined } from "@ant-design/icons";
 import { Outlet, useNavigate } from "react-router-dom";
 import { UserContext } from "../App";
 import useProtectedRoute from "../router/ProtectedRoute";
 
 const { Header, Content, Sider } = Layout;
-
 const Home: React.FC = () => {
   useProtectedRoute();
 
@@ -32,11 +31,11 @@ const Home: React.FC = () => {
     if (userContext?.user?.userRole === "admin") {
       baseItems.push(
         { label: "User Management", icon: <UserOutlined />, key: "/admin-dashboard", "data-testid": "menu-item-admin" },
-        { label: "Modify Meet", icon: <UserOutlined />, key: "/meet-management", "data-testid": "menu-item-meet-management" }
+        { label: "Meet Management", icon: <UserOutlined />, key: "/meet-management", "data-testid": "menu-item-meet-management" }
       );
     } else if (userContext?.user?.userRole === "volunteer") {
       baseItems.push(
-        //{ label: "Meet", icon: <ReadOutlined />, key: "/project-staff", "data-testid": "menu-item-meet-staff" },
+        { label: "View Meets", icon: <ReadOutlined />, key: "/event-management", "data-testid": "menu-item-event-management" },
         //{ label: "Project Allocation", icon: <SolutionOutlined />, key: "/project-allocation-staff", "data-testid": "menu-item-project-allocation-staff" }
       );
     }
@@ -70,52 +69,111 @@ const Home: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: "100vh", backgroundColor: "#162c66", backgroundSize: "cover" }}>
-      <Header data-testid="header" style={{ display: "flex", justifyContent: "space-between", paddingInline: 20, alignItems: "center", color: "#fff", backgroundColor: "#162c66", fontWeight: "bold", fontSize: "25px" }}>
-        <div style={{ display: "flex", alignItems: "center" }}>
-          {/* Logo */}
-          <img data-testid="logo" src="/images/logo.png" alt="Logo" style={{ height: "70px" }} />
-          {/* Title */}
-          <h1 data-testid="title" style={{ color: "#fff", marginLeft: "10px", marginBottom: "5" }}>Rainbow</h1>
-        </div>
+      <Header
+  data-testid="header"
+  style={{
+    display: "flex",
+    justifyContent: "space-between",
+    paddingInline: 20,
+    alignItems: "center",
+    color: "#fff",
+    backgroundColor: "#162c66",
+    fontWeight: "bold",
+    fontSize: "25px",
+    position: 'relative'
+  }}
+>
+  <div style={{ display: "flex", alignItems: "center" }}>
+    {/* Logo */}
+    {screens.md && (
+      <img
+        data-testid="logo"
+        src="/images/logo.png"
+        alt="Logo"
+        style={{ height: "70px" }}
+      />
+    )}
+  </div>
 
-        {/* Login User Info */}
-        {userContext ? (
-          <div style={{ display: "flex", alignItems: "center", marginRight: "20px" }}>
-            <Tooltip title="My Profile">
-              <div data-testid="tooltip-my-profile" onClick={handleUserInfoClick} style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
-                <UserOutlined style={{ marginRight: 10, color: "#fff" }} />
-                <span style={{ fontSize: "18px", color: "#fff" }}>{userContext?.user?.firstName}</span>
-              </div>
-            </Tooltip>
-            <span style={{ borderLeft: "1px solid #fff", height: "20px", marginRight: "20px", marginLeft: "20px" }}></span>
-            <Tooltip title="Logout">
-              <LogoutOutlined onClick={handleLogoutClick} style={{ fontSize: "18px", color: "#fff", cursor: "pointer" }} />
-            </Tooltip>
-          </div>
-        ) : (
-          <div>Login</div>
-        )}
+  {/* Title */}
+  <h1
+      data-testid="title"
+      style={{
+        color: "#fff",
+        margin: 0,
+        position: screens.md ? "absolute" : "static",
+        left: screens.md ? "50%" : "auto",
+        transform: screens.md ? "translateX(-50%)" : "none",
+        fontSize: screens.md ? "50px" : "25px", // Adjust the font size based on screen size
 
-        {/* Burger Menu (Drawer) for Mobile */}
-        {screens.xs && (
-          <div className="burger-menu">
-            <Drawer
-              title="Menu"
-              placement="right"
-              closable={true}
-              onClose={closeDrawer}
-              visible={drawerVisible}
-              bodyStyle={{ padding: 0 }}
-            >
-              <Menu mode="inline" defaultSelectedKeys={["/"]} onClick={onMenuClick} style={{ height: "100%", borderRight: 0 }} items={getMenuItems()} />
-            </Drawer>
+      }}
+    >
+      Rainbow
+  </h1>
+
+  {/* Login User Info */}
+  <div style={{ display: "flex", alignItems: "center" }}>
+    {userContext ? (
+      <div style={{ display: "flex", alignItems: "center", marginRight: "20px" }}>
+        <Tooltip title="My Profile">
+          <div
+            data-testid="tooltip-my-profile"
+            onClick={handleUserInfoClick}
+            style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
+          >
+            <UserOutlined style={{ marginRight: 10, color: "#fff" }} />
+            <span style={{ fontSize: "18px", color: "#fff" }}>
+              {userContext?.user?.firstName}
+            </span>
           </div>
-        )}
-      </Header>
+        </Tooltip>
+        <span
+          style={{
+            borderLeft: "1px solid #fff",
+            height: "20px",
+            marginRight: "20px",
+            marginLeft: "20px",
+          }}
+        ></span>
+        <Tooltip title="Logout">
+          <LogoutOutlined
+            onClick={handleLogoutClick}
+            style={{ fontSize: "18px", color: "#fff", cursor: "pointer" }}
+          />
+        </Tooltip>
+      </div>
+    ) : (
+      <div>Login</div>
+    )}
+  </div>
+
+  {/* Burger Menu (Drawer) for Mobile */}
+  {!screens.md && (
+    <div className="burger-menu">
+      <Drawer
+        title="Menu"
+        placement="right"
+        closable={true}
+        onClose={closeDrawer}
+        visible={drawerVisible}
+        bodyStyle={{ padding: 0 }}
+      >
+        <Menu
+          mode="inline"
+          defaultSelectedKeys={["/"]}
+          onClick={onMenuClick}
+          style={{ height: "100%", borderRight: 0 }}
+          items={getMenuItems()}
+        />
+      </Drawer>
+    </div>
+  )}
+</Header>
+
 
       <Layout>
         {/* Left Sider Area for Desktop */}
-        {!screens.xs && (
+        {screens.md && (
           <Sider data-testid="sider" width={250} style={{ background: colorBgContainer }}>
             <Menu mode="inline" defaultSelectedKeys={["/"]} onClick={onMenuClick} style={{ height: "100%", borderRight: 0 }} items={getMenuItems()} />
           </Sider>

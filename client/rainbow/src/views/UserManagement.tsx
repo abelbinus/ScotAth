@@ -5,6 +5,7 @@ import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import { UserContext } from "../App";
 import { IUser } from "../types/User";
 import { getAllUsersAPI, addUserAPI, updateUserAPI, deleteUserAPI } from "../apis/api";
+import { AxiosError } from "axios";
 const User = () => {
   // userInfo
   const userContext = useContext(UserContext);
@@ -26,19 +27,20 @@ const User = () => {
     { title: "Name", dataIndex: "userName", key: "userName" },
     ...(screens.xs ? [] : [
       { title: "Email", dataIndex: "userEmail", key: "userEmail" },
+      {
+        title: "Role", dataIndex: "userRole", key: "userRole",
+        render: (_: any, { userRole }: any) => (
+          <>
+            {userRole === "volunteer" ? (
+              <Tag color="blue">volunteer</Tag>
+            ) : userRole === "admin" ? (
+              <Tag color="red">admin</Tag>
+            ) : null}
+          </>
+        ),
+      },
     ]),
-    {
-      title: "Role", dataIndex: "userRole", key: "userRole",
-      render: (_, { userRole }) => (
-        <>
-          {userRole === "volunteer" ? (
-            <Tag color="blue">volunteer</Tag>
-          ) : userRole === "admin" ? (
-            <Tag color="red">admin</Tag>
-          ) : null}
-        </>
-      ),
-    },
+    
     {
       title: "Action",
       key: "operation",
@@ -126,13 +128,13 @@ const User = () => {
         middleName: user.middleName,
         lastName: user.lastName,
         userName: user.userName,
-        userPass: null,
+        userPass: user.userPass,
         userEmail: user.userEmail,
         userRole: user.userRole,
         userMob: user.userMob,
         userAddress: user.userAddress
       };
-
+      console.log(userParams);
       await addUserAPI(userParams);
       message.success("User added successfully");
 
@@ -140,11 +142,30 @@ const User = () => {
       addform.resetFields();
 
       // re-get User list
-      //getUserList();
+      getUserList();
     } catch (error: any) {
-      const errMsg = error.response?.data?.msg || "Add user failed";
-      console.error(errMsg);
-      message.error(errMsg);
+      if (error instanceof AxiosError) {
+        // AxiosError specific handling
+        if (error.response) {
+          // Server responded with a status other than 2xx
+          const errMsg = error.response.data.error || "Add user failed";
+          console.error('Server responded with an error:', errMsg);
+          console.error('Status code:', error.response.status);
+          message.error(errMsg);
+        } else if (error.request) {
+          // Request was made but no response was received
+          console.error('No response received:', error.request);
+        } else {
+          // Something happened in setting up the request that triggered an error
+          console.error('Error in setting up the request:', error.message);
+        }
+      } else {
+        // Handle non-Axios errors
+        const errMsg = error.response?.data?.msg || "Add user failed";
+        console.error(errMsg);
+        message.error(errMsg);
+      }
+      
     }
   };
 
@@ -159,11 +180,11 @@ const User = () => {
       middleName: user.middleName,
       lastName: user.lastName,
       userName: user.userName,
-      userPass: null,
       userEmail: user.userEmail,
       userRole: user.userRole,
       userMob: user.userMob,
-      userAddress: user.userAddress
+      userAddress: user.userAddress,
+      userPass: null
 
     });
   };
@@ -183,7 +204,6 @@ const User = () => {
         middleName: user.middleName,
         lastName: user.lastName,
         userName: user.userName,
-        userPass: user.userPass,
         userEmail: user.userEmail,
         userRole: user.userRole,
         usermob: user.userMob
@@ -257,7 +277,7 @@ const User = () => {
   ];
 
   // Custom validator function for integer validation
-  const validateInteger = (_, value: any) => {
+  const validateInteger = (_: any, value: any) => {
     if (!value || /^\d+$/.test(value)) {
       return Promise.resolve();
     }
@@ -270,16 +290,16 @@ const User = () => {
       
 
       {/*Add button area */}
-      <Row>
-        <Col span={8}>
-          <p style={{ fontWeight: "bold" }}>User Management</p>        
-        </Col>
-        <Col span={8}></Col>
-        <Col span={8} style={{ display: "flex", marginTop: "10px", justifyContent: "flex-end" }}>
-          <Button type="primary" onClick={onAddClick}>Add</Button>
-        </Col>
-      </Row>
-      <Divider />
+    <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
+      <Col span={8}>
+        <p style={{ fontWeight: "bold", marginBottom: 0 }}>User Management</p>
+      </Col>
+      <Col span={8}></Col>
+      <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>
+        <Button type="primary" onClick={onAddClick}>Add</Button>
+      </Col>
+    </Row>
+    <Divider style={{ marginTop: 20, marginBottom: 10 }} />
 
       {/*Table area */}
       <Tabs defaultActiveKey="1" items={tabItems} />
@@ -303,10 +323,10 @@ const User = () => {
             <Form.Item name="lastName" label="Last Name" rules={[{ required: true, message: "Please input your last name!" }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="userName" label="Username" rules={[{ required: true, message: "Please input the user name!" }]}>
+            <Form.Item name="userName" label="Username" rules={[{ required: true, message: "Please input the user name!" }]} initialValue="">
               <Input />
             </Form.Item>
-            <Form.Item name="password" label="Password"
+            <Form.Item name="userPass" label="Password"
               rules={[
                 { required: true, message: "Please input your new password!" },
                 { min: 8, message: "Password must be at least 8 characters." }
@@ -355,26 +375,22 @@ const User = () => {
             <Form.Item name="userName" label="Name" rules={[{ message: "Please input the user name!" }]}>
               <Input />
             </Form.Item>
-            <Form.Item
-              name="userPass"
-              label="New Password"
-              rules={[
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || value.length >= 8) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error("Password must be at least 8 characters."));
-                  },
-                }),
-              ]}
-            >
-              <Input.Password
-                type={isPasswordVisible ? "text" : "password"}
-              />
-            </Form.Item>
             <Form.Item name="email" label="Email" rules={[{ message: "Please input the email address!" }]}>
               <Input type="email" />
+            </Form.Item>
+            <Form.Item name="userPass" label="Password"
+              rules={[
+                { required: true, message: "Please input your new password!" },
+                { min: 8, message: "Password must be at least 8 characters." }
+              ]}>
+              <Input
+                type={isPasswordVisible ? "text" : "password"}
+                addonAfter={
+                  <Button type="text" onClick={handlePasswordVisibility}>
+                    {isPasswordVisible ? <EyeInvisibleOutlined /> : <EyeTwoTone />}
+                  </Button>
+                }
+              />
             </Form.Item>
             <Form.Item name="role" label="Role" rules={[{ message: "Please select the role!" }]}>
               <Radio.Group disabled>
