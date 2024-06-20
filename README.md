@@ -20,18 +20,18 @@ Ensure you have the following installed on your machine:
 
 ## Installation
 
-1. Clone the repository: git clone https://github.com/abelbinus/ScotAth.git
-2. Navigation to the server by going to server directory: cd server
-3. Install the dependencies: npm i
-4. Go back to the ScotAth directory using cd ../.. 
-5. Navigate to the client: cd client/rainbow
-6. Install the dependencies: npm i
+1. Clone the repository using `git clone https://github.com/abelbinus/ScotAth.git`.
+2. Navigation to the server by going to server directory using `cd server`.
+3. Install the dependencies using `npm i`.
+4. Go back to the ScotAth directory using `cd ../..`.
+5. Navigate to the client using `cd client/rainbow`.
+6. Install the dependencies using `npm i`.
 
 ##  Build the React Application
-1. From the client/rainbow directory, you can build the react application using npm run build.
-2. Go back to the ScotAth directory using cd ../..
+1. From the client/rainbow directory, you can build the react application using `npm run build`.
+2. Go back to the ScotAth directory using `cd ../..`.
 
-## Rub the Server
-1. Go to the server directory: cd server
-2. Run the server: npm start
+## Run the Server
+1. Go to the server directory using `cd server`.
+2. Run the server using `npm start`.
 3. The server will start on http://localhost:5000 and serve the static files from the React application's build directory.
