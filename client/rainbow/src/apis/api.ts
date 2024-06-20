@@ -1,13 +1,22 @@
 import { request } from "./index.ts"
 import { ILoginValues } from "../types/LoginValues";
 
-// all user
+// // all user
+// export function loginAPI(loginValues: ILoginValues) {
+//     return request({
+//         url: "/api/authentication/login",
+//         method: "POST",
+//         data: loginValues,
+//     });
+// }
+
+// Login API endpoint
 export function loginAPI(loginValues: ILoginValues) {
-    return request({
-        url: "/api/authentication/login",
-        method: "POST",
-        data: loginValues,
-    });
+  return request({
+    method: 'POST',
+    url: '/api/login', // Adjust URL if necessary
+    data: loginValues,
+  });
 }
 
 // all user
@@ -18,10 +27,36 @@ export function logoutAPI() {
     });
 }
 
+// Update a specific user
+export function updateUserAPI(user: any) {
+    return request({
+        url: `/api/rainbow/user/`,
+        method: "PUT",
+        data: user,
+    })
+}
+
+// Get all meets list
+export function getMeetsAPI() {
+    return request({
+        url: `/api/rainbow/meet`,
+        method: "GET",
+    });
+}
+
+// Update a specific meet
+export function updateMeetAPI(meet: any) {
+    return request({
+        url: `/api/rainbow/meet`,
+        method: "PUT",
+        data: meet,
+    })
+}
+
 // user
 export function changePasswordAPI(oldPass: string, newPass: string, userId: number) {
     return request({
-        url: `/api/projectshare/user/changePassword/${oldPass}/${newPass}/${userId}`,
+        url: `/api/rainbow/user/changePassword/${oldPass}/${newPass}/${userId}`,
         method: "PUT",
     });
 }
@@ -29,7 +64,7 @@ export function changePasswordAPI(oldPass: string, newPass: string, userId: numb
 // user
 export function getUserByIdAPI(userId: number) {
     return request({
-        url: `/api/projectshare/user/${userId}`,
+        url: `/api/rainbow/user/${userId}`,
         method: "GET",
     });
 }
@@ -37,7 +72,7 @@ export function getUserByIdAPI(userId: number) {
 // admin
 export function getAllUsersAPI() {
     return request({
-        url: "/api/projectshare/users",
+        url: "/api/rainbow/user",
         method: "GET",
     });
 }
@@ -45,17 +80,8 @@ export function getAllUsersAPI() {
 // admin
 export function addUserAPI(user: any) {
     return request({
-        url: "/api/projectshare/user",
+        url: "/api/rainbow/user",
         method: "POST",
-        data: user,
-    });
-}
-
-// admin
-export function updateUserAPI(user: any) {
-    return request({
-        url: "/api/projectshare/user",
-        method: "PUT",
         data: user,
     });
 }
@@ -63,93 +89,33 @@ export function updateUserAPI(user: any) {
 // admin
 export function deleteUserAPI(userId: number) {
     return request({
-        url: `/api/projectshare/user/${userId}`,
+        url: `/api/rainbow/user/${userId}`,
         method: "DELETE",
     });
 }
 
 // staff
-export function getProjectsAPI(userId: number) {
+export function addMeetAPI(meet: any) {
     return request({
-        url: `/api/projectshare/projects/${userId}`,
-        method: "GET",
-    });
-}
-
-// staff
-export function addProjectAPI(project: any) {
-    return request({
-        url: `/api/projectshare/project`,
+        url: `/api/rainbow/meet`,
         method: "POST",
-        data: project,
+        data: meet,
     })
 }
 
 // staff
-export function updateProjectAPI(project: any, userId: number) {
+export function deleteMeetAPI(meetId: number) {
     return request({
-        url: `/api/projectshare/project/${userId}`,
-        method: "PUT",
-        data: project,
-    })
-}
-
-// staff
-export function deleteProjectAPI(projectId: number, staffId: number, userId: number) {
-    return request({
-        url: `/api/projectshare/project/${projectId}/${staffId}/${userId}`,
+        url: `/api/rainbow/meet/${meetId}`,
         method: "DELETE",
     })
 }
 
-// staff
-export function getStaffOwnProjectsAPI(staffId: number) {
+// get all event details from folder
+export function getEventFiles(pfFolder: any) {
     return request({
-        url: `/api/projectshare/project-allocation/staff/${staffId}`,
-        method: "GET",
-    });
-}
-
-// staff
-export function approveProjectAPI(studentId: number, projectId: number) {
-    return request({
-        url: "/api/projectshare/approve-project",
+        url: `/api/rainbow/event/`,
         method: "POST",
-        data: {
-            studentId: studentId,
-            projectId: projectId,
-        },
-    });
-}
-
-// staff
-export function rejectProjectAPI(studentId: number, projectId: number) {
-    return request({
-        url: "/api/projectshare/reject-project",
-        method: "POST",
-        data: {
-            studentId: studentId,
-            projectId: projectId,
-        },
-    });
-}
-
-// student
-export function getStudentAppliedProjectsAPI(studentID: number) {
-    return request({
-        url: `/api/projectshare/projects/student/${studentID}`,
-        method: "GET",
-    });
-}
-
-// student
-export function applyProjectAPI(studentId: number, projectId: number) {
-    return request({
-        url: "/api/projectshare/apply-project",
-        method: "POST",
-        data: {
-            studentId: studentId,
-            projectId: projectId,
-        },
-    });
+        data: pfFolder,
+    })
 }

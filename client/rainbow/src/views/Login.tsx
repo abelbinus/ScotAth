@@ -17,50 +17,37 @@ const LoginPage = () => {
     const onFinish = async (values: ILoginValues) => {
         setLoading(true);
 
-        try {
-            // login 
-            //const response: any = await loginAPI(values);
-        
-            // save authToken
-            //const authToken = response.headers["AUTHORIZATION"] || response.headers["authorization"] || response.headers["Authorization"];
-            //if (authToken) {
-                // save token to localStorage
-                //localStorage.setItem("AUTH_TOKEN", authToken);
-            //}
+            
+    try {
+            // login
+            const response: any = await loginAPI(values);
 
-            // change obj to IUser
-            // const loginUser: IUser = {
-            //     id: response.data.obj.id,
-            //     name: response.data.obj.name,
-            //     email: response.data.obj.email,
-            //     role: response.data.obj.type,
-            //     department: response.data.obj.department,
-            //     password: null,
-            // };
-
+            // Convert the response to IUser format
             const loginUser: IUser = {
-                id: 1, // Replace with a desired unique ID for your test user
-                name: 'Michael Greer', // Replace with a desired test user name
-                email: 'test.user@example.com', // Replace with a desired test user email
-                role: 'admin', // Replace with a desired test user role (e.g., 'admin', 'user')
-                department: null, // Replace with a desired test user department (optional)
-                password: '12345678', // As in the original code
-              };
+                userId: response.data.user.userId,
+                firstName: response.data.user.firstName,
+                middleName: response.data.user.middleName,
+                lastName: response.data.user.lastName,
+                userName: response.data.user.userName,
+                userEmail: response.data.user.userEmail || '', // You need to handle this if email is not provided in the response
+                userRole: response.data.user.userRole,
+                userPass: null, // Assuming you do not store password in loginUser object
+                userAddress: response.data.user.userAddress,
+                userMob: response.data.user.userMob
+            };
 
-            message.success("Login successfully");
+            message.success("Login successful");
 
-            // UserContext
+            // Update user context
             setUser(loginUser);
             setLoading(false);
 
-            // display by role
-            if (loginUser.role === "admin") {
-                navigate("/user");
-            } else if (loginUser.role === "staff") {
-                navigate("/project-staff");
-            } else if (loginUser.role === "student") {
-                navigate("/project-student");
-            } else { }
+            // Navigate based on user role
+            if (loginUser.userRole === "admin") {
+                navigate("/admin-dashboard");
+            } else {
+                navigate("/event-management");
+            }
         } catch (error: any) {
             const errMsg = error.response?.data?.msg || "Login failed";
             console.error(errMsg);
@@ -70,20 +57,14 @@ const LoginPage = () => {
     };
 
     return (
-        <Layout style={{ minHeight: "100vh", backgroundColor: "#162c66", backgroundSize: "cover" }}>
-            <Header data-testid="header" style={{ display: "flex", justifyContent: "space-between", paddingInline: 20, alignItems: "center", color: "#fff", backgroundColor: "#162c66", fontWeight: "bold", fontSize: "25px" }}>
-                <div style={{ display: "flex", alignItems: "center"}}>
-                    {/* Logo */}
-                    <img data-testid="logo" src="/images/logo.png" alt="Logo" style={{ height: "70px" }} />
-                    {/* title */}
-                    <h1 data-testid="title" style={{ color: "#fff", marginLeft: "10px", marginBottom: "5" }}>
-                        Rainbow
-                    </h1>
-                </div>
-            </Header>
-            <Content style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                <Card data-testid="login" title="Login" style={{ width: 350 }}>
-                    <div style={{ maxWidth: "300px" }}>
+        <Layout style={{ minHeight: '100vh', backgroundColor: '#162c66', backgroundSize: 'cover' }}>
+            <Content style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '50px 20px' }}>
+                <div style={{ maxWidth: '400px', width: '100%', textAlign: 'center' }}>
+                    <div style={{ marginBottom: '20px', }}>
+                        <img src="/images/logo.png" alt="Logo" style={{ height: '100px' }} />
+                    </div>
+                    <h1 data-testid="title" style={{ color: "#fff", marginBottom: '30px' }}>Rainbow</h1>
+                    <Card data-testid="login" title="Login" style={{ borderRadius: '8px' }}>
                         <Form
                             name="login_form"
                             data-testid="login_form"
@@ -92,34 +73,40 @@ const LoginPage = () => {
                             onFinish={onFinish}
                         >
                             <Form.Item
-                                data-testid="userid"
-                                name="userId"
-                                rules={[{ required: true, message: "Please input your ID!" }]}
-                                style={{ marginBottom: "20px" }}
-                            >
-                                <Input prefix={<UserOutlined className="site-form-item-icon" />} placeholder="User ID" />
-                            </Form.Item>
-                            <Form.Item
-                                data-testid="password"
-                                name="password"
-                                rules={[{ required: true, message: "Please input your Password!" }]}
+                                name="userName"
+                                rules={[{ required: true, message: 'Please input your username!' }]}
+                                style={{ marginBottom: '20px' }}
                             >
                                 <Input
-                                    prefix={<LockOutlined className="site-form-item-icon" />}
-                                    type="password"
-                                    placeholder="Password"
+                                    prefix={<UserOutlined />}
+                                    placeholder="User Name"
+                                    style={{ height: '50px', fontSize: '16px' }} // Increased height and font size
                                 />
                             </Form.Item>
-
-                            <Form.Item data-testid="loginitem">
-                                <Button data-testid="loginbutton" type="primary" htmlType="submit" className="login-form-button" loading={loading}>
+                            <Form.Item
+                                name="userPass"
+                                rules={[{ required: true, message: 'Please input your Password!' }]}
+                            >
+                                <Input.Password
+                                    prefix={<LockOutlined />}
+                                    placeholder="Password"
+                                    style={{ height: '50px', fontSize: '16px' }} // Increased height and font size
+                                />
+                            </Form.Item>
+                            <Form.Item>
+                                <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    className="login-form-button"
+                                    loading={loading}
+                                    style={{ height: '50px', fontSize: '16px', width: '100%' }} // Increased height and font size
+                                >
                                     Log in
                                 </Button>
                             </Form.Item>
                         </Form>
-                    </div>
-                </Card>
-
+                    </Card>
+                </div>
             </Content>
         </Layout>
     );
