@@ -305,6 +305,71 @@ app.post('/api/rainbow/event', (req, res) => {
     });
   });
 
+  // Inside your route handler for updating start lists
+app.post('/api/update-start-lists', (req, res) => {
+    const meetID = req.body.meetID;
+  
+    // Delete existing records from tblEvent
+    let sqlDeleteEvent = `DELETE FROM tblEvent WHERE MeetID = ?`;
+    db.run(sqlDeleteEvent, [meetID], function(err) {
+      if (err) {
+        console.error('Error deleting records from tblEvent:', err.message);
+        return res.status(500).json({ error: 'Failed to delete records from tblEvent' });
+      }
+      
+      // Delete existing records from tblStartList
+      let sqlDeleteStartList = `DELETE FROM tblStartList WHERE MeetID = ?`;
+      db.run(sqlDeleteStartList, [meetID], function(err) {
+        if (err) {
+          console.error('Error deleting records from tblStartList:', err.message);
+          return res.status(500).json({ error: 'Failed to delete records from tblStartList' });
+        }
+  
+        // Call function to recreate start lists
+        recreateStartLists(meetID, res); // Implement recreateStartLists function
+      });
+    });
+  });
+  
+
+  function recreateStartLists(meetID, res) {
+    // Implement logic to read files and insert into database
+    // Example of reading from a file and inserting into tblEvent
+    let filename = 'path/to/your/startlist.csv'; // Replace with your actual filename
+    let lines = []; // Array to store lines read from the file
+  
+    // Example: Reading lines from a file
+    fs.readFile(filename, 'utf8', (err, data) => {
+      if (err) {
+        console.error('Error reading file:', err.message);
+        return res.status(500).json({ error: 'Failed to read start list file' });
+      }
+  
+      // Process lines from the file and insert into database
+      lines = data.split('\n');
+      lines.forEach((line) => {
+        // Parse line and insert into tblEvent or tblStartList based on your logic
+        // Example: Insert into tblEvent
+        let values = line.split(','); // Split by comma assuming CSV format
+        let event = values[0];
+        let eventNum = values[1];
+        let displayOrder = values[2];
+  
+        let sqlInsertEvent = `INSERT INTO tblEvent (EventName, Filename, MeetID, DisplayOrder)
+                              VALUES (?, ?, ?, ?)`;
+        db.run(sqlInsertEvent, [event, eventNum, meetID, displayOrder], function(err) {
+          if (err) {
+            console.error('Error inserting into tblEvent:', err.message);
+          }
+        });
+      });
+  
+      // Return success response once all operations are completed
+      res.status(200).json({ message: 'Start lists updated successfully' });
+    });
+  }
+
+  
 // All other requests go to React app
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname + '/../client/rainbow/build/index.html'));

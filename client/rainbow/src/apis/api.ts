@@ -1,15 +1,6 @@
 import { request } from "./index.ts"
 import { ILoginValues } from "../types/LoginValues";
 
-// // all user
-// export function loginAPI(loginValues: ILoginValues) {
-//     return request({
-//         url: "/api/authentication/login",
-//         method: "POST",
-//         data: loginValues,
-//     });
-// }
-
 // Login API endpoint
 export function loginAPI(loginValues: ILoginValues) {
   return request({
@@ -94,7 +85,7 @@ export function deleteUserAPI(userId: number) {
     });
 }
 
-// staff
+// admin
 export function addMeetAPI(meet: any) {
     return request({
         url: `/api/rainbow/meet`,
@@ -103,7 +94,7 @@ export function addMeetAPI(meet: any) {
     })
 }
 
-// staff
+// admin
 export function deleteMeetAPI(meetId: number) {
     return request({
         url: `/api/rainbow/meet/${meetId}`,
