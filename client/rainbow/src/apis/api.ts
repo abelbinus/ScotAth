@@ -103,10 +103,10 @@ export function deleteMeetAPI(meetId: number) {
 }
 
 // get all event details from folder
-export function getEventFiles(pfFolder: any) {
+export function getEventFiles(folderParams: any) {
     return request({
         url: `/api/rainbow/event/`,
         method: "POST",
-        data: pfFolder,
+        data: folderParams,
     })
 }

@@ -3,6 +3,7 @@ const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
+const csv = require('csv-parser');
 const fs = require('fs');
 
 const app = express();
@@ -286,24 +287,7 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-app.post('/api/rainbow/event', (req, res) => {
-    const { pfFolder } = req.body;
-    console.log(req.body);
-    if (!pfFolder) {
-      return res.status(400).json({ error: 'pfFolder path is required' });
-    }
-  
-    const folderPath = path.resolve(pfFolder);
-  
-    fs.readdir(folderPath, (err, files) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ error: 'Failed to read directory' });
-      }
-  
-      res.json({ files });
-    });
-  });
+
 
   // Inside your route handler for updating start lists
 app.post('/api/update-start-lists', (req, res) => {
@@ -369,6 +353,84 @@ app.post('/api/update-start-lists', (req, res) => {
     });
   }
 
+  app.post('/api/rainbow/event', async (req, res) => {
+    const { pfFolder, meetId } = req.body;
+    console.log(req.body);
+    if (!pfFolder) {
+      return res.status(400).json({ error: 'pfFolder path is required' });
+    }
+  
+    try {
+      const folderPath = path.resolve(pfFolder);
+      const files = await fs.promises.readdir(folderPath);
+  
+      const csvFiles = files.filter(file => path.extname(file).toLowerCase() === '.csv');
+      const startlistFile = csvFiles.find(file => file.toLowerCase() === 'startlist.csv');
+  
+      // Read contents of each CSV file
+      const fileContents = [];
+  
+      for (const file of csvFiles) {
+        const filePath = path.join(folderPath, file);
+        const rows = [];
+        try {
+          await new Promise((resolve, reject) => {
+            const stream = fs.createReadStream(filePath)
+              .on('error', (error) => {
+                console.error(`Error reading file ${file}:`, error);
+                reject(error);
+              })
+              .pipe(csv({ separator: ';' }))
+              .on('data', (row) => {
+                rows.push(row);
+              })
+              .on('end', () => {
+                console.log(`CSV file ${file} successfully processed.`);
+                fileContents.push({ fileName: file, data: rows });
+                resolve();
+              });
+          });
+        } catch (error) {
+          console.error(`Failed to process CSV file ${file}:`, error);
+          return res.status(500).json({ error: `Failed to process CSV file ${file}` });
+        }
+      }
+      insertCSVIntoDatabase(fileContents, meetId);
+      res.json({ files: csvFiles, contents: fileContents });
+  
+    } catch (error) {
+      console.error('Error in /api/rainbow/event:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
+  // Function to insert content into SQLite database
+async function insertCSVIntoDatabase(contents, meetId) {
+    // Assuming 'contents' is an array of objects containing data from CSV files
+  
+    for (const content of contents) {
+      const { fileName, data } = content;
+  
+      for (const row of data) {
+        const { EventCode, Date, Time, LaneOrder, Bib, FamilyName, Firstname, Length, Nation, Sponsor, Title1, Title2 } = row;
+  
+        // SQL statement to insert data into a table named 'StartList'
+        const sql = `
+          INSERT INTO tblevents (meetId, eventCode, eventDate, eventTime, laneOrder, athleteNum, familyName, firstname, eventLength, athleteClub, sponsor, eventName, title2)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `;
+  
+        // Execute the SQL statement
+        db.run(sql, [meetId, EventCode, Date, Time, LaneOrder, Bib, FamilyName, Firstname, Length, Nation, Sponsor, Title1, Title2], function(err) {
+          if (err) {
+            console.error(`Error inserting row into database from file ${fileName}:`, err);
+          } else {
+            console.log(`Row inserted successfully into database from file ${fileName}`);
+          }
+        });
+      }
+    }
+  }
   
 // All other requests go to React app
 app.get('*', (req, res) => {

@@ -1,11 +1,10 @@
-import * as React from 'react';
 import { useState, useEffect, useContext } from "react";
 import { Divider, Input, Col, Row, Space, Tag, Table, Button, Form, Modal, Select, Popconfirm, message, Tabs } from "antd";
 import { ColumnsType } from "antd/es/table";
 import { UserContext } from "../App.tsx";
 import { IMeet } from "../types/Meet";
-import { getMeetsAPI, deleteMeetAPI, updateMeetAPI, addMeetAPI } from "../apis/api.ts";
-import { FolderOpenOutlined } from "@mui/icons-material";
+import { getMeetsAPI, deleteMeetAPI, updateMeetAPI, addMeetAPI, getEventFiles } from "../apis/api.ts";
+import './../css/MeetManagement.css'
 
 interface EditFormValues {
     meetId: number;
@@ -31,6 +30,9 @@ const MeetListAdmin = () => {
   // edit Meet
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editForm] = Form.useForm();
+
+  const [fileList, setFileList] = useState<string[]>([]);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   // userInfo
   const userContext = useContext(UserContext);
@@ -137,43 +139,73 @@ const MeetListAdmin = () => {
     return <div>No access permission</div>;
   }
 
+  const handleUpdateClick = async (pfFolder: string, meetId: number) => {
+    try {
+        console.log(pfFolder);
+        const folderParams = {
+            pfFolder: pfFolder,
+            meetId: meetId
+        }
+        const response = await getEventFiles(folderParams);
+        setFileList(response.data.files);
+        setIsModalVisible(true);
+        } catch (error: any) {
+        const errMsg = error.response?.data?.error || "Failed to fetch files";
+        console.error(errMsg);
+        message.error(errMsg);
+        }
+    };
+
+  const handleCancel = () => {
+    setIsModalVisible(false);
+    setFileList([]);
+  };
+
   // list columns
   const baseColumns: ColumnsType<IMeet> = [
     {
       title: "Meet ID",
       dataIndex: "meetId",
       key: "meetId",
+      width: 150,
     },
     {
       title: "Meet Name",
       dataIndex: "meetName",
       key: "meetName",
+      width: 150,
     },
     {
         title: "Description",
         dataIndex: "meetDesc",
         key: "meetDesc",
         render: text => <span>{text.length > 300 ? `${text.substring(0, 300)}...` : text}</span>,
+        width: 250,
+        
     },
     {
       title: "EventList",
       dataIndex: "eventList",
       key: "eventList",
+      width: 150,
     },
     {
       title: "PFFolder",
       dataIndex: "pfFolder",
       key: "pfFolder",
+      width: 200,
     },
     {
       title: "PFOutput",
       key: "pfOutput",
       dataIndex: "pfOutput",
+      width: 100,
     },
     {
         title: "Interface Folder",
         key: "intFolder",
         dataIndex: "intFolder",
+        width:200,
     },
     {
         title: "Edit",
@@ -184,6 +216,7 @@ const MeetListAdmin = () => {
                 {record.edit ? "Yes" : "No"}
             </span>
         ),
+        width: 100,
     }
   ]
 
@@ -194,18 +227,23 @@ const MeetListAdmin = () => {
       key: "action",
       dataIndex: "action",
       render: (_, record) => (
-        <Space size="middle">
-          <Button onClick={() => onEditClick(record)}>Edit</Button>
+        <Space size="middle" direction="vertical" className="action-buttons">
+          <Button type="primary" className="action-button" onClick={() => handleUpdateClick(record.pfFolder, record.meetId)}>
+            Update Meet
+          </Button>
+          <Button className="action-button" onClick={() => onEditClick(record)}>Edit</Button>
           <Popconfirm
             title="Are you sure to delete this meet?"
             onConfirm={() => onDeleteClick(record)}
             okText="Yes"
             cancelText="No"
           >
-            <Button danger>Delete</Button>
+            <Button danger className="action-button">Delete</Button>
           </Popconfirm>
+          
         </Space>
       ),
+      width: 170,
     },
   ];
 
@@ -214,11 +252,14 @@ const MeetListAdmin = () => {
       label: "All Meets",
       key: "2",
       children: (
-        <Table
-          rowKey={record => `${record.meetId}`}
-          columns={meetColumns}
-          dataSource={meetList}
-        />
+        <div style={{ overflowX: 'auto', overflowY: 'auto', maxWidth: '100%' }}>
+          <Table
+            rowKey={record => `${record.meetId}`}
+            columns={meetColumns}
+            dataSource={meetList}
+            tableLayout="fixed" // Ensure columns have fixed width
+          />
+        </div>
       ),
     },
   ]

@@ -10,8 +10,6 @@ const { Panel } = Collapse;
 
 const EventManagement: React.FC = () => {
   const [meets, setMeetList] = useState<IMeet[]>([]);
-  const [fileList, setFileList] = useState<string[]>([]);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const userContext = useContext(UserContext);
 
   // get meet list
@@ -45,26 +43,7 @@ const EventManagement: React.FC = () => {
     getMeetList();
   }, [userContext]);
 
-  const handleUpdateClick = async (pfFolder: string) => {
-    try {
-        console.log(pfFolder);
-        const folderParams = {
-            pfFolder: pfFolder
-        }
-        const response = await getEventFiles(folderParams);
-        setFileList(response.data.files);
-        setIsModalVisible(true);
-        } catch (error: any) {
-        const errMsg = error.response?.data?.error || "Failed to fetch files";
-        console.error(errMsg);
-        message.error(errMsg);
-        }
-    };
-
-  const handleCancel = () => {
-    setIsModalVisible(false);
-    setFileList([]);
-  };
+  
 
   return (
     <div>
@@ -87,7 +66,6 @@ const EventManagement: React.FC = () => {
           <Card 
               title={meet.meetName} 
               bordered={false} 
-              extra={<Button type="primary" onClick={() => handleUpdateClick(meet.pfFolder)}>Update Meet</Button>}
             >
               <Collapse>
                 <Panel header="View Details" key="1">
