@@ -147,6 +147,7 @@ const MeetListAdmin = () => {
             meetId: meetId
         }
         const response = await getEventFiles(folderParams);
+        message.success("Updated Start List Successfully");
         setFileList(response.data.files);
         setIsModalVisible(true);
         } catch (error: any) {
@@ -229,7 +230,7 @@ const MeetListAdmin = () => {
       render: (_, record) => (
         <Space size="middle" direction="vertical" className="action-buttons">
           <Button type="primary" className="action-button" onClick={() => handleUpdateClick(record.pfFolder, record.meetId)}>
-            Update Meet
+            Update Events
           </Button>
           <Button className="action-button" onClick={() => onEditClick(record)}>Edit</Button>
           <Popconfirm
@@ -243,7 +244,7 @@ const MeetListAdmin = () => {
           
         </Space>
       ),
-      width: 170,
+      width: 180,
     },
   ];
 

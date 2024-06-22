@@ -18,7 +18,7 @@ app.use(cors());
 
 // Start the server
 app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on http://localhost:${port}`);
 });
 
 
@@ -290,146 +290,215 @@ app.post('/api/login', (req, res) => {
 
 
   // Inside your route handler for updating start lists
-app.post('/api/update-start-lists', (req, res) => {
-    const meetID = req.body.meetID;
-  
-    // Delete existing records from tblEvent
-    let sqlDeleteEvent = `DELETE FROM tblEvent WHERE MeetID = ?`;
-    db.run(sqlDeleteEvent, [meetID], function(err) {
-      if (err) {
-        console.error('Error deleting records from tblEvent:', err.message);
-        return res.status(500).json({ error: 'Failed to delete records from tblEvent' });
-      }
-      
-      // Delete existing records from tblStartList
-      let sqlDeleteStartList = `DELETE FROM tblStartList WHERE MeetID = ?`;
-      db.run(sqlDeleteStartList, [meetID], function(err) {
-        if (err) {
-          console.error('Error deleting records from tblStartList:', err.message);
-          return res.status(500).json({ error: 'Failed to delete records from tblStartList' });
-        }
-  
-        // Call function to recreate start lists
-        recreateStartLists(meetID, res); // Implement recreateStartLists function
-      });
-    });
-  });
+
   
 
-  function recreateStartLists(meetID, res) {
-    // Implement logic to read files and insert into database
-    // Example of reading from a file and inserting into tblEvent
-    let filename = 'path/to/your/startlist.csv'; // Replace with your actual filename
-    let lines = []; // Array to store lines read from the file
-  
-    // Example: Reading lines from a file
-    fs.readFile(filename, 'utf8', (err, data) => {
-      if (err) {
-        console.error('Error reading file:', err.message);
-        return res.status(500).json({ error: 'Failed to read start list file' });
-      }
-  
-      // Process lines from the file and insert into database
-      lines = data.split('\n');
-      lines.forEach((line) => {
-        // Parse line and insert into tblEvent or tblStartList based on your logic
-        // Example: Insert into tblEvent
-        let values = line.split(','); // Split by comma assuming CSV format
-        let event = values[0];
-        let eventNum = values[1];
-        let displayOrder = values[2];
-  
-        let sqlInsertEvent = `INSERT INTO tblEvent (EventName, Filename, MeetID, DisplayOrder)
-                              VALUES (?, ?, ?, ?)`;
-        db.run(sqlInsertEvent, [event, eventNum, meetID, displayOrder], function(err) {
-          if (err) {
-            console.error('Error inserting into tblEvent:', err.message);
-          }
-        });
+  function deleteStartLists(meetID, res) {
+    return new Promise((resolve, reject) => {
+      // Delete existing records from tblEvent
+      let sqlDeleteEvent = `DELETE FROM tblevents WHERE MeetID = ?`;
+      db.run(sqlDeleteEvent, [meetID], function(err) {
+        if (err) {
+          console.error('Error deleting records from tblEvent:', err.message);
+          return reject({ error: 'Failed to delete records from tblevents' });
+        }
+        resolve();
       });
-  
-      // Return success response once all operations are completed
-      res.status(200).json({ message: 'Start lists updated successfully' });
     });
   }
 
   app.post('/api/rainbow/event', async (req, res) => {
-    const { pfFolder, meetId } = req.body;
-    console.log(req.body);
-    if (!pfFolder) {
-      return res.status(400).json({ error: 'pfFolder path is required' });
-    }
-  
-    try {
-      const folderPath = path.resolve(pfFolder);
-      const files = await fs.promises.readdir(folderPath);
-  
-      const csvFiles = files.filter(file => path.extname(file).toLowerCase() === '.csv');
-      const startlistFile = csvFiles.find(file => file.toLowerCase() === 'startlist.csv');
-  
-      // Read contents of each CSV file
-      const fileContents = [];
-  
-      for (const file of csvFiles) {
-        const filePath = path.join(folderPath, file);
-        const rows = [];
-        try {
-          await new Promise((resolve, reject) => {
-            const stream = fs.createReadStream(filePath)
-              .on('error', (error) => {
-                console.error(`Error reading file ${file}:`, error);
-                reject(error);
-              })
-              .pipe(csv({ separator: ';' }))
-              .on('data', (row) => {
-                rows.push(row);
-              })
-              .on('end', () => {
-                console.log(`CSV file ${file} successfully processed.`);
-                fileContents.push({ fileName: file, data: rows });
-                resolve();
-              });
-          });
-        } catch (error) {
-          console.error(`Failed to process CSV file ${file}:`, error);
-          return res.status(500).json({ error: `Failed to process CSV file ${file}` });
-        }
+      const { pfFolder, meetId } = req.body;
+      if (!pfFolder) {
+          return res.status(400).json({ error: 'pfFolder path is required' });
       }
-      insertCSVIntoDatabase(fileContents, meetId);
-      res.json({ files: csvFiles, contents: fileContents });
-  
-    } catch (error) {
-      console.error('Error in /api/rainbow/event:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
+
+      let responseSent = false;
+
+      try {
+          await deleteStartLists(meetId, res);
+
+          const folderPath = path.resolve(pfFolder);
+          const fileContents = await readTextFiles(folderPath);
+          //const fileContents = await readCSVFiles(folderPath);
+          res.json({ files: fileContents });
+          // if (!responseSent) {
+          //     await insertCSVIntoDatabase(fileContents, meetId);
+          //     // await updateEventCodes();  // Uncomment this if you have this function implemented
+          //     res.json({ files: fileContents });
+          // }
+
+      } catch (error) {
+          console.error('Error in /api/rainbow/event:', error);
+          if (!responseSent) {
+              res.status(500).json({ error: 'Internal Server Error' });
+          }
+      }
   });
 
-  // Function to insert content into SQLite database
-async function insertCSVIntoDatabase(contents, meetId) {
-    // Assuming 'contents' is an array of objects containing data from CSV files
-  
-    for (const content of contents) {
-      const { fileName, data } = content;
-  
-      for (const row of data) {
-        const { EventCode, Date, Time, LaneOrder, Bib, FamilyName, Firstname, Length, Nation, Sponsor, Title1, Title2 } = row;
-  
-        // SQL statement to insert data into a table named 'StartList'
-        const sql = `
-          INSERT INTO tblevents (meetId, eventCode, eventDate, eventTime, laneOrder, athleteNum, familyName, firstname, eventLength, athleteClub, sponsor, eventName, title2)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-  
-        // Execute the SQL statement
-        db.run(sql, [meetId, EventCode, Date, Time, LaneOrder, Bib, FamilyName, Firstname, Length, Nation, Sponsor, Title1, Title2], function(err) {
-          if (err) {
-            console.error(`Error inserting row into database from file ${fileName}:`, err);
-          } else {
-            console.log(`Row inserted successfully into database from file ${fileName}`);
-          }
+  // New endpoint to fetch all events based on meetId
+  app.get('/api/rainbow/events/:meetId', (req, res) => {
+    const meetId = req.params.meetId;
+
+    const query = 'SELECT * FROM tblevents WHERE meetId = ? AND athleteNum IS NOT NULL';
+    db.all(query, [meetId], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        res.json({ events: rows });
+    });
+  });
+
+  async function readTextFiles(folderPath) {
+      const files = await fs.promises.readdir(folderPath);
+      const textFiles = files.filter(file => path.extname(file).toLowerCase() === '.csv'); // Adjusted to filter text files
+      console.log(`Number of text files: ${textFiles.length}`);
+
+      if (textFiles.length < 1) {
+          throw new Error("No text files found in the provided directory");
+      }
+
+      const fileContents = [];
+
+      for (const file of textFiles) {
+          const filePath = path.join(folderPath, file);
+          const content = await fs.promises.readFile(filePath, 'utf-8'); // Read file content as plain text
+          console.log(`Text file ${file} successfully processed.`);
+          fileContents.push({ fileName: file, data: content });
+      }
+
+      return fileContents;
+  };
+
+  async function readCSVFiles(folderPath) {
+    const files = await fs.promises.readdir(folderPath);
+    const csvFiles = files.filter(file => path.extname(file).toLowerCase() === '.csv');
+    console.log(`Number of CSV files: ${csvFiles.length}`);
+
+    if (csvFiles.length < 1) {
+        throw new Error("No CSV files found in the provided directory");
+    }
+
+    if (csvFiles.length > 1) {
+        const startlistFile = csvFiles.find(file => file.toLowerCase() === 'startlist.csv');
+        if (!startlistFile) {
+            throw new Error("startlist.csv file not found");
+        }
+        csvFiles = [startlistFile];
+    }
+
+    const fileContents = [];
+
+    for (const file of csvFiles) {
+        const filePath = path.join(folderPath, file);
+        const rows = [];
+        await new Promise((resolve, reject) => {
+            const stream = fs.createReadStream(filePath, { encoding: 'utf-8' })
+                .on('error', (error) => {
+                    console.error(`Error reading file ${file}:`, error);
+                    reject(error);
+                })
+                .pipe(csv({ separator: ';' }))
+                .on('data', (row) => {
+                    rows.push(row);
+                })
+                .on('end', () => {
+                    console.log(`CSV file ${file} successfully processed.`);
+                    fileContents.push({ fileName: file, data: rows });
+                    resolve();
+                });
         });
+    }
+
+    return fileContents;
+  }
+
+  // Function to insert content into SQLite database
+  async function insertCSVIntoDatabase(contents, meetId) {
+      // Assuming 'contents' is an array of objects containing data from CSV files
+    
+      for (const content of contents) {
+        const { fileName, data } = content;
+        let previousEventCode = null;
+        
+        for (const row of data) {
+          let eventCode = row['Event Code'];
+          const eventDate = row['Date'];
+          const eventTime = row['Time'];
+          const laneOrder = row['Lane/order'];
+          const athleteNum = row['Bib'];
+          const familyName = row['Family Name'];
+          const firstName = row['Firstname'];
+          const eventLength = row['Length'];
+          const athleteClub = row['Nation'];
+          const sponsor = row['Sponsor'];
+          const eventName = row['Title 1'];
+          const title2 = row['Title 2'];
+
+          // if(eventCode && !athleteNum) {
+          //   previousEventCode = eventCode;
+          // } else if(!eventCode && athleteNum){
+          //   eventCode = previousEventCode;
+          // }
+          
+          // console.log(eventCode)
+          // SQL statement to insert data into a table named 'StartList'
+          const sql = `
+            INSERT INTO tblevents (meetId, eventCode, eventDate, eventTime, laneOrder, athleteNum, familyName, firstName, eventLength, athleteClub, sponsor, eventName, title2)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `;
+    
+          // Execute the SQL statement
+          db.run(sql, [meetId, eventCode, eventDate, eventTime, laneOrder, athleteNum, familyName, firstName, eventLength, athleteClub, sponsor, eventName, title2], function(err) {
+            if (err) {
+              console.error(`Error inserting row into database from file ${fileName}:`, err);
+            } else {
+              //console.log(`Row inserted successfully into database from file ${fileName}`);
+            }
+          });
+        }
       }
     }
+
+  // Function to update event codes
+  async function updateEventCodes() {
+    return new Promise((resolve, reject) => {
+        db.serialize(() => {
+            let previousEventCode = null;
+
+            db.each(
+                "SELECT rowid, eventCode, athleteNum FROM tblevents ORDER BY rowid",
+                (err, row) => {
+                    if (err) {
+                        console.error('Error reading from tblevents:', err.message);
+                        return reject(err);
+                    }
+                    if (row.eventCode) {
+                        previousEventCode = row.eventCode;
+                    } else if (!row.eventCode && row.athleteNum) {
+                        db.run(
+                            "UPDATE tblevents SET eventCode = ? WHERE rowid = ?",
+                            [previousEventCode, row.rowid],
+                            function (err) {
+                                if (err) {
+                                    console.error(`Error updating rowid ${row.rowid}:`, err.message);
+                                } else {
+                                    //console.log(`Updated rowid ${row.rowid} with eventCode ${previousEventCode}`);
+                                }
+                            }
+                        );
+                    }
+                },
+                (err, numRows) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve(numRows);
+                }
+            );
+        });
+    });
   }
   
 // All other requests go to React app
