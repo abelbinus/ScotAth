@@ -118,3 +118,12 @@ export function getEventbyMeetId(meetId: any) {
         method: "GET",
     })
 }
+
+// update all event details
+export function updateEventAPI(eventGroup: any) {
+    return request({
+        url: `/api/rainbow/updateEventAPI/`,
+        method: "POST",
+        data: eventGroup,
+    })
+}

@@ -337,7 +337,6 @@ app.post('/api/login', (req, res) => {
   // New endpoint to fetch all events based on meetId
   app.get('/api/rainbow/event/:meetId', (req, res) => {
     const { meetId } = req.params;
-    console.log(meetId);
     const query = 'SELECT * FROM tblevents WHERE meetId = ?';
     db.all(query, [meetId], (err, rows) => {
         if (err) {
@@ -348,6 +347,34 @@ app.post('/api/login', (req, res) => {
     });
   });
 
+  // Update event API
+app.post('/api/rainbow/updateEventAPI', (req, res) => {
+    const events = req.body;
+    const updateQuery = `
+      UPDATE tblevents
+      SET startListValue = ?, finishPos = ?
+      WHERE eventCode = ? AND athleteNum = ? AND familyName = ? AND firstName = ?
+    `;
+  
+    db.serialize(() => {
+      const stmt = db.prepare(updateQuery);
+  
+      events.forEach(event => {
+        stmt.run(event.startListValue, event.finishPos, event.eventCode, event.athleteNum, event.familyName, event.firstName, function(err) {
+          if (err) {
+            return res.status(500).json({ error: err.message });
+          }
+        });
+      });
+  
+      stmt.finalize((err) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        res.json({ message: 'Events updated successfully!' });
+      });
+    });
+  });
 
   async function readTextFiles(folderPath) {
     const files = await fs.promises.readdir(folderPath);
@@ -379,7 +406,6 @@ app.post('/api/login', (req, res) => {
   async function insertTextIntoDatabase(contents, meetId) {
     for (const content of contents) {
         const { fileName, data } = content;
-        console.log(data);
         const rows = data.split('\n');
 
         let currentEvent = null;

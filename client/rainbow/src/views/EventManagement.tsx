@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { getEventbyMeetId } from '../apis/api';
-import { Collapse, Input } from 'antd';
+import { Collapse, Input, Select, Table, Button, message } from 'antd';
+import { getEventbyMeetId, updateEventAPI } from '../apis/api';
 
 const { Panel } = Collapse;
 const { Search } = Input;
+const { Option } = Select;
 
 interface Event {
   eventCode: string;
@@ -19,6 +20,8 @@ interface Event {
   eventName: string;
   title2: string;
   sponsor: string;
+  startListValue: string;
+  finishPos: string;
 }
 
 const EventsList: React.FC = () => {
@@ -30,6 +33,15 @@ const EventsList: React.FC = () => {
   const location = useLocation();
   const meetId = location.state?.meetId;
 
+  // Function to handle status change for an athlete
+  const handleStatusChange = (value: string, athlete: any) => {
+    const updatedEvents = events.map(event => 
+      event.athleteNum === athlete.athleteNum ? { ...event, startListValue: value } : event
+    );
+    setEvents(updatedEvents);
+    setFilteredEvents(updatedEvents); // Also update filtered events
+  };
+
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -39,8 +51,8 @@ const EventsList: React.FC = () => {
 
         const response = await getEventbyMeetId(meetId);
         setEvents(response.data.events);
-        setLoading(false);
         setFilteredEvents(response.data.events); // Initialize filteredEvents with all events
+        setLoading(false);
       } catch (err) {
         setError('Error fetching events');
         setLoading(false);
@@ -63,6 +75,16 @@ const EventsList: React.FC = () => {
     }
   };
 
+  // Function to handle save operation
+  const handleSave = async (eventGroup: Event[]) => {
+    try {
+      const response = await updateEventAPI(eventGroup);
+      message.success('Events status updated successfully!');
+    } catch (err) {
+      message.error('Error updating events status');
+    }
+  };
+
   const renderEvents = () => {
     const eventGroups: { [key: string]: Event[] } = {};
 
@@ -76,14 +98,36 @@ const EventsList: React.FC = () => {
     return (
       <Collapse accordion>
         {Object.keys(eventGroups).map(eventCode => (
-          <Panel header={eventCode} key={eventCode}>
-            <ul>
-              {eventGroups[eventCode].map(athlete => (
-                <li key={athlete.athleteNum}>
-                  <strong>{athlete.eventName}</strong>: {athlete.familyName} {athlete.firstName} ({athlete.athleteNum}) - {athlete.athleteClub}
-                </li>
-              ))}
-            </ul>
+          <Panel header={`${eventCode} - ${eventGroups[eventCode][0]?.eventName}`} key={eventCode}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <Table
+                dataSource={eventGroups[eventCode]}
+                columns={[
+                  { title: 'Family Name', dataIndex: 'familyName', key: 'familyName', width: 200, },
+                  { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200, },
+                  { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175, },
+                  { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub' },
+                  {
+                    title: 'Status',
+                    dataIndex: 'startListValue',
+                    key: 'startListValue',
+                    render: (text: string, record: any) => (
+                      <Select defaultValue={record.status || 'Select'} style={{ width: 120 }} onChange={(value) => handleStatusChange(value, record)}>
+                        <Option value="DNF">DNF</Option>
+                        <Option value="DNS">DNS</Option>
+                        <Option value="DQ">DQ</Option>
+                      </Select>
+                    ),
+                  },
+                ]}
+                rowKey="athleteNum"
+                pagination={false}
+                scroll={{ y: 300, x: 'max-content' }}
+              />
+              <div style={{ alignSelf: 'flex-end', marginTop: '25px'}}>
+                <Button type="primary" onClick={() => handleSave(eventGroups[eventCode])}>Save</Button>
+              </div>
+            </div>
           </Panel>
         ))}
       </Collapse>

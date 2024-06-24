@@ -1,8 +1,8 @@
-import { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Divider, Col, Row, Card, message, Typography, Collapse, Button } from "antd";
 import { UserContext } from "../App";
 import { IMeet } from "../types/Meet";
-import { getEventFiles, getMeetsAPI } from "../apis/api";
+import { getMeetsAPI } from "../apis/api";
 import { AxiosError } from "axios";
 import { useNavigate } from 'react-router-dom';
 
@@ -10,84 +10,80 @@ const { Title } = Typography;
 const { Panel } = Collapse;
 
 const ViewMeet: React.FC = () => {
-  const [meets, setMeetList] = useState<IMeet[]>([]);
+  const [meets, setMeets] = useState<IMeet[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const userContext = useContext(UserContext);
   const navigate = useNavigate();
+
+  // Fetch meet list from API
+  const fetchMeets = async () => {
+    setLoading(true);
+    try {
+      const response = await getMeetsAPI();
+      const meetList: IMeet[] = response.data.meet.map((meet: any) => ({
+        meetId: meet.meetId,
+        meetName: meet.meetName,
+        meetDesc: meet.meetDesc ?? '',
+        pfFolder: meet.pfFolder,
+        pfOutput: meet.pfOutput,
+        eventList: meet.eventList,
+        intFolder: meet.intFolder,
+        edit: meet.edit ?? false,
+      }));
+      setMeets(meetList);
+      setLoading(false);
+    } catch (error: any) {
+      const errMsg = error.response?.data?.msg || "Failed to load meets";
+      console.error(errMsg);
+      setError(errMsg);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMeets();
+  }, [userContext]); // Reload meets if user context changes
+
   const handleMeetSelection = (meetId: string) => {
     navigate('/event-management', { state: { meetId } });
   };
 
-  // get meet list
-  const getMeetList = async () => {
-    try {
-      const response: any = await getMeetsAPI();
-      const meetList: IMeet[] = response.data.meet;
-
-      let meets = meetList.map((i): IMeet => {
-        return {
-          meetId: i.meetId,
-          meetName: i.meetName,
-          meetDesc: i.meetDesc ?? '',
-          pfFolder: i.pfFolder,
-          pfOutput: i.pfOutput,
-          eventList: i.eventList,
-          intFolder: i.intFolder,
-          edit: i.edit ?? false,
-        }
-      });
-
-      setMeetList(meets);
-    } catch (error: any) {
-      const errMsg = error.response?.data?.msg || "Loading list failed";
-      console.error(errMsg);
-      message.error(errMsg);
-    }
-  };
+  const renderPanelHeader = (meetName: string, meetId: string) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span>{meetName}</span>
+      <Button type="primary" onClick={() => handleMeetSelection(meetId)}>View Events</Button>
+    </div>
+  );
   
-
-  useEffect(() => {
-    getMeetList();
-  }, [userContext]);
-
-  
-
   return (
     <div>
-      {/* Add button area */}
-      <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
-        <Col span={8}>
-          <p style={{ fontWeight: "bold", marginBottom: 0 }}>All Meets</p>
-        </Col>
-        <Col span={8}></Col>
-        <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>
-          {/* Add any buttons if necessary */}
-        </Col>
-      </Row>
-      <Divider style={{ marginTop: 20, marginBottom: 10 }} />
-      
-      {/* Display Meets as Cards */}
-      {meets.map(meet => (
-        <Row key={meet.meetId} gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={24}>
-          <Card 
-              title={meet.meetName} 
-              bordered={false}
-            >
-              <Button onClick={() => handleMeetSelection(meet.meetId)} style={{ marginLeft: 'auto' }}>Select</Button> */
-              <Collapse>
-                <Panel header="View Details" key="1">
-                  <p><strong>Desc:</strong> {meet.meetDesc}</p>
+      <Title level={3}>All Meets</Title>
+      <Divider />
+
+      {/* Display meets as cards */}
+      {loading ? (
+        <p>Loading...</p>
+      ) : error ? (
+        <p>{error}</p>
+      ) : (
+        <Collapse accordion>
+          {meets.map(meet => (
+            <Panel header={renderPanelHeader(meet.meetName, meet.meetId)} key={meet.meetId}>
+              <Row justify="space-between" align="middle">
+                <Col>
+                  <p><strong>Description:</strong> {meet.meetDesc}</p>
                   <p><strong>PF Folder:</strong> {meet.pfFolder}</p>
                   <p><strong>PF Output:</strong> {meet.pfOutput}</p>
                   <p><strong>Event List:</strong> {meet.eventList}</p>
                   <p><strong>Int Folder:</strong> {meet.intFolder}</p>
                   <p><strong>Edit:</strong> {meet.edit ? 'Yes' : 'No'}</p>
-                </Panel>
-              </Collapse>
-            </Card>
-          </Col>
-        </Row>
-      ))}
+                </Col>
+              </Row>
+            </Panel>
+          ))}
+        </Collapse>
+      )}
     </div>
   );
 };
