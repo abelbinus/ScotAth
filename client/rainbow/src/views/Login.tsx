@@ -46,7 +46,7 @@ const LoginPage = () => {
             if (loginUser.userRole === "admin") {
                 navigate("/admin-dashboard");
             } else {
-                navigate("/event-management");
+                navigate("/view-meet");
             }
         } catch (error: any) {
             const errMsg = error.response?.data?.msg || "Login failed";

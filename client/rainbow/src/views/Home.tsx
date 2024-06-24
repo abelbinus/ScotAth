@@ -8,7 +8,7 @@ import useProtectedRoute from "../router/ProtectedRoute";
 const { Header, Content, Sider } = Layout;
 const Home: React.FC = () => {
   useProtectedRoute();
-
+  const [selectedMeetId, setSelectedMeetId] = useState<string | null>(null);
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
   const { useBreakpoint } = Grid;
 
@@ -35,13 +35,19 @@ const Home: React.FC = () => {
       );
     } else if (userContext?.user?.userRole === "volunteer") {
       baseItems.push(
-        { label: "View Meets", icon: <ReadOutlined />, key: "/event-management", "data-testid": "menu-item-event-management" },
-        //{ label: "Project Allocation", icon: <SolutionOutlined />, key: "/project-allocation-staff", "data-testid": "menu-item-project-allocation-staff" }
+        { label: "View Meets", icon: <ReadOutlined />, key: "/view-meet", "data-testid": "menu-item-view-meet" },
+        // { label: "View Events", icon: <ReadOutlined />, key: "/event-management", "data-testid": "menu-item-event-management", meetId: selectedMeetId },
       );
     }
 
     return baseItems;
   };
+
+  const handleMeetSelection = (meetId: string) => {
+    setSelectedMeetId(meetId); // Update selectedMeetId when a meet is selected
+    navigate("/event-management", { state: { meetId } }); // Navigate to event-management with meetId
+  };
+  
 
   const handleUserInfoClick = () => {
     navigate("/profile");

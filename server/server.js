@@ -308,39 +308,37 @@ app.post('/api/login', (req, res) => {
   }
 
   app.post('/api/rainbow/event', async (req, res) => {
-      const { pfFolder, meetId } = req.body;
-      if (!pfFolder) {
-          return res.status(400).json({ error: 'pfFolder path is required' });
-      }
+    const { pfFolder, meetId } = req.body;
+    if (!pfFolder) {
+        return res.status(400).json({ error: 'pfFolder path is required' });
+    }
 
-      let responseSent = false;
+    let responseSent = false;
 
-      try {
-          await deleteStartLists(meetId, res);
+    try {
+        await deleteStartLists(meetId, res);
 
-          const folderPath = path.resolve(pfFolder);
-          const fileContents = await readTextFiles(folderPath);
-          //const fileContents = await readCSVFiles(folderPath);
-          res.json({ files: fileContents });
-          // if (!responseSent) {
-          //     await insertCSVIntoDatabase(fileContents, meetId);
-          //     // await updateEventCodes();  // Uncomment this if you have this function implemented
-          //     res.json({ files: fileContents });
-          // }
+        const folderPath = path.resolve(pfFolder);
+        const fileContents = await readTextFiles(folderPath);
 
-      } catch (error) {
-          console.error('Error in /api/rainbow/event:', error);
-          if (!responseSent) {
-              res.status(500).json({ error: 'Internal Server Error' });
-          }
-      }
-  });
+        if (!responseSent) {
+            await insertTextIntoDatabase(fileContents, meetId);
+            res.json({ files: fileContents });
+        }
+
+    } catch (error) {
+        console.error('Error in /api/rainbow/event:', error);
+        if (!responseSent) {
+            res.status(500).json({ error: 'Internal Server Error' });
+        }
+    }
+});
 
   // New endpoint to fetch all events based on meetId
-  app.get('/api/rainbow/events/:meetId', (req, res) => {
-    const meetId = req.params.meetId;
-
-    const query = 'SELECT * FROM tblevents WHERE meetId = ? AND athleteNum IS NOT NULL';
+  app.get('/api/rainbow/event/:meetId', (req, res) => {
+    const { meetId } = req.params;
+    console.log(meetId);
+    const query = 'SELECT * FROM tblevents WHERE meetId = ?';
     db.all(query, [meetId], (err, rows) => {
         if (err) {
             res.status(500).json({ error: err.message });
@@ -350,155 +348,72 @@ app.post('/api/login', (req, res) => {
     });
   });
 
+
   async function readTextFiles(folderPath) {
-      const files = await fs.promises.readdir(folderPath);
-      const textFiles = files.filter(file => path.extname(file).toLowerCase() === '.csv'); // Adjusted to filter text files
-      console.log(`Number of text files: ${textFiles.length}`);
-
-      if (textFiles.length < 1) {
-          throw new Error("No text files found in the provided directory");
-      }
-
-      const fileContents = [];
-
-      for (const file of textFiles) {
-          const filePath = path.join(folderPath, file);
-          const content = await fs.promises.readFile(filePath, 'utf-8'); // Read file content as plain text
-          console.log(`Text file ${file} successfully processed.`);
-          fileContents.push({ fileName: file, data: content });
-      }
-
-      return fileContents;
-  };
-
-  async function readCSVFiles(folderPath) {
     const files = await fs.promises.readdir(folderPath);
-    const csvFiles = files.filter(file => path.extname(file).toLowerCase() === '.csv');
-    console.log(`Number of CSV files: ${csvFiles.length}`);
+    const textFiles = files.filter(file => path.extname(file).toLowerCase() === '.csv');
+    console.log(`Number of text files: ${textFiles.length}`);
 
-    if (csvFiles.length < 1) {
-        throw new Error("No CSV files found in the provided directory");
-    }
-
-    if (csvFiles.length > 1) {
-        const startlistFile = csvFiles.find(file => file.toLowerCase() === 'startlist.csv');
-        if (!startlistFile) {
-            throw new Error("startlist.csv file not found");
-        }
-        csvFiles = [startlistFile];
+    if (textFiles.length < 1) {
+        throw new Error("No text files found in the provided directory");
     }
 
     const fileContents = [];
 
-    for (const file of csvFiles) {
+    for (const file of textFiles) {
         const filePath = path.join(folderPath, file);
-        const rows = [];
-        await new Promise((resolve, reject) => {
-            const stream = fs.createReadStream(filePath, { encoding: 'utf-8' })
-                .on('error', (error) => {
-                    console.error(`Error reading file ${file}:`, error);
-                    reject(error);
-                })
-                .pipe(csv({ separator: ';' }))
-                .on('data', (row) => {
-                    rows.push(row);
-                })
-                .on('end', () => {
-                    console.log(`CSV file ${file} successfully processed.`);
-                    fileContents.push({ fileName: file, data: rows });
-                    resolve();
-                });
-        });
+        const content = await fs.promises.readFile(filePath, 'utf-8');
+
+        // // Remove UTF-8 BOM if present
+        // if (content.charCodeAt(0) === 0xFEFF) {
+        //     content = content.slice(1);
+        // }
+
+        console.log(`Text file ${file} successfully processed.`);
+        fileContents.push({ fileName: file, data: content });
     }
 
     return fileContents;
   }
-
   // Function to insert content into SQLite database
-  async function insertCSVIntoDatabase(contents, meetId) {
-      // Assuming 'contents' is an array of objects containing data from CSV files
-    
-      for (const content of contents) {
+  async function insertTextIntoDatabase(contents, meetId) {
+    for (const content of contents) {
         const { fileName, data } = content;
-        let previousEventCode = null;
-        
-        for (const row of data) {
-          let eventCode = row['Event Code'];
-          const eventDate = row['Date'];
-          const eventTime = row['Time'];
-          const laneOrder = row['Lane/order'];
-          const athleteNum = row['Bib'];
-          const familyName = row['Family Name'];
-          const firstName = row['Firstname'];
-          const eventLength = row['Length'];
-          const athleteClub = row['Nation'];
-          const sponsor = row['Sponsor'];
-          const eventName = row['Title 1'];
-          const title2 = row['Title 2'];
+        console.log(data);
+        const rows = data.split('\n');
 
-          // if(eventCode && !athleteNum) {
-          //   previousEventCode = eventCode;
-          // } else if(!eventCode && athleteNum){
-          //   eventCode = previousEventCode;
-          // }
-          
-          // console.log(eventCode)
-          // SQL statement to insert data into a table named 'StartList'
-          const sql = `
-            INSERT INTO tblevents (meetId, eventCode, eventDate, eventTime, laneOrder, athleteNum, familyName, firstName, eventLength, athleteClub, sponsor, eventName, title2)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `;
-    
-          // Execute the SQL statement
-          db.run(sql, [meetId, eventCode, eventDate, eventTime, laneOrder, athleteNum, familyName, firstName, eventLength, athleteClub, sponsor, eventName, title2], function(err) {
-            if (err) {
-              console.error(`Error inserting row into database from file ${fileName}:`, err);
-            } else {
-              //console.log(`Row inserted successfully into database from file ${fileName}`);
+        let currentEvent = null;
+
+        for (const row of rows) {
+            const columns = row.split(';').map(col => col.trim());
+
+            if (columns[0]) { // New event header row
+                currentEvent = columns;
+            } else if (currentEvent && columns.length > 1) { // Athlete row
+                const [
+                    eventCode, eventDate, eventTime, laneOrder, athleteNum,
+                    familyName, firstName, athleteClub, eventLength, eventName, title2, sponsor
+                ] = [
+                    currentEvent[0], currentEvent[1], currentEvent[2], columns[3],
+                    columns[4], columns[5], columns[6], columns[7],
+                    currentEvent[8], currentEvent[9], currentEvent[10], currentEvent[11]
+                ];
+
+                const sql = `
+                    INSERT INTO tblevents (meetId, eventCode, eventDate, eventTime, laneOrder, athleteNum, familyName, firstName, athleteClub, eventLength, eventName, title2, sponsor)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `;
+
+                db.run(sql, [meetId, eventCode, eventDate, eventTime, laneOrder, athleteNum, familyName, firstName, athleteClub, eventLength, eventName, title2, sponsor], function(err) {
+                    if (err) {
+                        console.error(`Error inserting row into database from file ${fileName}:`, err);
+                    } else {
+                        console.log(`Row inserted successfully into database from file ${fileName}`);
+                    }
+                });
             }
-          });
         }
-      }
     }
-
-  // Function to update event codes
-  async function updateEventCodes() {
-    return new Promise((resolve, reject) => {
-        db.serialize(() => {
-            let previousEventCode = null;
-
-            db.each(
-                "SELECT rowid, eventCode, athleteNum FROM tblevents ORDER BY rowid",
-                (err, row) => {
-                    if (err) {
-                        console.error('Error reading from tblevents:', err.message);
-                        return reject(err);
-                    }
-                    if (row.eventCode) {
-                        previousEventCode = row.eventCode;
-                    } else if (!row.eventCode && row.athleteNum) {
-                        db.run(
-                            "UPDATE tblevents SET eventCode = ? WHERE rowid = ?",
-                            [previousEventCode, row.rowid],
-                            function (err) {
-                                if (err) {
-                                    console.error(`Error updating rowid ${row.rowid}:`, err.message);
-                                } else {
-                                    //console.log(`Updated rowid ${row.rowid} with eventCode ${previousEventCode}`);
-                                }
-                            }
-                        );
-                    }
-                },
-                (err, numRows) => {
-                    if (err) {
-                        return reject(err);
-                    }
-                    resolve(numRows);
-                }
-            );
-        });
-    });
   }
   
 // All other requests go to React app

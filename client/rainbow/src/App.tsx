@@ -8,8 +8,11 @@ interface IUserContext {
   setUser: (user: IUser | null) => void;
 }
 
-// create user context
-export const UserContext = React.createContext<IUserContext>({ user: null, setUser: () => { } });
+// Create user context
+export const UserContext = React.createContext<IUserContext>({
+  user: null,
+  setUser: () => {}
+});
 
 function App() {
   const [user, setUser] = useState<IUser | null>(null);

@@ -5,6 +5,7 @@ import ProfilePage from "../views/Profile";
 import User from "../views/UserManagement";
 import Meet from "../views/MeetManagement";
 import Event from "../views/EventManagement";
+import ViewMeet from "../views/ViewMeet";
 
 const router = createBrowserRouter([
   {
@@ -15,7 +16,8 @@ const router = createBrowserRouter([
       { path: "/profile", element: <ProfilePage />, },
       { path: "/admin-dashboard", element: <User />, },
       { path: "/meet-management", element: <Meet/>},
-      { path: "/event-management", element: <Event/>},
+      { path: "/view-meet", element: <ViewMeet/>},
+      { path: "/event-management", element: <Event />},
     ],
   },
   { path: "login", element: <LoginPage /> }, // super router

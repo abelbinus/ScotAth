@@ -1,88 +1,112 @@
-import { useState, useEffect, useContext } from "react";
-import { Divider, Col, Row, Card, message, Typography, Collapse, Button } from "antd";
-import { UserContext } from "../App";
-import { IMeet } from "../types/Meet";
-import { getEventFiles, getMeetsAPI } from "../apis/api";
-import { AxiosError } from "axios";
+import React, { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import { getEventbyMeetId } from '../apis/api';
+import { Collapse, Input } from 'antd';
 
-const { Title } = Typography;
 const { Panel } = Collapse;
+const { Search } = Input;
 
-const EventManagement: React.FC = () => {
-  const [meets, setMeetList] = useState<IMeet[]>([]);
-  const userContext = useContext(UserContext);
+interface Event {
+  eventCode: string;
+  eventDate: string;
+  eventTime: string;
+  laneOrder: string;
+  athleteNum: string;
+  familyName: string;
+  firstName: string;
+  athleteClub: string;
+  eventLength: string;
+  eventName: string;
+  title2: string;
+  sponsor: string;
+}
 
-  // get meet list
-  const getMeetList = async () => {
-    try {
-      const response: any = await getMeetsAPI();
-      const meetList: IMeet[] = response.data.meet;
+const EventsList: React.FC = () => {
+  const [events, setEvents] = useState<Event[]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState<string>('');
+  const location = useLocation();
+  const meetId = location.state?.meetId;
 
-      let meets = meetList.map((i): IMeet => {
-        return {
-          meetId: i.meetId,
-          meetName: i.meetName,
-          meetDesc: i.meetDesc ?? '',
-          pfFolder: i.pfFolder,
-          pfOutput: i.pfOutput,
-          eventList: i.eventList,
-          intFolder: i.intFolder,
-          edit: i.edit ?? false,
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        if (!meetId) {
+          return; // Exit early if meetId is null or undefined
         }
-      });
 
-      setMeetList(meets);
-    } catch (error: any) {
-      const errMsg = error.response?.data?.msg || "Loading list failed";
-      console.error(errMsg);
-      message.error(errMsg);
+        const response = await getEventbyMeetId(meetId);
+        setEvents(response.data.events);
+        setLoading(false);
+        setFilteredEvents(response.data.events); // Initialize filteredEvents with all events
+      } catch (err) {
+        setError('Error fetching events');
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, [meetId]);
+
+  const handleFilter = (value: string) => {
+    setSearchText(value);
+    if (value.trim() === '') {
+      setFilteredEvents(events); // Reset filter, show all events
+    } else {
+      const filtered = events.filter(event =>
+        event.eventCode.toLowerCase().includes(value.toLowerCase()) ||
+        event.title2.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredEvents(filtered);
     }
   };
 
-  useEffect(() => {
-    getMeetList();
-  }, [userContext]);
+  const renderEvents = () => {
+    const eventGroups: { [key: string]: Event[] } = {};
 
-  
+    filteredEvents.forEach(event => {
+      if (!eventGroups[event.eventCode]) {
+        eventGroups[event.eventCode] = [];
+      }
+      eventGroups[event.eventCode].push(event);
+    });
+
+    return (
+      <Collapse accordion>
+        {Object.keys(eventGroups).map(eventCode => (
+          <Panel header={eventCode} key={eventCode}>
+            <ul>
+              {eventGroups[eventCode].map(athlete => (
+                <li key={athlete.athleteNum}>
+                  <strong>{athlete.eventName}</strong>: {athlete.familyName} {athlete.firstName} ({athlete.athleteNum}) - {athlete.athleteClub}
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        ))}
+      </Collapse>
+    );
+  };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>{error}</div>;
 
   return (
     <div>
-      {/* Add button area */}
-      <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
-        <Col span={8}>
-          <p style={{ fontWeight: "bold", marginBottom: 0 }}>All Meets</p>
-        </Col>
-        <Col span={8}></Col>
-        <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>
-          {/* Add any buttons if necessary */}
-        </Col>
-      </Row>
-      <Divider style={{ marginTop: 20, marginBottom: 10 }} />
-      
-      {/* Display Meets as Cards */}
-      {meets.map(meet => (
-        <Row key={meet.meetId} gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={24}>
-          <Card 
-              title={meet.meetName} 
-              bordered={false} 
-            >
-              <Collapse>
-                <Panel header="View Details" key="1">
-                  <p><strong>Desc:</strong> {meet.meetDesc}</p>
-                  <p><strong>PF Folder:</strong> {meet.pfFolder}</p>
-                  <p><strong>PF Output:</strong> {meet.pfOutput}</p>
-                  <p><strong>Event List:</strong> {meet.eventList}</p>
-                  <p><strong>Int Folder:</strong> {meet.intFolder}</p>
-                  <p><strong>Edit:</strong> {meet.edit ? 'Yes' : 'No'}</p>
-                </Panel>
-              </Collapse>
-            </Card>
-          </Col>
-        </Row>
-      ))}
+      <h2>Events List</h2>
+      <Search
+        placeholder="Search by eventCode or Title"
+        allowClear
+        enterButton="Search"
+        size="large"
+        onSearch={value => handleFilter(value)}
+        style={{ marginBottom: '16px' }}
+      />
+      {renderEvents()}
     </div>
   );
 };
 
-export default EventManagement;
+export default EventsList;

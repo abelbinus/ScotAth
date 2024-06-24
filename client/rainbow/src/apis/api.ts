@@ -110,3 +110,11 @@ export function getEventFiles(folderParams: any) {
         data: folderParams,
     })
 }
+
+// get all event details from folder
+export function getEventbyMeetId(meetId: any) {
+    return request({
+        url: `/api/rainbow/event/${meetId}`,
+        method: "GET",
+    })
+}
