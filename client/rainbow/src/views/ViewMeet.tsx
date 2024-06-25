@@ -46,7 +46,9 @@ const ViewMeet: React.FC = () => {
   }, [userContext]); // Reload meets if user context changes
 
   const handleMeetSelection = (meetId: string) => {
-    navigate('/event-management', { state: { meetId } });
+    localStorage.setItem("lastSelectedMeetId", meetId);
+    console.log(meetId);
+    navigate('/view-event', { state: { meetId } });
   };
 
   const renderPanelHeader = (meetName: string, meetId: string) => (

@@ -14,6 +14,11 @@ const Home: React.FC = () => {
     const storedMeetId = localStorage.getItem("lastSelectedMeetId");
     return storedMeetId || null;
   });
+
+  // const [selectedEventId, setSelectedEventId] = useState<string | null>(() => {
+  //   const storedEventId = localStorage.getItem("lastSelectedEventId");
+  //   return storedEventId || null;
+  // });
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
   const navigate = useNavigate();
@@ -28,15 +33,14 @@ const Home: React.FC = () => {
   }, [location.pathname]);
 
   useEffect(() => {
-    // Handle meetId from state or localStorage on component mount or update
-    if (location.pathname === "/event-management" && location.state?.meetId) {
-      const meetIdFromState = location.state.meetId;
-      setSelectedMeetId(meetIdFromState);
-      localStorage.setItem("lastSelectedMeetId", meetIdFromState); // Save meetId to local storage
-    } else if (localStorage.getItem("lastSelectedMeetId")) {
+    if (localStorage.getItem("lastSelectedMeetId")) {
       const currentMeetId = localStorage.getItem("lastSelectedMeetId") || '';
       setSelectedMeetId(currentMeetId);
     }
+    // if(localStorage.getItem("lastSelectedEventId")) {
+    //   const currentEventId = localStorage.getItem("lastSelectedEventId") || '';
+    //   setSelectedEventId(currentEventId);
+    // }
   }, [location.state]);
 
   const onMenuClick = (route: any) => {
@@ -54,6 +58,10 @@ const Home: React.FC = () => {
       setSelectedMeetId(clickedMenuItem.meetId);
       localStorage.setItem("lastSelectedMeetId", clickedMenuItem.meetId); // Update localStorage with new meetId
     }
+    // if(clickedMenuItem?.eventId) {
+    //   setSelectedEventId(clickedMenuItem.eventId);
+    //   localStorage.setItem("lastSelectedEventId", clickedMenuItem.eventId);
+    // }
   };
 
   const getMenuItems = () => {
@@ -67,7 +75,10 @@ const Home: React.FC = () => {
     } else if (user?.userRole === "volunteer") {
       baseItems.push(
         { label: "View Meets", icon: <ReadOutlined />, key: "/view-meet", "data-testid": "menu-item-view-meet" },
-        { label: "View Events", icon: <ReadOutlined />, key: "/event-management", "data-testid": "menu-item-event-management", meetId: selectedMeetId },
+        { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
+        { label: "Check In Athletes", icon: <ReadOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
+        { label: "Track Judge Screen", icon: <ReadOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
+        { label: "PhotoFinish", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
       );
     }
 

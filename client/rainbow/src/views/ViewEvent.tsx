@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { Collapse, Input, Select, Table, Button, message } from 'antd';
 import { getEventbyMeetId, updateEventAPI } from '../apis/api';
 
@@ -30,7 +29,6 @@ const EventsList: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState<string>('');
-  const location = useLocation();
   const meetId = localStorage.getItem("lastSelectedMeetId");
   // Function to handle status change for an athlete
   const handleStatusChange = (value: string, athlete: any) => {
@@ -77,6 +75,11 @@ const EventsList: React.FC = () => {
     }
   };
 
+  const handleMeetSelection = (meetId: string) => {
+    localStorage.setItem("lastSelectedMeetId", meetId);
+    console.log(meetId);
+  };
+
   // Function to handle save operation
   const handleSave = async (eventGroup: Event[]) => {
     try {
@@ -113,26 +116,11 @@ const EventsList: React.FC = () => {
                   { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200, },
                   { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175, },
                   { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub' },
-                  {
-                    title: 'Status',
-                    dataIndex: 'startListValue',
-                    key: 'startListValue',
-                    render: (text: string, record: any) => (
-                      <Select defaultValue={record.status || 'Select'} style={{ width: 120 }} onChange={(value) => handleStatusChange(value, record)}>
-                        <Option value="DNF">DNF</Option>
-                        <Option value="DNS">DNS</Option>
-                        <Option value="DQ">DQ</Option>
-                      </Select>
-                    ),
-                  },
                 ]}
                 rowKey="athleteNum"
                 pagination={false}
-                scroll={{ y: 300, x: 'max-content' }}
+                scroll={{ x: 'max-content' }}
               />
-              <div style={{ alignSelf: 'flex-end', marginTop: '25px'}}>
-                <Button type="primary" onClick={() => handleSave(eventGroups[eventCode])}>Save</Button>
-              </div>
             </div>
           </Panel>
         ))}

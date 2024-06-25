@@ -127,3 +127,12 @@ export function updateEventAPI(eventGroup: any) {
         data: eventGroup,
     })
 }
+
+// get all event photos
+export function getEventPhoto(photoParams: any) {
+    return request({
+        url: `/api/rainbow/getEventPhotoAPI/`,
+        method: "POST",
+        data: photoParams,
+    })
+}
