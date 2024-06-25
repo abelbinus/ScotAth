@@ -5,6 +5,8 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcrypt');
 const csv = require('csv-parser');
 const fs = require('fs');
+const os = require('os');
+const logger = require('./logger'); // Import the logger
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -18,16 +20,16 @@ app.use(cors());
 
 // Start the server
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+    logger.info(`Server is running on http://localhost:${port}`);
 });
 
 
 // Connect to SQLite database
 const db = new sqlite3.Database(path.join(__dirname, '/../sqlite/trackjudging.db'), (err) => {
     if (err) {
-        console.error('Error opening database:', err.message);
+        logger.error('Error opening database:', err.message);
     } else {
-        console.log('Connected to the SQLite database.');
+        logger.info('Connected to the SQLite database.');
     }
 });
 
@@ -98,7 +100,7 @@ app.post('/api/rainbow/user', async (req, res) => {
             return res.status(500).json({ error: 'Failed to add user' });
         }
 
-        console.log(`A user with ID ${this.lastID} has been added`);
+        logger.info(`A user with ID ${this.lastID} has been added`);
         res.json({ message: 'User added successfully' });
     });
 });
@@ -148,7 +150,7 @@ app.put('/api/rainbow/user', async (req, res) => {
         return res.status(404).json({ error: 'User not found' });
       }
   
-      console.log(`User with ID ${user.userId} has been updated`);
+      logger.info(`User with ID ${user.userId} has been updated`);
       res.json({ message: 'User updated successfully' });
     });
   });
@@ -210,7 +212,7 @@ app.put('/api/rainbow/meet', (req, res) => {
     
     db.run(query, [meetName, meetDesc, pfFolder, pfOutput, eventList, intFolder, edit, meetId], function(err) {
       if (err) {
-        console.log(err);
+        logger.error(err);
         res.status(500).json({ error: err.message });
         return;
       }
@@ -235,7 +237,7 @@ app.delete('/api/rainbow/user/:userId', (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        console.log(`User with ID ${userId} has been deleted`);
+        logger.info(`User with ID ${userId} has been deleted`);
         res.json({ message: 'User deleted successfully' });
     });
 });
@@ -274,11 +276,12 @@ app.post('/api/login', (req, res) => {
     const query = 'SELECT * FROM tblusers WHERE userName = ? AND userPass = ?';
     db.get(query, [userName, userPass], (err, row) => {
         if (err) {
+            logger.error(err.message);
             res.status(500).json({ error: err.message });
             return;
         }
         if (!row) {
-            console.log(row);
+            logger.error('Invalid username or password');
             res.status(401).json({ error: 'Invalid username or password' });
             return;
         }
@@ -308,9 +311,33 @@ app.post('/api/login', (req, res) => {
   }
 
   app.post('/api/rainbow/event', async (req, res) => {
-    const { pfFolder, meetId } = req.body;
+    const { pfFolder, pfOutput, meetId } = req.body;
+
     if (!pfFolder) {
         return res.status(400).json({ error: 'pfFolder path is required' });
+    } else if (!pfOutput) {
+        return res.status(400).json({ error: 'pfOutput type is required' });
+    } else if (!meetId) {
+        return res.status(400).json({ error: 'meetId is missing' });
+    }
+
+    // Determine the OS platform
+    const platform = os.platform();
+    logger.info(`Running on platform: ${platform}`);
+
+    // Check if pfFolder path format is correct based on the OS
+    if (platform === 'win32') {
+        // Windows-specific path check
+        const windowsPathRegex = /^[a-zA-Z]:\\/;
+        if (!windowsPathRegex.test(pfFolder)) {
+            return res.status(400).json({ error: 'Invalid pfFolder path format for Windows' });
+        }
+    // } else {
+    //     // POSIX (Linux, macOS) specific path check
+    //     const posixPathRegex = /^\//;
+    //     if (!posixPathRegex.test(pfFolder)) {
+    //         return res.status(400).json({ error: 'Invalid pfFolder path format for ' + platform });
+    //     }
     }
 
     let responseSent = false;
@@ -325,11 +352,10 @@ app.post('/api/login', (req, res) => {
             await insertTextIntoDatabase(fileContents, meetId);
             res.json({ files: fileContents });
         }
-
     } catch (error) {
         console.error('Error in /api/rainbow/event:', error);
         if (!responseSent) {
-            res.status(500).json({ error: 'Internal Server Error' });
+            res.status(500).json({ error: 'No files found in the provided directory' });
         }
     }
 });
@@ -379,7 +405,7 @@ app.post('/api/rainbow/updateEventAPI', (req, res) => {
   async function readTextFiles(folderPath) {
     const files = await fs.promises.readdir(folderPath);
     const textFiles = files.filter(file => path.extname(file).toLowerCase() === '.csv');
-    console.log(`Number of text files: ${textFiles.length}`);
+    logger.info(`Number of text files: ${textFiles.length}`);
 
     if (textFiles.length < 1) {
         throw new Error("No text files found in the provided directory");
@@ -396,7 +422,7 @@ app.post('/api/rainbow/updateEventAPI', (req, res) => {
         //     content = content.slice(1);
         // }
 
-        console.log(`Text file ${file} successfully processed.`);
+        logger.info(`Text file ${file} successfully processed.`);
         fileContents.push({ fileName: file, data: content });
     }
 
@@ -432,9 +458,9 @@ app.post('/api/rainbow/updateEventAPI', (req, res) => {
 
                 db.run(sql, [meetId, eventCode, eventDate, eventTime, laneOrder, athleteNum, familyName, firstName, athleteClub, eventLength, eventName, title2, sponsor], function(err) {
                     if (err) {
-                        console.error(`Error inserting row into database from file ${fileName}:`, err);
+                        logger.error(`Error inserting row into database from file ${fileName}:`, err);
                     } else {
-                        console.log(`Row inserted successfully into database from file ${fileName}`);
+                        logger.info(`Row inserted successfully into database from file ${fileName}`);
                     }
                 });
             }

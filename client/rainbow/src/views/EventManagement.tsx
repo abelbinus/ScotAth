@@ -31,8 +31,7 @@ const EventsList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState<string>('');
   const location = useLocation();
-  const meetId = location.state?.meetId;
-
+  const meetId = localStorage.getItem("lastSelectedMeetId");
   // Function to handle status change for an athlete
   const handleStatusChange = (value: string, athlete: any) => {
     const updatedEvents = events.map(event => 
@@ -46,8 +45,11 @@ const EventsList: React.FC = () => {
     const fetchEvents = async () => {
       try {
         if (!meetId) {
-          return; // Exit early if meetId is null or undefined
+            setError('Meet ID is not provided');
+            setLoading(false);
+            return; // Exit early if meetId is null or undefined
         }
+  
 
         const response = await getEventbyMeetId(meetId);
         setEvents(response.data.events);
@@ -94,7 +96,11 @@ const EventsList: React.FC = () => {
       }
       eventGroups[event.eventCode].push(event);
     });
-
+    const eventCodeCount = Object.keys(eventGroups).length;
+    // console.log(eventCodeCount);
+    // if (Object.keys(eventGroups).length === 0) {
+    //     return <div>No events available for this meet ID.</div>;
+    // }
     return (
       <Collapse accordion>
         {Object.keys(eventGroups).map(eventCode => (
@@ -139,7 +145,7 @@ const EventsList: React.FC = () => {
 
   return (
     <div>
-      <h2>Events List</h2>
+      <h2>Events List for Meet ID: {meetId}</h2>
       <Search
         placeholder="Search by eventCode or Title"
         allowClear

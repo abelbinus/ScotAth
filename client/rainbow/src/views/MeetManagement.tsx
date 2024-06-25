@@ -102,7 +102,6 @@ const MeetListAdmin = () => {
     try {
       const response: any = await getMeetsAPI();
       const meetList: IMeet[] = response.data.meet; // Assuming response.data contains the array
-      console.log(meetList);
 
       let meets = meetList.map((i): IMeet => {
         return {
@@ -123,7 +122,7 @@ const MeetListAdmin = () => {
       setMeetList(allMeets);
     } catch (error: any) {
       const errMsg = error.response?.data?.msg || "Loading list failed";
-      console.error(errMsg);
+      console.log(errMsg);
       message.error(errMsg);
     }
   };
@@ -139,17 +138,34 @@ const MeetListAdmin = () => {
     return <div>No access permission</div>;
   }
 
-  const handleUpdateClick = async (pfFolder: string, meetId: number) => {
+  const handleUpdateClick = async (pfFolder: string, pfOutput: string, meetId: number) => {
     try {
-        console.log(pfFolder);
-        const folderParams = {
-            pfFolder: pfFolder,
-            meetId: meetId
+        if(pfFolder == null || pfFolder == "") {
+          const errMsg = "pfFolder path is required";
+          console.log(errMsg);
+          message.error(errMsg);
         }
-        const response = await getEventFiles(folderParams);
-        message.success("Updated Start List Successfully");
-        setFileList(response.data.files);
-        setIsModalVisible(true);
+        else if(pfOutput == null || pfOutput == "") {
+          const errMsg = "pfOutput type is required";
+          console.log(errMsg);
+          message.error(errMsg);
+        }
+        else if(meetId == null) {
+          const errMsg = "pfOutput type is required";
+          console.log(errMsg);
+          message.error(errMsg);
+        }
+        else {
+          const folderParams = {
+              pfFolder: pfFolder,
+              pfOutput: pfOutput,
+              meetId: meetId
+          }
+          const response = await getEventFiles(folderParams);
+          message.success("Updated Start List Successfully");
+          setFileList(response.data.files);
+          setIsModalVisible(true);
+        }
         } catch (error: any) {
         const errMsg = error.response?.data?.error || "Failed to fetch files";
         console.error(errMsg);
@@ -229,7 +245,7 @@ const MeetListAdmin = () => {
       dataIndex: "action",
       render: (_, record) => (
         <Space size="middle" direction="vertical" className="action-buttons">
-          <Button type="primary" className="action-button" onClick={() => handleUpdateClick(record.pfFolder, record.meetId)}>
+          <Button type="primary" className="action-button" onClick={() => handleUpdateClick(record.pfFolder, record.pfOutput, record.meetId)}>
             Update Events
           </Button>
           <Button className="action-button" onClick={() => onEditClick(record)}>Edit</Button>
@@ -489,13 +505,13 @@ const MeetListAdmin = () => {
   )
 }
 
-declare module 'react' {
-  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    // extends React's HTMLAttributes
-    directory?: string;        // remember to make these attributes optional....
-    webkitdirectory?: string;
-    window?: any;
-  }
-}
+// declare module 'react' {
+//   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+//     // extends React's HTMLAttributes
+//     directory?: string;        // remember to make these attributes optional....
+//     webkitdirectory?: string;
+//     window?: any;
+//   }
+// }
 
 export default MeetListAdmin
