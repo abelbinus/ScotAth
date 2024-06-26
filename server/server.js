@@ -169,6 +169,24 @@ app.get('/api/rainbow/meet', (req, res) => {
     });
 });
 
+// New endpoint to fetch a specific meet by meetId
+app.get('/api/rainbow/meet/:meetId', (req, res) => {
+    const { meetId } = req.params;
+    const query = 'SELECT * FROM tblmeets WHERE meetId = ?';
+    
+    db.get(query, [meetId], (err, row) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        if (!row) {
+            res.status(404).json({ error: 'Meet not found' });
+            return;
+        }
+        res.json({ meet: row });
+    });
+});
+
 // POST endpoint to add a new meet
 app.post('/api/rainbow/meet', (req, res) => {
     const { meetId, meetName, meetDesc, pfFolder, pfOutput, eventList, intFolder, edit } = req.body;
@@ -467,6 +485,40 @@ app.post('/api/rainbow/updateEventAPI', (req, res) => {
         }
     }
   }
+
+  
+
+  // Endpoint to get photos
+app.post('/api/rainbow/getEventPhotoAPI/', (req, res) => {
+    const { pfFolder, lifFilename } = req.body;
+  
+    if (!pfFolder || !lifFilename) {
+      return res.status(400).json({ error: 'pfFolder path is not present' });
+    }
+
+
+  
+    // Construct the directory path based on meetId and eventId
+    const eventPhotoFolder = path.join(PF_FOLDER, meetId, eventId);
+  
+    fs.readdir(eventPhotoFolder, (err, files) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error reading photos directory' });
+      }
+  
+      // Filter out non-image files (optional)
+      const imageFiles = files.filter(file => /\.(jpg|jpeg|png|gif)$/.test(file));
+  
+      // Construct URLs or base64 data for each image
+      const photos = imageFiles.map(file => {
+        const filePath = path.join(eventPhotoFolder, file);
+        const fileData = fs.readFileSync(filePath, { encoding: 'base64' });
+        return `data:image/${path.extname(file).substring(1)};base64,${fileData}`;
+      });
+  
+      res.json({ photos });
+    });
+  });
   
 // All other requests go to React app
 app.get('*', (req, res) => {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Input, Select, Table, message } from 'antd';
-import { getEventPhoto, getEventbyMeetId, updateEventAPI } from '../apis/api';
+import { getEventPhoto, getEventbyMeetId, getMeetByIdAPI, updateEventAPI } from '../apis/api';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -66,15 +66,24 @@ const Photofinish: React.FC = () => {
 
   const fetchPhotos = async () => {
     try {
-        const photoParams = {
-            meetId: meetId,
-            eventId: selectedEventCode
+        if (!meetId || !selectedEventCode) {
+          throw new Error('Meet ID or event code is not provided');
         }
-        const responsePhoto = await getEventPhoto(photoParams); // Replace with your backend endpoint
+        const response = await getMeetByIdAPI(meetId);
+        const pfFolder = response.data.meet.pfFolder;
+        if(!pfFolder) {
+          throw new Error('pfFolder is not provided');
+        }
+        const lifFilename = generateLifFilename(selectedEventCode);
+        const photoParams = {
+            pfFolder: pfFolder,
+            lifFilename: lifFilename
+        }
+        const responsePhoto = await getEventPhoto(photoParams); 
         if (!responsePhoto) {
         throw new Error('Failed to fetch photos');
         }
-        setPhotos(responsePhoto.data.photos); // Assuming your backend returns an object with a 'photos' array
+        setPhotos(responsePhoto.data.photos); // Set photos state
     } catch (error) {
         console.error('Error fetching photos:', error);
     }
@@ -116,6 +125,14 @@ const Photofinish: React.FC = () => {
       setError(filtered.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
     }
   };
+
+  // Utility function to generate lifFilename from eventCode
+const generateLifFilename = (eventCode: string): string => {
+  if (eventCode.length < 7) {
+    throw new Error('Event code is too short to generate a lif filename');
+  }
+  return `${eventCode.substring(0, 5)}-${eventCode.substring(5, 7)}.lif`;
+};
 
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(events);

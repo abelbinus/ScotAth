@@ -35,6 +35,14 @@ export function getMeetsAPI() {
     });
 }
 
+// Get all meets list
+export function getMeetByIdAPI(meetId: string) {
+    return request({
+        url: `/api/rainbow/meet/${meetId}`,
+        method: "GET",
+    });
+}
+
 // Update a specific meet
 export function updateMeetAPI(meet: any) {
     return request({
