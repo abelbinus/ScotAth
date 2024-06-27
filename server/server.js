@@ -2,7 +2,7 @@ const express = require('express');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
-const bcrypt = require('bcrypt');
+//const bcrypt = require('bcrypt');
 const csv = require('csv-parser');
 const fs = require('fs');
 const os = require('os');
@@ -13,7 +13,7 @@ const port = process.env.PORT || 5000;
 const cors = require('cors');
 
 // Middleware
-app.use(express.static(path.join(__dirname, '/../client/rainbow/build')));
+app.use(express.static(path.join(process.cwd(), '..', 'client', 'rainbow', 'build')));
 app.use(bodyParser.json());
 // Enable CORS for all routes
 app.use(cors());
@@ -23,11 +23,15 @@ app.listen(port, () => {
     logger.info(`Server is running on http://localhost:${port}`);
 });
 
+// Correctly build the path to the database file
+const dbPath = path.join(process.cwd(), '..', 'sqlite', 'trackjudging.db');
 
 // Connect to SQLite database
-const db = new sqlite3.Database(path.join(__dirname, '/../sqlite/trackjudging.db'), (err) => {
+const db = new sqlite3.Database(dbPath, (err) => {
+    console.log(process.cwd());
+    logger.info(process.cwd());
     if (err) {
-        logger.error('Error opening database:', err.message);
+        logger.error('Error opening database:', err);
     } else {
         logger.info('Connected to the SQLite database.');
     }
