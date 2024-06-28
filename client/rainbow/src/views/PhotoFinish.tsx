@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Input, Select, Table, message } from 'antd';
 import { getEventPhoto, getEventbyMeetId, getMeetByIdAPI, updateEventAPI } from '../apis/api';
+import { Axios, AxiosError } from 'axios';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -42,7 +43,12 @@ const Photofinish: React.FC = () => {
         }
 
         const response = await getEventbyMeetId(meetId);
-        setEvents(response.data.events);
+        const events = response.data.events;
+
+        // Order events based on eventCode
+        events.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
+
+        setEvents(events);
 
         // Set the initial selected event code to the first event code in the list
         if (response.data.events.length > 0) {
@@ -71,21 +77,30 @@ const Photofinish: React.FC = () => {
         }
         const response = await getMeetByIdAPI(meetId);
         const pfFolder = response.data.meet.pfFolder;
+        const pfOutput = response.data.meet.pfOutput;
         if(!pfFolder) {
           throw new Error('pfFolder is not provided');
         }
-        const lifFilename = generateLifFilename(selectedEventCode);
+        if(!pfOutput) {
+          throw new Error('pfOutput is not provided');
+        }
+        const filename = generateFilename(selectedEventCode);
+        console.log('filename:', filename);
         const photoParams = {
             pfFolder: pfFolder,
-            lifFilename: lifFilename
+            filename: filename
         }
-        const responsePhoto = await getEventPhoto(photoParams); 
-        if (!responsePhoto) {
-        throw new Error('Failed to fetch photos');
-        }
+        const responsePhoto = await getEventPhoto(photoParams); // Fetch photos for the selected event
         setPhotos(responsePhoto.data.photos); // Set photos state
+        message.success('Photo found for event');
     } catch (error) {
-        console.error('Error fetching photos:', error);
+        if (error instanceof AxiosError && error.response && error.response.data && error.response.data.error) {
+          message.error(error.response.data.error);
+        }
+        else {
+          console.error('Error fetching photos:', error);
+        }
+        setPhotos([]); // Clear photos state
     }
 };
   useEffect(() => {
@@ -107,7 +122,7 @@ const Photofinish: React.FC = () => {
   // Function to handle save operation
   const handleSave = async () => {
     try {
-      const response = await updateEventAPI(filteredEvents);
+      await updateEventAPI(filteredEvents);
       message.success('Events status updated successfully!');
     } catch (err) {
       message.error('Error updating events status');
@@ -127,11 +142,11 @@ const Photofinish: React.FC = () => {
   };
 
   // Utility function to generate lifFilename from eventCode
-const generateLifFilename = (eventCode: string): string => {
+const generateFilename = (eventCode: string): string => {
   if (eventCode.length < 7) {
     throw new Error('Event code is too short to generate a lif filename');
   }
-  return `${eventCode.substring(0, 5)}-${eventCode.substring(5, 7)}.lif`;
+  return `${eventCode.substring(0, 5)}-${eventCode.substring(5, 7)}`;
 };
 
   const renderEvents = () => {
@@ -141,7 +156,7 @@ const generateLifFilename = (eventCode: string): string => {
       <div>
         <Select
           placeholder="Select an event"
-          style={{ width: 300, marginBottom: '16px' }} // Increase width
+          style={{ width: '100%', maxWidth: '300px', marginBottom: '16px' }} // Increase width
           value={selectedEventCode}
           onChange={handleEventSelect}
           showSearch
@@ -176,15 +191,17 @@ const generateLifFilename = (eventCode: string): string => {
             scroll={{ x: 'max-content' }}
           />
         )}
-        <div>
-      {photos.map((photo, index) => (
-        <img key={index} src={photo} alt={`Photo ${index}`} style={{ maxWidth: '100px', maxHeight: '100px', marginRight: '10px' }} />
-      ))}
-    </div>
-      </div>
-      
-
-      
+        <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', marginTop: '16px' }}>
+          {photos.map((photo, index) => (
+            <img 
+              key={index} 
+              src={photo} 
+              alt={`Photo ${index}`} 
+              style={{ maxWidth: '100%', height: 'auto', maxHeight: '300px', margin: '10px' }} 
+            />
+          ))}
+        </div>
+      </div> 
     );
   };
 

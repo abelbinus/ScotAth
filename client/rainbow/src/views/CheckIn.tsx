@@ -54,7 +54,12 @@ const EventsList: React.FC = () => {
         }
 
         const response = await getEventbyMeetId(meetId);
-        setEvents(response.data.events);
+        const events = response.data.events;
+
+        // Order events based on eventCode
+        events.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
+
+        setEvents(events);
 
         // Set the initial selected event code to the first event code in the list
         if (response.data.events.length > 0) {
@@ -117,7 +122,7 @@ const EventsList: React.FC = () => {
       <div>
         <Select
           placeholder="Select an event"
-          style={{ width: 300, marginBottom: '16px' }} // Increase width
+          style={{ width: '100%', maxWidth: '300px', marginBottom: '16px' }} // Increase width
           value={selectedEventCode}
           onChange={handleEventSelect}
           showSearch

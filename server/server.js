@@ -3,33 +3,42 @@ const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
 //const bcrypt = require('bcrypt');
-const csv = require('csv-parser');
 const fs = require('fs');
-const os = require('os');
 const logger = require('./logger'); // Import the logger
 
 const app = express();
 const port = process.env.PORT || 5000;
 const cors = require('cors');
 
-// Middleware
-app.use(express.static(path.join(process.cwd(), '..', 'client', 'rainbow', 'build')));
-app.use(bodyParser.json());
-// Enable CORS for all routes
-app.use(cors());
+const {
+    findScotathClientDir,
+    findScotathDBDir,
+    readTextFiles,
+    insertTextIntoDatabase,
+    deleteExistingEvents,
+    deleteEventInfo
+} = require('./utils'); // Import utility functions
 
 // Start the server
 app.listen(port, () => {
     logger.info(`Server is running on http://localhost:${port}`);
 });
 
-// Correctly build the path to the database file
-const dbPath = path.join(process.cwd(), '..', 'sqlite', 'trackjudging.db');
+// Determine the client path
+const clientPath = path.resolve(findScotathClientDir(__dirname));
+
+// Determine the database path
+const dbPath = path.resolve(findScotathDBDir(process.cwd()), 'sqlite', 'trackjudging.db');
+
+// Serve static files from the React app
+app.use(express.static(path.join(clientPath, 'client', 'rainbow', 'build')));
+
+app.use(bodyParser.json());
+// Enable CORS for all routes
+app.use(cors());
 
 // Connect to SQLite database
 const db = new sqlite3.Database(dbPath, (err) => {
-    console.log(process.cwd());
-    logger.info(process.cwd());
     if (err) {
         logger.error('Error opening database:', err);
     } else {
@@ -312,27 +321,7 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-
-
-  // Inside your route handler for updating start lists
-
-  
-
-  function deleteStartLists(meetID, res) {
-    return new Promise((resolve, reject) => {
-      // Delete existing records from tblEvent
-      let sqlDeleteEvent = `DELETE FROM tblevents WHERE MeetID = ?`;
-      db.run(sqlDeleteEvent, [meetID], function(err) {
-        if (err) {
-          console.error('Error deleting records from tblEvent:', err.message);
-          return reject({ error: 'Failed to delete records from tblevents' });
-        }
-        resolve();
-      });
-    });
-  }
-
-  app.post('/api/rainbow/event', async (req, res) => {
+app.post('/api/rainbow/event', async (req, res) => {
     const { pfFolder, pfOutput, meetId } = req.body;
 
     if (!pfFolder) {
@@ -343,35 +332,16 @@ app.post('/api/login', (req, res) => {
         return res.status(400).json({ error: 'meetId is missing' });
     }
 
-    // Determine the OS platform
-    const platform = os.platform();
-    logger.info(`Running on platform: ${platform}`);
-
-    // Check if pfFolder path format is correct based on the OS
-    if (platform === 'win32') {
-        // Windows-specific path check
-        const windowsPathRegex = /^[a-zA-Z]:\\/;
-        if (!windowsPathRegex.test(pfFolder)) {
-            return res.status(400).json({ error: 'Invalid pfFolder path format for Windows' });
-        }
-    // } else {
-    //     // POSIX (Linux, macOS) specific path check
-    //     const posixPathRegex = /^\//;
-    //     if (!posixPathRegex.test(pfFolder)) {
-    //         return res.status(400).json({ error: 'Invalid pfFolder path format for ' + platform });
-    //     }
-    }
-
     let responseSent = false;
 
     try {
-        await deleteStartLists(meetId, res);
+        await deleteEventInfo(meetId, db);
 
         const folderPath = path.resolve(pfFolder);
         const fileContents = await readTextFiles(folderPath);
 
         if (!responseSent) {
-            await insertTextIntoDatabase(fileContents, meetId);
+            await insertTextIntoDatabase(fileContents, meetId, db);
             res.json({ files: fileContents });
         }
     } catch (error) {
@@ -382,16 +352,23 @@ app.post('/api/login', (req, res) => {
     }
 });
 
-  // New endpoint to fetch all events based on meetId
-  app.get('/api/rainbow/event/:meetId', (req, res) => {
+  // New endpoint to fetch eventinfo and events based on meetId
+app.get('/api/rainbow/eventinfo/:meetId', (req, res) => {
     const { meetId } = req.params;
-    const query = 'SELECT * FROM tblevents WHERE meetId = ?';
+    
+    // Query to join tbleventinfo and tblevents based on eventCode and meetId
+    const query = `
+      SELECT ei.*, e.* 
+      FROM tbleventinfo ei 
+      JOIN tblevents e ON ei.eventCode = e.eventCode 
+      WHERE ei.meetId = ?`;
+      
     db.all(query, [meetId], (err, rows) => {
-        if (err) {
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        res.json({ events: rows });
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json({ events: rows });
     });
   });
 
@@ -424,105 +401,41 @@ app.post('/api/rainbow/updateEventAPI', (req, res) => {
     });
   });
 
-  async function readTextFiles(folderPath) {
-    const files = await fs.promises.readdir(folderPath);
-    const textFiles = files.filter(file => path.extname(file).toLowerCase() === '.csv');
-    logger.info(`Number of text files: ${textFiles.length}`);
-
-    if (textFiles.length < 1) {
-        throw new Error("No text files found in the provided directory");
-    }
-
-    const fileContents = [];
-
-    for (const file of textFiles) {
-        const filePath = path.join(folderPath, file);
-        const content = await fs.promises.readFile(filePath, 'utf-8');
-
-        // // Remove UTF-8 BOM if present
-        // if (content.charCodeAt(0) === 0xFEFF) {
-        //     content = content.slice(1);
-        // }
-
-        logger.info(`Text file ${file} successfully processed.`);
-        fileContents.push({ fileName: file, data: content });
-    }
-
-    return fileContents;
-  }
-  // Function to insert content into SQLite database
-  async function insertTextIntoDatabase(contents, meetId) {
-    for (const content of contents) {
-        const { fileName, data } = content;
-        const rows = data.split('\n');
-
-        let currentEvent = null;
-
-        for (const row of rows) {
-            const columns = row.split(';').map(col => col.trim());
-
-            if (columns[0]) { // New event header row
-                currentEvent = columns;
-            } else if (currentEvent && columns.length > 1) { // Athlete row
-                const [
-                    eventCode, eventDate, eventTime, laneOrder, athleteNum,
-                    familyName, firstName, athleteClub, eventLength, eventName, title2, sponsor
-                ] = [
-                    currentEvent[0], currentEvent[1], currentEvent[2], columns[3],
-                    columns[4], columns[5], columns[6], columns[7],
-                    currentEvent[8], currentEvent[9], currentEvent[10], currentEvent[11]
-                ];
-
-                const sql = `
-                    INSERT INTO tblevents (meetId, eventCode, eventDate, eventTime, laneOrder, athleteNum, familyName, firstName, athleteClub, eventLength, eventName, title2, sponsor)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `;
-
-                db.run(sql, [meetId, eventCode, eventDate, eventTime, laneOrder, athleteNum, familyName, firstName, athleteClub, eventLength, eventName, title2, sponsor], function(err) {
-                    if (err) {
-                        logger.error(`Error inserting row into database from file ${fileName}:`, err);
-                    } else {
-                        logger.info(`Row inserted successfully into database from file ${fileName}`);
-                    }
-                });
-            }
-        }
-    }
-  }
+  
 
   
 
   // Endpoint to get photos
 app.post('/api/rainbow/getEventPhotoAPI/', (req, res) => {
-    const { pfFolder, lifFilename } = req.body;
-  
-    if (!pfFolder || !lifFilename) {
-      return res.status(400).json({ error: 'pfFolder path is not present' });
+    const { pfFolder, filename } = req.body;
+    if (!pfFolder || !filename) {
+        return res.status(400).json({ error: 'pfFolder path is not present' });
     }
 
-
-  
     // Construct the directory path based on meetId and eventId
-    const eventPhotoFolder = path.join(PF_FOLDER, meetId, eventId);
-  
-    fs.readdir(eventPhotoFolder, (err, files) => {
-      if (err) {
+    const eventPhotoFolder = path.join(pfFolder);
+
+    fs.readdir(pfFolder, (err, files) => {
+        if (err) {
         return res.status(500).json({ error: 'Error reading photos directory' });
-      }
-  
-      // Filter out non-image files (optional)
-      const imageFiles = files.filter(file => /\.(jpg|jpeg|png|gif)$/.test(file));
-  
-      // Construct URLs or base64 data for each image
-      const photos = imageFiles.map(file => {
+        }
+
+        // Filter files to match the provided filename
+        const matchingFiles = files.filter(file => file.includes(filename) && /\.(jpg|jpeg|png|gif)$/.test(file));
+        if (matchingFiles.length === 0) {
+            return res.status(404).json({ error: 'No matching photos found' });
+        }
+
+        // Construct URLs or base64 data for each image
+        const photos = matchingFiles.map(file => {
         const filePath = path.join(eventPhotoFolder, file);
         const fileData = fs.readFileSync(filePath, { encoding: 'base64' });
         return `data:image/${path.extname(file).substring(1)};base64,${fileData}`;
-      });
-  
-      res.json({ photos });
+        });
+
+        res.json({ photos });
     });
-  });
+});
   
 // All other requests go to React app
 app.get('*', (req, res) => {

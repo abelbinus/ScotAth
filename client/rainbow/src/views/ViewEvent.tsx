@@ -26,6 +26,9 @@ interface Event {
 const EventsList: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const [sortedFilteredEvents, setSortedFilteredEvents] = useState<Event[]>([]);
+  const [sortBy, setSortBy] = useState<'eventCode' | 'eventName' | 'eventTime'>('eventCode');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState<string>('');
@@ -40,6 +43,36 @@ const EventsList: React.FC = () => {
   };
 
   useEffect(() => {
+    // Function to sort events based on sortBy and sortOrder
+    const sortEvents = () => {
+      const sortedEvents = [...filteredEvents].sort((a, b) => {
+        if (sortBy === 'eventCode') {
+          return sortOrder === 'asc' ? a.eventCode.localeCompare(b.eventCode) : b.eventCode.localeCompare(a.eventCode);
+        } else if (sortBy === 'eventName') {
+          return sortOrder === 'asc' ? a.eventName.localeCompare(b.eventName) : b.eventName.localeCompare(a.eventName);
+        } else if (sortBy === 'eventTime') {
+          return sortOrder === 'asc' ? a.eventTime.localeCompare(b.eventTime) : b.eventTime.localeCompare(a.eventTime);
+        }
+        return 0;
+      });
+
+      setFilteredEvents(sortedEvents);
+    };
+
+    sortEvents();
+  }, [filteredEvents, sortBy, sortOrder]);
+
+  const handleSort = (sortBy: 'eventCode' | 'eventName' | 'eventTime') => {
+    setSortBy(sortBy);
+    // Default to ascending order when changing sortBy
+    setSortOrder('asc');
+  };
+
+  const handleSortOrder = (order: 'asc' | 'desc') => {
+    setSortOrder(order);
+  };
+
+  useEffect(() => {
     const fetchEvents = async () => {
       try {
         if (!meetId) {
@@ -50,7 +83,12 @@ const EventsList: React.FC = () => {
   
 
         const response = await getEventbyMeetId(meetId);
-        setEvents(response.data.events);
+        const events = response.data.events;
+
+        // Order events based on eventCode
+        events.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
+
+        setEvents(events);
         setFilteredEvents(response.data.events); // Initialize filteredEvents with all events
         setLoading(false);
       } catch (err) {
@@ -69,7 +107,7 @@ const EventsList: React.FC = () => {
     } else {
       const filtered = events.filter(event =>
         event.eventCode.toLowerCase().includes(value.toLowerCase()) ||
-        event.title2.toLowerCase().includes(value.toLowerCase())
+        event.eventName.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredEvents(filtered);
     }
@@ -142,6 +180,20 @@ const EventsList: React.FC = () => {
         onSearch={value => handleFilter(value)}
         style={{ marginBottom: '16px' }}
       />
+      <div>
+        <span>Sort By: </span>
+        <Select value={sortBy} onChange={(value) => handleSort(value as 'eventCode' | 'eventName' | 'eventTime')}>
+          <Option value="eventCode">Event Code</Option>
+          <Option value="eventName">Event Name</Option>
+          <Option value="eventTime">Event Time</Option>
+        </Select>
+        <Button onClick={() => handleSortOrder('asc')}>
+          {sortOrder === 'asc' ? '▲' : '△'}
+        </Button>
+        <Button onClick={() => handleSortOrder('desc')}>
+          {sortOrder === 'desc' ? '▼' : '▽'}
+        </Button>
+      </div>
       {renderEvents()}
     </div>
   );

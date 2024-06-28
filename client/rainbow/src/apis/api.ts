@@ -122,11 +122,18 @@ export function getEventFiles(folderParams: any) {
 // get all event details from folder
 export function getEventbyMeetId(meetId: any) {
     return request({
-        url: `/api/rainbow/event/${meetId}`,
+        url: `/api/rainbow/eventinfo/${meetId}`,
         method: "GET",
     })
 }
 
+// get all event details from folder
+export function getEventbyEventCode(eventCode: any) {
+    return request({
+        url: `/api/rainbow/event/${eventCode}`,
+        method: "GET",
+    })
+}
 // update all event details
 export function updateEventAPI(eventGroup: any) {
     return request({

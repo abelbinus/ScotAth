@@ -151,7 +151,7 @@ const MeetListAdmin = () => {
           message.error(errMsg);
         }
         else if(meetId == null) {
-          const errMsg = "pfOutput type is required";
+          const errMsg = "MeetID is required";
           console.log(errMsg);
           message.error(errMsg);
         }
