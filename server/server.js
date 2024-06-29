@@ -14,7 +14,8 @@ const {
     findScotathClientDir,
     findScotathDBDir,
     readTextFiles,
-    insertTextIntoDatabase,
+    insertFLTextIntoDatabase,
+    insertCSVTextIntoDatabase,
     deleteExistingEvents,
     deleteEventInfo
 } = require('./utils'); // Import utility functions
@@ -322,12 +323,12 @@ app.post('/api/login', (req, res) => {
 });
 
 app.post('/api/rainbow/event', async (req, res) => {
-    const { pfFolder, pfOutput, meetId } = req.body;
+    const { pfFolder, eventList, meetId } = req.body;
 
     if (!pfFolder) {
         return res.status(400).json({ error: 'pfFolder path is required' });
-    } else if (!pfOutput) {
-        return res.status(400).json({ error: 'pfOutput type is required' });
+    } else if (!eventList) {
+        return res.status(400).json({ error: 'eventList type is required' });
     } else if (!meetId) {
         return res.status(400).json({ error: 'meetId is missing' });
     }
@@ -335,15 +336,11 @@ app.post('/api/rainbow/event', async (req, res) => {
     let responseSent = false;
 
     try {
+        await deleteExistingEvents(meetId, db);
         await deleteEventInfo(meetId, db);
 
         const folderPath = path.resolve(pfFolder);
-        const fileContents = await readTextFiles(folderPath);
-
-        if (!responseSent) {
-            await insertTextIntoDatabase(fileContents, meetId, db);
-            res.json({ files: fileContents });
-        }
+        await readTextFiles(folderPath, eventList, meetId, db, res);
     } catch (error) {
         console.error('Error in /api/rainbow/event:', error);
         if (!responseSent) {
@@ -360,7 +357,7 @@ app.get('/api/rainbow/eventinfo/:meetId', (req, res) => {
     const query = `
       SELECT ei.*, e.* 
       FROM tbleventinfo ei 
-      JOIN tblevents e ON ei.eventCode = e.eventCode 
+      JOIN tblevents e ON ei.eventCode = e.eventCode AND ei.meetId = e.meetId
       WHERE ei.meetId = ?`;
       
     db.all(query, [meetId], (err, rows) => {
@@ -377,15 +374,15 @@ app.post('/api/rainbow/updateEventAPI', (req, res) => {
     const events = req.body;
     const updateQuery = `
       UPDATE tblevents
-      SET startListValue = ?, finishPos = ?
-      WHERE eventCode = ? AND athleteNum = ? AND familyName = ? AND firstName = ?
+      SET startPos = ?, finishPos = ?, startTime = ?, finishTime = ?
+      WHERE meetId = ? AND eventCode = ? AND athleteNum = ? AND familyName = ? AND firstName = ?
     `;
   
     db.serialize(() => {
       const stmt = db.prepare(updateQuery);
   
       events.forEach(event => {
-        stmt.run(event.startListValue, event.finishPos, event.eventCode, event.athleteNum, event.familyName, event.firstName, function(err) {
+        stmt.run(event.startPos, event.finishPos, event.startTime, event.finishTime, event.meetId, event.eventCode, event.athleteNum, event.familyName, event.firstName, function(err) {
           if (err) {
             return res.status(500).json({ error: err.message });
           }
@@ -439,5 +436,5 @@ app.post('/api/rainbow/getEventPhotoAPI/', (req, res) => {
   
 // All other requests go to React app
 app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname + '/../client/rainbow/build/index.html'));
+    res.sendFile(path.join(__dirname + 'client', 'rainbow', 'build'));
 });

@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Input, Select, Table, Button, message } from 'antd';
 import { getEventbyMeetId, updateEventAPI } from '../apis/api';
 
+import { TimePicker } from '../components';
+import moment from 'moment';
+
 const { Search } = Input;
 const { Option } = Select;
 
@@ -18,8 +21,10 @@ interface Event {
   eventName: string;
   title2: string;
   sponsor: string;
-  startListValue: string;
+  startPos: string;
   finishPos: string;
+  startTime: string;
+  finishtime: string;
 }
 
 const EventsList: React.FC = () => {
@@ -30,11 +35,42 @@ const EventsList: React.FC = () => {
   const [searchText, setSearchText] = useState<string>('');
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const meetId = localStorage.getItem('lastSelectedMeetId');
+  
+  const parseTime = (time: string) => {  
+    let hours = 0;
+    let minutes = 0;
+  
+    if (time.includes(':')) {
+      // Check for 12-hour format (AM/PM)
+      if (time.includes('AM') || time.includes('PM')) {
+        const timeParts = time.split(':');
+        const hourPart = timeParts[0];
+        const minutePart = timeParts[1].substr(0, 2); // Ensure to only take first two characters of minutes part
+        const modifier = timeParts[1].substr(2); // Grab AM/PM part
+  
+        hours = parseInt(hourPart, 10);
+        minutes = parseInt(minutePart, 10);
+  
+        if (modifier === 'PM' && hours < 12) {
+          hours += 12;
+        }
+        if (modifier === 'AM' && hours === 12) {
+          hours = 0;
+        }
+      } else { // 24-hour format
+        const timeParts = time.split(':');
+        hours = parseInt(timeParts[0], 10);
+        minutes = parseInt(timeParts[1], 10);
+      }
+    }
+  
+    return new Date(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+  };
 
   // Function to handle status change for an athlete
   const handleStatusChange = (value: string, athlete: any) => {
     const updatedEvents = events.map(event =>
-      event.athleteNum === athlete.athleteNum ? { ...event, startListValue: value } : event
+      event.athleteNum === athlete.athleteNum ? { ...event, startPos: value } : event
     );
     setEvents(updatedEvents);
     if (selectedEventCode) {
@@ -115,6 +151,34 @@ const EventsList: React.FC = () => {
     }
   };
 
+  const handleOk = (record: Event) => {
+    const updatedEvents = events.map(event => {
+      if (event.athleteNum === record.athleteNum) {
+        console.log(`Updating event for athleteNum ${record.startTime}`);
+        return { ...event, startTime: record.startTime };
+      } else {
+        return event;
+      }
+    });
+  
+    setEvents(updatedEvents);
+  };
+
+  // Handle time change in TimePicker
+  const handleStartTimeChange = (time: any, record: Event) => {
+    console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
+    const timeString = time ? time.format('hh:mm:ss:SSS A') : null; // Convert Moment object to 12-hour format string
+    const updatedEvents = events.map(event =>
+      event.athleteNum === record.athleteNum ? { ...event, startTime: timeString } : event
+    );
+    setEvents(updatedEvents);
+    if (selectedEventCode) {
+      setFilteredEvents(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+    } else {
+      setFilteredEvents(updatedEvents);
+    }
+  };
+
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(events);
 
@@ -145,14 +209,15 @@ const EventsList: React.FC = () => {
               { title: 'Family Name', dataIndex: 'familyName', key: 'familyName', width: 200 },
               { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
               { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
-              { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub' },
+              { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
               {
                 title: 'Status',
-                dataIndex: 'startListValue',
-                key: 'startListValue',
+                dataIndex: 'startPos',
+                key: 'startPos',
+                width: 100,
                 render: (text: string, record: any) => (
                   <Select
-                    defaultValue={record.startListValue || 'Select'}
+                    defaultValue={record.startPos || 'Select'}
                     style={{ width: 120 }}
                     onChange={(value) => handleStatusChange(value, record)}
                   >
@@ -163,13 +228,28 @@ const EventsList: React.FC = () => {
                   </Select>
                 ),
               },
+              {
+                title: 'Start Time',
+                dataIndex: 'startTime',
+                key: 'startTime',
+                width: 250,
+                render: (text: string, record: any) => (
+
+                  <TimePicker
+                    value={record.startTime ? moment(record.startTime, 'hh:mm:ss:SSS A') : null} // Provide default moment object in 12-hour format
+                    onChange={(time) => handleStartTimeChange(time, record)}
+                    format="hh:mm:ss:SSS A"
+                    use12Hours
+                  />
+                ),
+              }
             ]}
             rowKey="athleteNum"
             pagination={false}
             scroll={{ x: 'max-content' }}
           />
         )}
-        <div style={{ alignSelf: 'flex-end', marginTop: '25px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '25px'}}>
           <Button type="primary" onClick={handleSave}>Save</Button>
         </div>
       </div>

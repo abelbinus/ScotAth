@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { RouterProvider } from "react-router-dom"
+import { RouterProvider } from "react-router-dom";
 import { IUser } from "./modals/User";
-import router from "./router/router.tsx"
+import router from "./router/router.tsx";
+
+
 
 interface IUserContext {
   user: IUser | null;

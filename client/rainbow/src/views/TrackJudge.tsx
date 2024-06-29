@@ -161,16 +161,17 @@ const TrackJudge: React.FC = () => {
               { title: 'Family Name', dataIndex: 'familyName', key: 'familyName', width: 200 },
               { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
               { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
-              { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub' },
+              { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
               {
                 title: 'Status',
                 dataIndex: 'startListValue',
                 key: 'startListValue',
+                width: 100,
                 render: (text: string, record: any) => (
                   <Select
                     style={{ width: 120 }}
                     onChange={(value) => handleStatusChange(value, record)}
-                    value={selectedValues[record.athleteNum] || record.startListValue}
+                    value={selectedValues[record.athleteNum] || record.startListValue || 'Select'}
                   >
                     {getUniqueAthleteOptions(filteredEvents).map(optionValue => (
                       <Option key={optionValue} value={optionValue}>
@@ -186,7 +187,7 @@ const TrackJudge: React.FC = () => {
             scroll={{ x: 'max-content' }}
           />
         )}
-        <div style={{ alignSelf: 'flex-end', marginTop: '25px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '25px'}}>
           <Button type="primary" onClick={handleSave}>Save</Button>
         </div>
       </div>

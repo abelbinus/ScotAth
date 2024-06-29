@@ -109,6 +109,14 @@ const Home: React.FC = () => {
     setDrawerVisible(false);
   };
 
+  const onLogoClick = () => {
+    if (user?.userRole === "admin") {
+      navigate("/admin-dashboard");
+    } else if (user?.userRole === "volunteer") {
+      navigate("/view-meet");
+    }
+  };
+
   return (
     <Layout style={{ minHeight: "100vh", backgroundColor: "#162c66", backgroundSize: "cover" }}>
       <Header style={{
@@ -130,6 +138,7 @@ const Home: React.FC = () => {
               src="/images/logo.png"
               alt="Logo"
               style={{ height: "70px" }}
+              onClick={onLogoClick}
             />
           )}
         </div>

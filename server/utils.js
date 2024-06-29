@@ -38,14 +38,14 @@ function findScotathDBDir(currentDir) {
 
 // Inside your route handler for updating start lists
 
-function deleteExistingEvents(eventCode, db) {
+function deleteExistingEvents(meetID, db) {
     return new Promise((resolve, reject) => {
         // Delete existing records from tblEvent
-        let sqlDeleteEvent = `DELETE FROM tblevents WHERE eventCode = ?`;
-        db.run(sqlDeleteEvent, [eventCode], function(err) {
+        let sqlDeleteEvent = `DELETE FROM tbleventinfo WHERE MeetID = ?`;
+        db.run(sqlDeleteEvent, [meetID], function(err) {
             if (err) {
-            console.error('Error deleting records from tblEvent:', err.message);
-            return reject({ error: 'Failed to delete records from tblevents' });
+            console.error('Error deleting records from tbleventinfo:', err.message);
+            return reject({ error: 'Failed to delete records from tbleventinfo' });
             }
             resolve();
         });
@@ -65,11 +65,9 @@ function deleteEventInfo(meetID, db) {
         });
     });
 }
-
-async function readTextFiles(folderPath) {
+async function readText(folderPath, fileExtension) {
     const files = await fs.promises.readdir(folderPath);
-    const textFiles = files.filter(file => path.extname(file).toLowerCase() === '.csv');
-
+    const textFiles = files.filter(file => path.extname(file).toLowerCase() === fileExtension.toLowerCase());
     if (textFiles.length < 1) {
         throw new Error("No text files found in the provided directory");
     }
@@ -88,11 +86,30 @@ async function readTextFiles(folderPath) {
         logger.info(`Text file ${file} successfully processed.`);
         fileContents.push({ fileName: file, data: content });
     }
-
     return fileContents;
-    }
+}
+
+async function readTextFiles(folderPath, eventList, meetId, db, res) {
+    if(eventList === 'FL') {
+        const fileExtension = '.lynx.evt';
+        const fileExtensionPpl = '.lynx.ppl';
+        const fileContents = readText(folderPath, fileExtension);
+        const fileContentsPpl = readText(folderPath, fileExtensionPpl);
+        insertFLTextIntoDatabase(fileContents, meetId, db);
+        res.json({ files: fileContents });
+    } else if(eventList === 'OMEGA' || eventList === 'HYTEK OMEGA') {
+        const fileExtension = '.csv';
+        let fileContents = [];
+        fileContents = await readText(folderPath, fileExtension);
+        insertCSVTextIntoDatabase(fileContents, meetId, db);
+        res.json({ files: fileContents });
+    } 
+}
+
+async function insertFLTextIntoDatabase(contents, meetId, db) {
+}
 // Function to insert content into SQLite database
-async function insertTextIntoDatabase(contents, meetId, db) {
+async function insertCSVTextIntoDatabase(contents, meetId, db) {
     for (const content of contents) {
         const { fileName, data } = content;
         const rows = data.split('\n');
@@ -111,7 +128,6 @@ async function insertTextIntoDatabase(contents, meetId, db) {
                 ] = [
                     currentEvent[0], currentEvent[1], currentEvent[2], currentEvent[8], currentEvent[9], currentEvent[10], currentEvent[11]
                 ];
-                deleteExistingEvents(eventCode, db);
                 const athleteSql = `
                     INSERT INTO tbleventinfo (meetId, eventCode, eventDate, eventTime, eventLength, eventName, title2, sponsor)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -134,11 +150,11 @@ async function insertTextIntoDatabase(contents, meetId, db) {
                     columns[4], columns[5], columns[6], columns[7]
                 ];
                 const sql = `
-                    INSERT INTO tblevents (eventCode, laneOrder, athleteNum, familyName, firstName, athleteClub)
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    INSERT INTO tblevents (meetId, eventCode, laneOrder, athleteNum, familyName, firstName, athleteClub)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                 `;
 
-                db.run(sql, [eventCode, laneOrder, athleteNum, familyName, firstName, athleteClub], function(err) {
+                db.run(sql, [meetId, eventCode, laneOrder, athleteNum, familyName, firstName, athleteClub], function(err) {
                     if (err) {
                         logger.error(`Error inserting row into database from file ${fileName}:`, err);
                     } else {
@@ -154,7 +170,8 @@ module.exports = {
     findScotathClientDir,
     findScotathDBDir,
     readTextFiles,
-    insertTextIntoDatabase,
+    insertFLTextIntoDatabase,
+    insertCSVTextIntoDatabase,
     deleteExistingEvents,
     deleteEventInfo
 };

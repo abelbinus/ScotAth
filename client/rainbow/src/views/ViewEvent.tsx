@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Collapse, Input, Select, Table, Button, message } from 'antd';
 import { getEventbyMeetId, updateEventAPI } from '../apis/api';
 
@@ -26,8 +26,7 @@ interface Event {
 const EventsList: React.FC = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-  const [sortedFilteredEvents, setSortedFilteredEvents] = useState<Event[]>([]);
-  const [sortBy, setSortBy] = useState<'eventCode' | 'eventName' | 'eventTime'>('eventCode');
+  const [sortBy, setSortBy] = useState<'eventCode' | 'eventName' | 'eventDate'>('eventCode');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,34 +41,77 @@ const EventsList: React.FC = () => {
     setFilteredEvents(updatedEvents); // Also update filtered events
   };
 
-  useEffect(() => {
-    // Function to sort events based on sortBy and sortOrder
-    const sortEvents = () => {
-      const sortedEvents = [...filteredEvents].sort((a, b) => {
-        if (sortBy === 'eventCode') {
-          return sortOrder === 'asc' ? a.eventCode.localeCompare(b.eventCode) : b.eventCode.localeCompare(a.eventCode);
-        } else if (sortBy === 'eventName') {
-          return sortOrder === 'asc' ? a.eventName.localeCompare(b.eventName) : b.eventName.localeCompare(a.eventName);
-        } else if (sortBy === 'eventTime') {
-          return sortOrder === 'asc' ? a.eventTime.localeCompare(b.eventTime) : b.eventTime.localeCompare(a.eventTime);
+  const parseDateTime = (date: string, time: string) => {
+    let separator = '.';
+    if (date.includes(',')) {
+      separator = ',';
+    } else if (date.includes('-')) {
+      separator = '-';
+    }
+  
+    const dateParts = date.split(separator);
+    const day = dateParts[0];
+    const month = dateParts[1];
+    const year = dateParts[2];
+  
+    let hours = 0;
+    let minutes = 0;
+  
+    if (time.includes(':')) {
+      // Check for 12-hour format (AM/PM)
+      if (time.includes('AM') || time.includes('PM')) {
+        const timeParts = time.split(':');
+        const hourPart = timeParts[0];
+        const minutePart = timeParts[1].substr(0, 2); // Ensure to only take first two characters of minutes part
+        const modifier = timeParts[1].substr(2); // Grab AM/PM part
+  
+        hours = parseInt(hourPart, 10);
+        minutes = parseInt(minutePart, 10);
+  
+        if (modifier === 'PM' && hours < 12) {
+          hours += 12;
         }
-        return 0;
+        if (modifier === 'AM' && hours === 12) {
+          hours = 0;
+        }
+      } else { // 24-hour format
+        const timeParts = time.split(':');
+        hours = parseInt(timeParts[0], 10);
+        minutes = parseInt(timeParts[1], 10);
+      }
+    }
+  
+    return new Date(`${year}-${month}-${day}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+  };
+
+  const sortedAndFilteredEvents = useMemo(() => {
+    let sortedEvents = [...filteredEvents];
+    if (sortBy === 'eventCode') {
+      sortedEvents.sort((a, b) => sortOrder === 'asc' ? a.eventCode.localeCompare(b.eventCode) : b.eventCode.localeCompare(a.eventCode));
+    } else if (sortBy === 'eventName') {
+      sortedEvents.sort((a, b) => sortOrder === 'asc' ? a.eventName.localeCompare(b.eventName) : b.eventName.localeCompare(a.eventName));
+    } else if (sortBy === 'eventDate') {
+      sortedEvents.sort((a, b) => {
+        const dateTimeA = parseDateTime(a.eventDate, a.eventTime);
+        const dateTimeB = parseDateTime(b.eventDate, b.eventTime);
+        return sortOrder === 'asc' ? dateTimeA.getTime() - dateTimeB.getTime() : dateTimeB.getTime() - dateTimeA.getTime();
       });
+    }
 
-      setFilteredEvents(sortedEvents);
-    };
+    return sortedEvents.filter(event =>
+      event.eventCode.toLowerCase().includes(searchText.toLowerCase()) ||
+      event.eventName.toLowerCase().includes(searchText.toLowerCase())
+    );
+  }, [filteredEvents, searchText, sortBy, sortOrder]);
 
-    sortEvents();
-  }, [filteredEvents, sortBy, sortOrder]);
-
-  const handleSort = (sortBy: 'eventCode' | 'eventName' | 'eventTime') => {
+  const handleSort = (sortBy: 'eventCode' | 'eventName' | 'eventDate') => {
     setSortBy(sortBy);
     // Default to ascending order when changing sortBy
     setSortOrder('asc');
   };
 
-  const handleSortOrder = (order: 'asc' | 'desc') => {
-    setSortOrder(order);
+  const handleSortOrder = () => {
+    setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
   };
 
   useEffect(() => {
@@ -115,7 +157,6 @@ const EventsList: React.FC = () => {
 
   const handleMeetSelection = (meetId: string) => {
     localStorage.setItem("lastSelectedMeetId", meetId);
-    console.log(meetId);
   };
 
   // Function to handle save operation
@@ -131,7 +172,7 @@ const EventsList: React.FC = () => {
   const renderEvents = () => {
     const eventGroups: { [key: string]: Event[] } = {};
 
-    filteredEvents.forEach(event => {
+    sortedAndFilteredEvents.forEach(event => {
       if (!eventGroups[event.eventCode]) {
         eventGroups[event.eventCode] = [];
       }
@@ -145,7 +186,16 @@ const EventsList: React.FC = () => {
     return (
       <Collapse accordion>
         {Object.keys(eventGroups).map(eventCode => (
-          <Panel header={`${eventCode} - ${eventGroups[eventCode][0]?.eventName}`} key={eventCode}>
+          <Panel 
+              header={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>{`${eventCode} - ${eventGroups[eventCode][0]?.eventName}`}</span>
+                  <span>{`${eventGroups[eventCode][0]?.eventDate} - ${eventGroups[eventCode][0]?.eventTime}`}</span>
+                </div>
+              }
+              key={eventCode}
+            >
+    
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <Table
                 dataSource={eventGroups[eventCode]}
@@ -180,18 +230,15 @@ const EventsList: React.FC = () => {
         onSearch={value => handleFilter(value)}
         style={{ marginBottom: '16px' }}
       />
-      <div>
-        <span>Sort By: </span>
-        <Select value={sortBy} onChange={(value) => handleSort(value as 'eventCode' | 'eventName' | 'eventTime')}>
+      <div style={{ marginBottom: '16px' }}>
+        <span style={{ marginRight: '8px' }}>Sort By:</span>
+        <Select value={sortBy} onChange={(value) => handleSort(value as 'eventCode' | 'eventName' | 'eventDate')}>
           <Option value="eventCode">Event Code</Option>
           <Option value="eventName">Event Name</Option>
-          <Option value="eventTime">Event Time</Option>
+          <Option value="eventDate">Event Date</Option>
         </Select>
-        <Button onClick={() => handleSortOrder('asc')}>
-          {sortOrder === 'asc' ? '▲' : '△'}
-        </Button>
-        <Button onClick={() => handleSortOrder('desc')}>
-          {sortOrder === 'desc' ? '▼' : '▽'}
+        <Button onClick={handleSortOrder} style={{ marginLeft: '8px' }}>
+          {sortOrder === 'asc' ? '▲' : '▼'}
         </Button>
       </div>
       {renderEvents()}

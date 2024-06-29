@@ -138,15 +138,15 @@ const MeetListAdmin = () => {
     return <div>No access permission</div>;
   }
 
-  const handleUpdateClick = async (pfFolder: string, pfOutput: string, meetId: number) => {
+  const handleUpdateClick = async (pfFolder: string, eventList: string, meetId: number) => {
     try {
         if(pfFolder == null || pfFolder == "") {
           const errMsg = "pfFolder path is required";
           console.log(errMsg);
           message.error(errMsg);
         }
-        else if(pfOutput == null || pfOutput == "") {
-          const errMsg = "pfOutput type is required";
+        else if(eventList == null || eventList == "") {
+          const errMsg = "eventList type is required";
           console.log(errMsg);
           message.error(errMsg);
         }
@@ -158,7 +158,7 @@ const MeetListAdmin = () => {
         else {
           const folderParams = {
               pfFolder: pfFolder,
-              pfOutput: pfOutput,
+              eventList: eventList,
               meetId: meetId
           }
           const response = await getEventFiles(folderParams);
@@ -245,7 +245,7 @@ const MeetListAdmin = () => {
       dataIndex: "action",
       render: (_, record) => (
         <Space size="middle" direction="vertical" className="action-buttons">
-          <Button type="primary" className="action-button" onClick={() => handleUpdateClick(record.pfFolder, record.pfOutput, record.meetId)}>
+          <Button type="primary" className="action-button" onClick={() => handleUpdateClick(record.pfFolder, record.eventList, record.meetId)}>
             Update Events
           </Button>
           <Button className="action-button" onClick={() => onEditClick(record)}>Edit</Button>
@@ -487,7 +487,7 @@ const MeetListAdmin = () => {
             </Input.Group>
           </Form.Item>
           <Form.Item name="eventList" label="Event List">
-            <Select defaultValue={editingMeet?.pfOutput || 'FL'}>
+            <Select defaultValue={editingMeet?.eventList || 'FL'}>
               <Select.Option value="FL">FL</Select.Option>
               <Select.Option value="OMEGA">OMEGA</Select.Option>
               <Select.Option value="HYTEK OMEGA">HYTEK OMEGA</Select.Option>
