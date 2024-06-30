@@ -138,7 +138,7 @@ const MeetListAdmin = () => {
     return <div>No access permission</div>;
   }
 
-  const handleUpdateClick = async (pfFolder: string, eventList: string, meetId: number) => {
+  const handleUpdateClick = async (pfFolder: string, intFolder: string, eventList: string, meetId: number) => {
     try {
         if(pfFolder == null || pfFolder == "") {
           const errMsg = "pfFolder path is required";
@@ -159,16 +159,51 @@ const MeetListAdmin = () => {
           const folderParams = {
               pfFolder: pfFolder,
               eventList: eventList,
+              intFolder: intFolder,
               meetId: meetId
           }
           const response = await getEventFiles(folderParams);
-          message.success("Updated Start List Successfully");
-          setFileList(response.data.files);
-          setIsModalVisible(true);
+          if(response.data.status == 'failure') {
+            if (response.data.error) {
+                // If there's an error message, handle it
+                try{
+                  if(response.data.error.copyError) {
+                    const errMsg = response.data.error.copyError || "Failed to copy startlist from interface folder";
+                    console.error(errMsg);
+                    message.error(errMsg);
+                  }
+                } catch (error: any) {
+                }
+                try{
+                  if(response.data.error.dbError) {
+                    const errMsg = response.data.error.dbError || "Failed to update database";
+                    console.error(errMsg);
+                    message.error(errMsg);
+                  }
+                } catch (error: any) {
+                }
+                const errMsg = response.data.error.message || "Failed to update start list";
+                console.error(errMsg);
+                message.error(errMsg);
+            }
+          } else {
+              // Success case: Display success message and update state
+              try{
+                if(response.data.error.copyError) {
+                  const errMsg = response.data.error.copyError || "Failed to copy startlist from interface folder";
+                  console.error(errMsg);
+                  message.error(errMsg);
+                }
+              } catch (error: any) {
+              }
+              message.success(response.data.message || "Updated Start List Successfully");
+              setFileList(response.data.files);
+              setIsModalVisible(true);
+          }
         }
         } catch (error: any) {
         const errMsg = error.response?.data?.error || "Failed to fetch files";
-        console.error(errMsg);
+        console.error(error);
         message.error(errMsg);
         }
     };
@@ -245,7 +280,7 @@ const MeetListAdmin = () => {
       dataIndex: "action",
       render: (_, record) => (
         <Space size="middle" direction="vertical" className="action-buttons">
-          <Button type="primary" className="action-button" onClick={() => handleUpdateClick(record.pfFolder, record.eventList, record.meetId)}>
+          <Button type="primary" className="action-button" onClick={() => handleUpdateClick(record.pfFolder, record.intFolder, record.eventList, record.meetId)}>
             Update Events
           </Button>
           <Button className="action-button" onClick={() => onEditClick(record)}>Edit</Button>

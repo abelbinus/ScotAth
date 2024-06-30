@@ -47,7 +47,6 @@ const ViewMeet: React.FC = () => {
 
   const handleMeetSelection = (meetId: string) => {
     localStorage.setItem("lastSelectedMeetId", meetId);
-    console.log(meetId);
     navigate('/view-event', { state: { meetId } });
   };
 

@@ -28,7 +28,7 @@ const TrackJudge: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const [selectedValues, setSelectedValues] = useState<{ [key: string]: string }>({}); // Track selected status values for each athlete
-  const meetId = localStorage.getItem('lastSelectedMeetId');
+  const meetid = localStorage.getItem('lastSelectedMeetId');
 
   // Function to handle status change for an athlete
   const handleStatusChange = (value: string, athlete: any) => {
@@ -49,13 +49,13 @@ const TrackJudge: React.FC = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        if (!meetId) {
+        if (!meetid) {
           setError('Meet ID is not provided');
           setLoading(false);
           return; // Exit early if meetId is null or undefined
         }
 
-        const response = await getEventbyMeetId(meetId);
+        const response = await getEventbyMeetId(meetid);
         const events = response.data.events;
 
         // Order events based on eventCode
@@ -80,7 +80,7 @@ const TrackJudge: React.FC = () => {
     };
 
     fetchEvents();
-  }, [meetId]);
+  }, [meetid]);
 
   const handleFilter = (value: string) => {
     const eventFound = events.find(event => event.eventCode.toLowerCase() === value.toLowerCase());
@@ -199,7 +199,7 @@ const TrackJudge: React.FC = () => {
 
   return (
     <div>
-      <h2>Events List for Meet ID: {meetId}</h2>
+      <h2>Events List for Meet ID: {meetid}</h2>
       {renderEvents()}
     </div>
   );

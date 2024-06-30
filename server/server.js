@@ -323,7 +323,7 @@ app.post('/api/login', (req, res) => {
 });
 
 app.post('/api/rainbow/event', async (req, res) => {
-    const { pfFolder, eventList, meetId } = req.body;
+    const { pfFolder, intFolder, eventList, meetId } = req.body;
 
     if (!pfFolder) {
         return res.status(400).json({ error: 'pfFolder path is required' });
@@ -340,7 +340,7 @@ app.post('/api/rainbow/event', async (req, res) => {
         await deleteEventInfo(meetId, db);
 
         const folderPath = path.resolve(pfFolder);
-        await readTextFiles(folderPath, eventList, meetId, db, res);
+        await readTextFiles(folderPath, intFolder, eventList, meetId, db, res);
     } catch (error) {
         console.error('Error in /api/rainbow/event:', error);
         if (!responseSent) {
@@ -375,14 +375,14 @@ app.post('/api/rainbow/updateEventAPI', (req, res) => {
     const updateQuery = `
       UPDATE tblevents
       SET startPos = ?, finishPos = ?, startTime = ?, finishTime = ?
-      WHERE meetId = ? AND eventCode = ? AND athleteNum = ? AND familyName = ? AND firstName = ?
+      WHERE meetId = ? AND eventCode = ? AND athleteNum = ? AND lastName = ? AND firstName = ?
     `;
   
     db.serialize(() => {
       const stmt = db.prepare(updateQuery);
   
       events.forEach(event => {
-        stmt.run(event.startPos, event.finishPos, event.startTime, event.finishTime, event.meetId, event.eventCode, event.athleteNum, event.familyName, event.firstName, function(err) {
+        stmt.run(event.startPos, event.finishPos, event.startTime, event.finishTime, event.meetId, event.eventCode, event.athleteNum, event.lastName, event.firstName, function(err) {
           if (err) {
             return res.status(500).json({ error: err.message });
           }

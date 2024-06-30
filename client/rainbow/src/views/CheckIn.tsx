@@ -34,7 +34,7 @@ const EventsList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState<string>('');
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
-  const meetId = localStorage.getItem('lastSelectedMeetId');
+  const meetid = localStorage.getItem('lastSelectedMeetId');
   
   const parseTime = (time: string) => {  
     let hours = 0;
@@ -83,13 +83,13 @@ const EventsList: React.FC = () => {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        if (!meetId) {
+        if (!meetid) {
           setError('Meet ID is not provided');
           setLoading(false);
           return; // Exit early if meetId is null or undefined
         }
 
-        const response = await getEventbyMeetId(meetId);
+        const response = await getEventbyMeetId(meetid);
         const events = response.data.events;
 
         // Order events based on eventCode
@@ -114,7 +114,7 @@ const EventsList: React.FC = () => {
     };
 
     fetchEvents();
-  }, [meetId]);
+  }, [meetid]);
 
   const handleFilter = (value: string) => {
     setSearchText(value);
@@ -261,7 +261,7 @@ const EventsList: React.FC = () => {
 
   return (
     <div>
-      <h2>Events List for Meet ID: {meetId}</h2>
+      <h2>Events List for Meet ID: {meetid}</h2>
       {renderEvents()}
     </div>
   );

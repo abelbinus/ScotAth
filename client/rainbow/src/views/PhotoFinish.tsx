@@ -30,19 +30,19 @@ const Photofinish: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState<string>('');
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
-  const meetId = localStorage.getItem('lastSelectedMeetId');
+  const meetid = localStorage.getItem('lastSelectedMeetId');
   const [photos, setPhotos] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        if (!meetId) {
+        if (!meetid) {
           setError('Meet ID is not provided');
           setLoading(false);
           return; // Exit early if meetId is null or undefined
         }
 
-        const response = await getEventbyMeetId(meetId);
+        const response = await getEventbyMeetId(meetid);
         const events = response.data.events;
 
         // Order events based on eventCode
@@ -68,14 +68,14 @@ const Photofinish: React.FC = () => {
 
     fetchEvents();
 
-  }, [meetId]);
+  }, [meetid]);
 
   const fetchPhotos = async () => {
     try {
-        if (!meetId || !selectedEventCode) {
+        if (!meetid || !selectedEventCode) {
           throw new Error('Meet ID or event code is not provided');
         }
-        const response = await getMeetByIdAPI(meetId);
+        const response = await getMeetByIdAPI(meetid);
         const pfFolder = response.data.meet.pfFolder;
         const pfOutput = response.data.meet.pfOutput;
         if(!pfFolder) {
@@ -211,7 +211,7 @@ const generateFilename = (eventCode: string): string => {
 
   return (
     <div>
-      <h2>Events List for Meet ID: {meetId}</h2>
+      <h2>Events List for Meet ID: {meetid}</h2>
       {renderEvents()}
     </div>
   );

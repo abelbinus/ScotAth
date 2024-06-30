@@ -202,8 +202,8 @@ const Home: React.FC = () => {
               placement="right"
               closable={true}
               onClose={closeDrawer}
-              visible={drawerVisible}
-              bodyStyle={{ padding: 0 }}
+              open={drawerVisible}
+              style={{ padding: 0 }}
             >
               <Menu
                 mode="inline"
