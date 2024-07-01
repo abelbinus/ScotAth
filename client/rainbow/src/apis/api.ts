@@ -128,6 +128,15 @@ export function getEventbyMeetId(meetId: any) {
 }
 
 // get all event details from folder
+export function getPFEventbyMeetId(folderParams: any) {
+    return request({
+        url: `/api/rainbow/pfevent/`,
+        method: "POST",
+        data: folderParams,
+    })
+}
+
+// get all event details from folder
 export function getEventbyEventCode(eventCode: any) {
     return request({
         url: `/api/rainbow/event/${eventCode}`,

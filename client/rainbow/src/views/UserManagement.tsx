@@ -65,7 +65,6 @@ const User = () => {
     try {
       const response: any = await getAllUsersAPI();
       const userList: any[] = response.data;
-      console.log(userList);
 
       let users = userList.map((user): IUser => {
         return {
@@ -134,7 +133,6 @@ const User = () => {
         userMob: user.userMob,
         userAddress: user.userAddress
       };
-      console.log(userParams);
       await addUserAPI(userParams);
       message.success("User added successfully");
 

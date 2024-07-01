@@ -4,6 +4,15 @@ const os = require('os');
 const logger = require('./logger');
 const { log, count } = require('console');
 
+// async function fileExists(filePath) {
+//     try {
+//         await fs.access(filePath);
+//         return true;
+//     } catch (error) {
+//         return false;
+//     }
+// }
+
 function findScotathClientDir(currentDir) {
     // Check if both 'sqlite' and 'client' directories exist in currentDir
     const clientExists = fs.existsSync(path.join(currentDir, 'client'));
@@ -65,7 +74,14 @@ function deleteEventInfo(meetID, db) {
         });
     });
 }
-async function readText(folderPath, fileName) {
+
+function makeEventNum(event, round, heat) {
+    const firstbit = String(event).padStart(3, '0');
+    const lastbit = String(heat).padStart(2, '0');
+    return `${firstbit}-${round}${lastbit}`;
+}
+
+async function readFile(folderPath, fileName) {
     const filePath = path.join(folderPath, fileName);
 
     try {
@@ -97,45 +113,8 @@ async function copyFile(srcFolder, destFolder, fileName) {
         return false;
     }
 }
-function getEventsResponse(failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, copyError, dbError, res) {
-    if (failedFlagEventInfo > 0 && failedFlagEvents > 0) {
-        dbError = `Database error inserting event info and events: ${failedFlagEventInfo} eventinfo errors out of ${totalFlagEventinfo} rows and ${failedFlagEvents} event errors out of ${totalFlagEvents} rows`;
-    } else if (failedFlagEventInfo > 0) {
-        dbError = `Database error inserting event info: ${failedFlagEventInfo} errors out of ${totalFlagEventinfo} rows`;
-    } else if (failedFlagEvents > 0) {
-        dbError = `Database error inserting events: ${failedFlagEvents} errors out of ${totalFlagEvents} rows`;
-    }
-    if (copyError && dbError) {
-        res.json({
-            error: {
-                message: `Failed to update start list.`,
-                copyError,
-                dbError
-            },
-            status: 'failure'
-        });
-    } else if (copyError) {
-        res.json({
-            error: {
-                copyError
-            },
-            message: `Updated existing start list successfully.`,
-            status: 'success'
-        });
-    } else if (dbError) {
-        res.json({
-            error: {
-                message: `Failed to update start list.`,
-                dbError
-            },
-            status: 'failure'
-        });
-    } else {
-        res.json({message: 'Updated start list successfully', status: 'success'});
-    }
 
-}
-async function readTextFiles(folderPath, intFolder, eventList, meetId, db, res) {
+async function readEventListFiles (folderPath, intFolder, eventList, meetId, db, res) {
     let fileContents = [];
     let evtContents = [];
     let pplContents = [];
@@ -147,10 +126,10 @@ async function readTextFiles(folderPath, intFolder, eventList, meetId, db, res) 
         const fileNamePpl = 'lynx.ppl';
 
         try {
-            evtContents = await readText(folderPath, fileName);
-            pplContents = await readText(folderPath, fileNamePpl);
-            [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertFLTextIntoDatabase(evtContents, pplContents, meetId, db);
-            getEventsResponse(failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, copyError, dbError, res);
+            evtContents = await readFile(folderPath, fileName);
+            pplContents = await readFile(folderPath, fileNamePpl);
+            [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertFLIntoDatabase(evtContents, pplContents, meetId, db);
+            postEventsResponse(failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, copyError, dbError, res);
         } catch (error) {
             console.log(error);
             if(copyError) {
@@ -187,9 +166,9 @@ async function readTextFiles(folderPath, intFolder, eventList, meetId, db, res) 
         }
 
         try {
-            fileContents = await readText(folderPath, fileName);
-            [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertCSVTextIntoDatabase(fileContents, meetId, db);
-            getEventsResponse(failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, copyError, dbError, res);
+            fileContents = await readFile(folderPath, fileName);
+            [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertCSVIntoDatabase(fileContents, meetId, db);
+            postEventsResponse(failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, copyError, dbError, res);
 
         } catch (error) {
             if(copyError) {
@@ -215,22 +194,61 @@ async function readTextFiles(folderPath, intFolder, eventList, meetId, db, res) 
     }
 }
 
-// async function fileExists(filePath) {
-//     try {
-//         await fs.access(filePath);
-//         return true;
-//     } catch (error) {
-//         return false;
-//     }
-// }
-function makeEventNum(event, round, heat) {
-    const firstbit = String(event).padStart(3, '0');
-    const lastbit = String(heat).padStart(2, '0');
-    return `${firstbit}-${round}${lastbit}`;
+async function readPFFiles(folderPath, pfOutput, meetId, db, res) {
+    let extension;
+    
+    if (pfOutput === 'lif') {
+        extension = '.lif';
+    } else if (pfOutput === 'cl') {
+        extension = '.cl';
+    } else {
+        throw new Error('Invalid pfOutput value. Expected "lif" or "cl".');
+    }
+
+    try {
+        const files = await fs.promises.readdir(folderPath);
+        const targetFiles = files.filter(file => path.extname(file) === extension);
+        let failedFlagEventInfo = 0;
+        let failedFlagEvents = 0;
+        let totalFlagEventinfo = 0; // Total number of event info rows
+        let totalFlagEvents = 0; // Total number of event rows
+        let dbError = null;
+        for (const file of targetFiles) {
+            const content = await readFile(folderPath, file);
+            // Process the content as needed, e.g., insert into the database
+            [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertPFIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db);
+        }
+
+        if (failedFlagEventInfo > 0 && failedFlagEvents > 0) {
+            dbError = `Database error updating event info and events: ${failedFlagEventInfo} eventinfo errors out of ${totalFlagEventinfo} rows and ${failedFlagEvents} event errors out of ${totalFlagEvents} rows`;
+        } else if (failedFlagEventInfo > 0) {
+            dbError = `Database error updating event info: ${failedFlagEventInfo} errors out of ${totalFlagEventinfo} rows`;
+        } else if (failedFlagEvents > 0) {
+            dbError = `Database error updating events: ${failedFlagEvents} errors out of ${totalFlagEvents} rows`;
+        }
+        if (dbError) {
+            res.json({
+                error: {
+                    message: `Failed to update phtofinish.`,
+                    dbError
+                },
+                status: 'failure'
+            });
+        } else {
+            res.json({message: 'Updated photofinish results successfully', status: 'success'});
+        }
+    } catch (error) {
+        logger.error(`Error reading file: ${error.message}`);
+        res.json({
+            error: {
+                message: `Failed to update photofinish.`
+            },
+            status: 'failure'
+        });
+    }
 }
 
-
-async function insertFLTextIntoDatabase(evtContents, pplContents, meetId, db) {
+async function insertFLIntoDatabase(evtContents, pplContents, meetId, db) {
     const pplLines = pplContents.split('\n');
     const evtLines = evtContents.split('\n');
     let ppl_firstName = {};
@@ -271,21 +289,7 @@ async function insertFLTextIntoDatabase(evtContents, pplContents, meetId, db) {
             if(numColumns > 9) {
                 eventLength = currentEvent[9];
             }
-            const eventInfoSql = `
-                INSERT INTO tbleventinfo (meetId, eventCode, eventLength, eventName)
-                VALUES (?, ?, ?, ?)
-            `;
-            db.run(eventInfoSql, [meetId, eventCode, eventLength, eventName], function(err) {
-                totalFlagEventinfo++;
-                if (err) {
-                    failedFlagEventInfo++;
-                    logger.error(`Error inserting event info into database:`, err);
-                    return 1;
-                } else {
-                    logger.info(`Event Info inserted successfully into database: ${eventCode}`);
-                }
-            });
-        
+            totalFlagEventinfo, failedFlagEventInfo = await dbQueryTblEventInfo(eventCode, null, null, eventLength, eventName, null, null, totalFlagEventinfo, failedFlagEventInfo, meetId, db);        
         }
         else {
             const eventCode = makeEventNum(currentEvent[0], currentEvent[1], currentEvent[2]);
@@ -311,20 +315,7 @@ async function insertFLTextIntoDatabase(evtContents, pplContents, meetId, db) {
                     }
                 }
                 if(laneOrder.length > 0) {
-                    const sql = `
-                        INSERT INTO tblevents (meetId, eventCode, laneOrder, athleteNum, lastName, firstName, athleteClub)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    `;
-
-                    db.run(sql, [meetId, eventCode, laneOrder, athleteNum, lastName, firstName, athleteClub], function(err) {
-                        totalFlagEvents++;
-                        if (err) {
-                            failedFlagEvents++;
-                            logger.error(`Error inserting row into database from file:`, err);
-                        } else {
-                            logger.info(`Row inserted successfully into database for event ${eventCode}`);
-                        }
-                    });
+                    totalFlagEvents, failedFlagEvents = await dbQueryTblEvents(eventCode, laneOrder, athleteNum, lastName, firstName, athleteClub, totalFlagEvents, failedFlagEvents, meetId, db);
                 }
             }
             
@@ -333,8 +324,9 @@ async function insertFLTextIntoDatabase(evtContents, pplContents, meetId, db) {
 
     return [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents];
 }
+
 // Function to insert content into SQLite database
-async function insertCSVTextIntoDatabase(content, meetId, db) {
+async function insertCSVIntoDatabase(content, meetId, db) {
     const data = content;
     const rows = data.split('\n');
 
@@ -345,55 +337,15 @@ async function insertCSVTextIntoDatabase(content, meetId, db) {
     let totalFlagEvents = 0; // Total number of event rows
     for (const row of rows) {
         const columns = row.split(';').map(col => col.trim());
-        let numColumns = columns.length;
         if (columns[0] && columns[0].includes('Event')) { // New event header row
             currentEvent = columns;
         } 
         else if (columns[0]) {
             currentEvent = columns;
-            const [
-                eventCode, eventDate, eventTime, eventLength, eventName, title2, sponsor
-            ] = [
-                currentEvent[0], currentEvent[1], currentEvent[2], currentEvent[8], currentEvent[9], currentEvent[10], currentEvent[11]
-            ];
-            const eventInfoSql = `
-                INSERT INTO tbleventinfo (meetId, eventCode, eventDate, eventTime, eventLength, eventName, title2, sponsor)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            `;
-
-            db.run(eventInfoSql, [meetId, eventCode, eventDate, eventTime, eventLength, eventName, title2, sponsor], function(err) {
-                totalFlagEventinfo++;
-                if (err) {
-                    failedFlagEventInfo++;
-                    logger.error(`Error inserting event info into database:`, err);
-                    return 1;
-                } else {
-                    logger.info(`Event Info inserted successfully into database from file ${eventCode}`);
-                }
-            });
-        
+            totalFlagEventinfo, failedFlagEventInfo = await dbQueryTblEventInfo(currentEvent[0], currentEvent[1], currentEvent[2], currentEvent[8], currentEvent[9], currentEvent[10], currentEvent[11], totalFlagEventinfo, failedFlagEventInfo, meetId, db);
         } else if (currentEvent && columns.length > 1) { // Athlete row
-            const [
-                eventCode, laneOrder, athleteNum,
-                lastName, firstName, athleteClub
-            ] = [
-                currentEvent[0], columns[3],
-                columns[4], columns[5], columns[6], columns[7]
-            ];
-            const sql = `
-                INSERT INTO tblevents (meetId, eventCode, laneOrder, athleteNum, lastName, firstName, athleteClub)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            `;
-
-            db.run(sql, [meetId, eventCode, laneOrder, athleteNum, lastName, firstName, athleteClub], function(err) {
-                totalFlagEvents++;
-                if (err) {
-                    failedFlagEvents++;
-                    logger.error(`Error inserting row into database:`, err);
-                } else {
-                    logger.info(`Row inserted successfully into database for event ${eventCode}`);
-                }
-            });
+            totalFlagEvents, failedFlagEvents = await dbQueryTblEvents(currentEvent[0], columns[3], columns[4], columns[5], columns[6], columns[7], totalFlagEvents, failedFlagEvents, meetId, db);
+            
         }
     }
 
@@ -401,12 +353,163 @@ async function insertCSVTextIntoDatabase(content, meetId, db) {
     return [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents];
 }
 
+async function insertPFIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db) {
+    const data = content;
+    const rows = data.split('\n');
+    let currentEvent = null;
+    let titleRow = false;
+    let finalPFTime = null;
+    for (let i=0; i<rows.length; i++) {
+        const row = rows[i];
+        const columns = row.split(',').map(col => col.trim());
+        let numColumns = columns.length;
+        if (columns[0] && columns[0].includes('Event')) { // New event header row
+            currentEvent = columns;
+            titleRow = true;
+        } 
+        else if ( i==0 && !titleRow) {
+            currentEvent = columns;
+            const [
+                eventCode, eventName
+            ] = [
+                makeEventNum(currentEvent[0], currentEvent[1], currentEvent[2]), currentEvent[3]
+            ];
+            if(numColumns > 9) {
+                finalPFTime = currentEvent[10];
+            }
+            totalFlagEventinfo, failedFlagEventInfo = await updateDBQueryTblEventInfo(eventCode, eventName, finalPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db);
+        } else if (currentEvent && columns.length > 1) { // Athlete row
+            const eventCode = makeEventNum(currentEvent[0], currentEvent[1], currentEvent[2]);
+            totalFlagEvents, failedFlagEvents = await updateDBQueryTblEvents(eventCode, columns[0], columns[1], columns[5], totalFlagEvents, failedFlagEvents, meetId, db);
+            
+        }
+    }
+    // Combine the flags into an array and return
+    return [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents];
+}
+
+async function dbQueryTblEventInfo(eventCode, eventDate, eventTime, eventLength, eventName, title2, sponsor, totalFlagEventinfo, failedFlagEventInfo, meetId, db) {
+    const eventInfoSql = `
+        INSERT INTO tbleventinfo (meetId, eventCode, eventDate, eventTime, eventLength, eventName, title2, sponsor)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.run(eventInfoSql, [meetId, eventCode, eventDate, eventTime, eventLength, eventName, title2, sponsor], function(err) {
+        totalFlagEventinfo++;
+        if (err) {
+            failedFlagEventInfo++;
+            logger.error(`Error inserting event info into database:`, err);
+            return 1;
+        } else {
+            logger.info(`Event Info inserted successfully into database from file ${eventCode}`);
+        }
+    });
+    return [totalFlagEventinfo, failedFlagEventInfo];    
+}
+
+async function dbQueryTblEvents(eventCode, laneOrder, athleteNum, lastName, firstName, athleteClub, totalFlagEvents, failedFlagEvents, meetId, db) {
+    const sql = `
+        INSERT INTO tblevents (meetId, eventCode, laneOrder, athleteNum, lastName, firstName, athleteClub)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.run(sql, [meetId, eventCode, laneOrder, athleteNum, lastName, firstName, athleteClub], function(err) {
+        totalFlagEvents++;
+        if (err) {
+            failedFlagEvents++;
+            logger.error(`Error inserting row into database:`, err);
+        } else {
+            logger.info(`Row inserted successfully into database for event ${eventCode}`);
+        }
+    });
+    return [totalFlagEvents, failedFlagEvents];    
+}
+
+async function updateDBQueryTblEventInfo(eventCode, eventName, eventPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db) {
+    const query = `
+      UPDATE tbleventinfo
+      SET eventName = ?,
+          eventPFTime = ?
+      WHERE MeetID = ? AND eventCode = ?;
+    `;
+
+    db.run(query, [eventName, eventPFTime, meetId, eventCode], function(err) {
+        totalFlagEventinfo++;
+        if (err) {
+            failedFlagEventInfo++;
+            logger.error(`Error inserting event info into database:`, err);
+            return 1;
+        } else {
+            logger.info(`Event Info inserted successfully into database from file ${eventCode}`);
+        }
+    });
+    return [totalFlagEventinfo, failedFlagEventInfo];
+}
+
+async function updateDBQueryTblEvents(eventCode, finalPFPos, athleteNum, finalPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db) {
+    const query = `
+      UPDATE tblevents
+      SET finalPFPos = ?,
+          finalPFTime = ?
+      WHERE MeetID = ? AND eventCode = ? AND athleteNum = ?;
+    `;
+
+    db.run(query, [finalPFPos, finalPFTime, meetId, eventCode, athleteNum], function(err) {
+        totalFlagEventinfo++;
+        if (err) {
+            failedFlagEventInfo++;
+            logger.error(`Error inserting event info into database:`, err);
+            return 1;
+        } else {
+            logger.info(`Event Info inserted successfully into database from file ${eventCode}`);
+        }
+    });
+    return [totalFlagEventinfo, failedFlagEventInfo];
+}
+
+function postEventsResponse(failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, copyError, dbError, res) {
+    if (failedFlagEventInfo > 0 && failedFlagEvents > 0) {
+        dbError = `Database error inserting event info and events: ${failedFlagEventInfo} eventinfo errors out of ${totalFlagEventinfo} rows and ${failedFlagEvents} event errors out of ${totalFlagEvents} rows`;
+    } else if (failedFlagEventInfo > 0) {
+        dbError = `Database error inserting event info: ${failedFlagEventInfo} errors out of ${totalFlagEventinfo} rows`;
+    } else if (failedFlagEvents > 0) {
+        dbError = `Database error inserting events: ${failedFlagEvents} errors out of ${totalFlagEvents} rows`;
+    }
+    if (copyError && dbError) {
+        res.json({
+            error: {
+                message: `Failed to update start list.`,
+                copyError,
+                dbError
+            },
+            status: 'failure'
+        });
+    } else if (copyError) {
+        res.json({
+            error: {
+                copyError
+            },
+            message: `Updated existing start list successfully.`,
+            status: 'success'
+        });
+    } else if (dbError) {
+        res.json({
+            error: {
+                message: `Failed to update start list.`,
+                dbError
+            },
+            status: 'failure'
+        });
+    } else {
+        res.json({message: 'Updated start list successfully', status: 'success'});
+    }
+}
+
 module.exports = {
     findScotathClientDir,
     findScotathDBDir,
-    readTextFiles,
-    insertFLTextIntoDatabase,
-    insertCSVTextIntoDatabase,
+    readEventListFiles,
+    readPFFiles,
     deleteExistingEvents,
     deleteEventInfo
 };

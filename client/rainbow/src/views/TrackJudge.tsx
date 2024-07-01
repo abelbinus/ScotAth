@@ -10,7 +10,7 @@ interface Event {
   eventTime: string;
   laneOrder: string;
   athleteNum: string;
-  familyName: string;
+  lastName: string;
   firstName: string;
   athleteClub: string;
   eventLength: string;
@@ -158,7 +158,7 @@ const TrackJudge: React.FC = () => {
           <Table
             dataSource={filteredEvents}
             columns={[
-              { title: 'Family Name', dataIndex: 'familyName', key: 'familyName', width: 200 },
+              { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
               { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
               { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
               { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },

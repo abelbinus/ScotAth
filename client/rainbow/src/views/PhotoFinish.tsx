@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Input, Select, Table, message } from 'antd';
-import { getEventPhoto, getEventbyMeetId, getMeetByIdAPI, updateEventAPI } from '../apis/api';
+import { getEventPhoto, getEventbyMeetId, getMeetByIdAPI, getPFEventbyMeetId, updateEventAPI } from '../apis/api';
 import { Axios, AxiosError } from 'axios';
 
 const { Search } = Input;
@@ -12,7 +12,7 @@ interface Event {
   eventTime: string;
   laneOrder: string;
   athleteNum: string;
-  familyName: string;
+  lastName: string;
   firstName: string;
   athleteClub: string;
   eventLength: string;
@@ -21,6 +21,8 @@ interface Event {
   sponsor: string;
   startListValue: string;
   finishPos: string;
+  finalPFTime: string;
+  finalPFPos: string;
 }
 
 const Photofinish: React.FC = () => {
@@ -41,26 +43,37 @@ const Photofinish: React.FC = () => {
           setLoading(false);
           return; // Exit early if meetId is null or undefined
         }
-
-        const response = await getEventbyMeetId(meetid);
-        const events = response.data.events;
-
-        // Order events based on eventCode
-        events.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
-
-        setEvents(events);
-
-        // Set the initial selected event code to the first event code in the list
-        if (response.data.events.length > 0) {
-          const initialEventCode = response.data.events[0].eventCode;
-          setSelectedEventCode(initialEventCode);
-          setFilteredEvents(response.data.events.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
-        } else {
-          setFilteredEvents(response.data.events); // Initialize filteredEvents with all events if no events are found
+        const response = await getMeetByIdAPI(meetid);
+        const pfFolder = response.data.meet.pfFolder;
+        const pfOutput = response.data.meet.pfOutput;
+        const folderParams = {
+          pfFolder: pfFolder,
+          pfOutput: pfOutput,
+          meetId: meetid
         }
+        const responsePFEvent = await getPFEventbyMeetId(folderParams);
+        const status = responsePFEvent.data.status;
+        if (status === 'success') {
+          const responseEvent = await getEventbyMeetId(meetid);
+          const responseEvents = responseEvent.data.events;
+          console.log('events:', responseEvents);
+          // Order events based on eventCode
+          responseEvents.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
 
-        setLoading(false);
+          setEvents(responseEvents);
+
+          // Set the initial selected event code to the first event code in the list
+          if (responseEvents.length > 0) {
+            const initialEventCode = responseEvents.eventCode;
+            setSelectedEventCode(initialEventCode);
+            setFilteredEvents(responseEvents.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+          } else {
+            setFilteredEvents(responseEvents); // Initialize filteredEvents with all events if no events are found
+          }
+          setLoading(false);
+        }
       } catch (err) {
+        console.log('Error fetching events:', err);
         setError('Error fetching events');
         setLoading(false);
       }
@@ -176,7 +189,7 @@ const generateFilename = (eventCode: string): string => {
           <Table
             dataSource={filteredEvents}
             columns={[
-              { title: 'Family Name', dataIndex: 'familyName', key: 'familyName', width: 200 },
+              { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
               { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
               { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
               { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },

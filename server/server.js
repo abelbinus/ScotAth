@@ -13,9 +13,8 @@ const cors = require('cors');
 const {
     findScotathClientDir,
     findScotathDBDir,
-    readTextFiles,
-    insertFLTextIntoDatabase,
-    insertCSVTextIntoDatabase,
+    readEventListFiles,
+    readPFFiles,
     deleteExistingEvents,
     deleteEventInfo
 } = require('./utils'); // Import utility functions
@@ -340,12 +339,31 @@ app.post('/api/rainbow/event', async (req, res) => {
         await deleteEventInfo(meetId, db);
 
         const folderPath = path.resolve(pfFolder);
-        await readTextFiles(folderPath, intFolder, eventList, meetId, db, res);
+        await readEventListFiles(folderPath, intFolder, eventList, meetId, db, res);
     } catch (error) {
         console.error('Error in /api/rainbow/event:', error);
         if (!responseSent) {
             res.status(500).json({ error: 'No files found in the provided directory' });
         }
+    }
+});
+
+app.post('/api/rainbow/pfevent', async (req, res) => {
+    const { pfFolder, pfOutput, meetId } = req.body;
+    if (!pfFolder) {
+        return res.status(400).json({ error: 'pfFolder path is required' });
+    } else if (!pfOutput) {
+        return res.status(400).json({ error: 'pfOutput type is required' });
+    } else if (!meetId) {
+        return res.status(400).json({ error: 'meetId is missing' });
+    }
+
+    try {
+        const folderPath = path.resolve(pfFolder);
+        await readPFFiles(folderPath, pfOutput, meetId, db, res);
+    } catch (error) {
+        console.error('Error in /api/rainbow/event:', error);
+        res.status(500).json({ error: 'No files found in the provided directory' });
     }
 });
 
