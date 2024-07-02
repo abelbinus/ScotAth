@@ -1,45 +1,35 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Collapse, Input, Select, Table, Button, message } from 'antd';
 import { getEventbyMeetId, updateEventAPI } from '../apis/api';
+import { useEvents } from '../Provider/EventProvider';
 
 const { Panel } = Collapse;
 const { Search } = Input;
 const { Option } = Select;
 
-interface Event {
-  eventCode: string;
-  eventDate: string;
-  eventTime: string;
-  laneOrder: string;
-  athleteNum: string;
-  lastName: string;
-  firstName: string;
-  athleteClub: string;
-  eventLength: string;
-  eventName: string;
-  title2: string;
-  sponsor: string;
-  startListValue: string;
-  finishPos: string;
-}
-
 const EventsList: React.FC = () => {
-  const [events, setEvents] = useState<Event[]>([]);
+  const {events, fetchEvents, loading, error } = useEvents();
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [sortBy, setSortBy] = useState<'eventCode' | 'eventName' | 'eventDate'>('eventCode');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState<string>('');
   const meetid = localStorage.getItem("lastSelectedMeetId");
-  // Function to handle status change for an athlete
-  const handleStatusChange = (value: string, athlete: any) => {
-    const updatedEvents = events.map(event => 
-      event.athleteNum === athlete.athleteNum ? { ...event, startListValue: value } : event
-    );
-    setEvents(updatedEvents);
-    setFilteredEvents(updatedEvents); // Also update filtered events
-  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        await fetchEvents(meetid);
+      } catch (error) {
+        console.error("Failed to fetch events:", error);
+      }
+    };
+  
+    fetchData();
+  }, [meetid]);
+
+  useEffect(() => {
+    setFilteredEvents(events);
+  }, [events]);
 
   const parseDateTime = (date: string, time: string) => {
     let separator = '.';
@@ -114,58 +104,16 @@ const EventsList: React.FC = () => {
     setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
   };
 
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        if (!meetid) {
-            setError('Meet ID is not provided');
-            setLoading(false);
-            return; // Exit early if meetId is null or undefined
-        }
-  
-
-        const response = await getEventbyMeetId(meetid);
-        const events = response.data.events;
-
-        // Order events based on eventCode
-        events.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
-
-        setEvents(events);
-        setFilteredEvents(response.data.events); // Initialize filteredEvents with all events
-        setLoading(false);
-      } catch (err) {
-        setError('Error fetching events');
-        setLoading(false);
-      }
-    };
-
-    fetchEvents();
-  }, [meetid]);
-
   const handleFilter = (value: string) => {
     setSearchText(value);
     if (value.trim() === '') {
       setFilteredEvents(events); // Reset filter, show all events
     } else {
-      const filtered = events.filter(event =>
+      const filtered = events.filter((event: { eventCode: string; eventName: string; }) =>
         event.eventCode.toLowerCase().includes(value.toLowerCase()) ||
         event.eventName.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredEvents(filtered);
-    }
-  };
-
-  const handleMeetSelection = (meetId: string) => {
-    localStorage.setItem("lastSelectedMeetId", meetId);
-  };
-
-  // Function to handle save operation
-  const handleSave = async (eventGroup: Event[]) => {
-    try {
-      const response = await updateEventAPI(eventGroup);
-      message.success('Events status updated successfully!');
-    } catch (err) {
-      message.error('Error updating events status');
     }
   };
 
@@ -190,7 +138,9 @@ const EventsList: React.FC = () => {
               header={
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>{`${eventCode} - ${eventGroups[eventCode][0]?.eventName}`}</span>
-                  <span>{`${eventGroups[eventCode][0]?.eventDate} - ${eventGroups[eventCode][0]?.eventTime}`}</span>
+                  {eventGroups[eventCode][0]?.eventDate && eventGroups[eventCode][0]?.eventTime ? (
+                    <span>{`${eventGroups[eventCode][0]?.eventDate} - ${eventGroups[eventCode][0]?.eventTime}`}</span>
+                  ) : null}
                 </div>
               }
               key={eventCode}

@@ -2,7 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { Divider, Input, Col, Row, Space, Tag, Table, Button, Form, Modal, Select, Popconfirm, message, Tabs } from "antd";
 import { ColumnsType } from "antd/es/table";
 import { UserContext } from "../App.tsx";
-import { IMeet } from "../types/Meet";
+import { IMeet } from "../modals/Meet";
 import { getMeetsAPI, deleteMeetAPI, updateMeetAPI, addMeetAPI, getEventFiles } from "../apis/api.ts";
 import './../css/MeetManagement.css'
 

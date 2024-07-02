@@ -3,7 +3,7 @@ import { Divider, Input, Col, Row, Button, Space, Table, Modal, Form, message, P
 import type { TableColumnsType } from "antd";
 import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import { UserContext } from "../App";
-import { IUser } from "../types/User";
+import { IUser } from "../modals/User";
 import { getAllUsersAPI, addUserAPI, updateUserAPI, deleteUserAPI } from "../apis/api";
 import { AxiosError } from "axios";
 const User = () => {

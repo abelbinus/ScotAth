@@ -2,6 +2,9 @@ import React, { useState } from "react";
 import { RouterProvider } from "react-router-dom";
 import { IUser } from "./modals/User";
 import router from "./router/router.tsx";
+import { EventProvider } from "./Provider/EventProvider.tsx";
+import { Visibility } from "@mui/icons-material";
+import { VisibilityProvider } from "./Provider/VisibilityProvider.tsx";
 
 
 
@@ -22,9 +25,13 @@ function App() {
 
   return (
     <UserContext.Provider value={loginValues}>
-      <div className="App">
-        <RouterProvider router={router} />
-      </div>
+      <EventProvider>
+        <VisibilityProvider>
+          <div className="App">
+            <RouterProvider router={router} />
+          </div>
+        </VisibilityProvider>
+      </EventProvider>
     </UserContext.Provider>
   )
 }

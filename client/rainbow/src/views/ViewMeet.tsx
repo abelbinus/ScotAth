@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Divider, Col, Row, Card, message, Typography, Collapse, Button } from "antd";
 import { UserContext } from "../App";
-import { IMeet } from "../types/Meet";
+import { IMeet } from "../modals/Meet";
 import { getMeetsAPI } from "../apis/api";
 import { AxiosError } from "axios";
 import { useNavigate } from 'react-router-dom';
+import { useVisibility } from "../Provider/VisibilityProvider";
 
 const { Title } = Typography;
 const { Panel } = Collapse;
@@ -15,6 +16,7 @@ const ViewMeet: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const userContext = useContext(UserContext);
   const navigate = useNavigate();
+  const { setShowLabels } = useVisibility();
 
   // Fetch meet list from API
   const fetchMeets = async () => {
@@ -47,6 +49,7 @@ const ViewMeet: React.FC = () => {
 
   const handleMeetSelection = (meetId: string) => {
     localStorage.setItem("lastSelectedMeetId", meetId);
+    setShowLabels(true);  // Show labels when "View Events" is clicked
     navigate('/view-event', { state: { meetId } });
   };
 

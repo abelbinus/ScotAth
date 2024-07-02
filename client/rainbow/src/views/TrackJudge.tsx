@@ -2,41 +2,59 @@ import React, { useEffect, useState } from 'react';
 import { Input, Select, Table, Button, message } from 'antd';
 import { getEventbyMeetId, updateEventAPI } from '../apis/api';
 
+import { TimePicker } from '../components';
+import moment from 'moment';
+import { useEvents } from '../Provider/EventProvider';
+
+const { Search } = Input;
 const { Option } = Select;
 
-interface Event {
-  eventCode: string;
-  eventDate: string;
-  eventTime: string;
-  laneOrder: string;
-  athleteNum: string;
-  lastName: string;
-  firstName: string;
-  athleteClub: string;
-  eventLength: string;
-  eventName: string;
-  title2: string;
-  sponsor: string;
-  startListValue: string;
-  finishPos: string;
-}
-
-const TrackJudge: React.FC = () => {
-  const [events, setEvents] = useState<Event[]>([]);
+const EventsList: React.FC = () => {
+  const {events, setEvents, setError, loading, error }: { events: Event[], setEvents: (updatedEvents: Event[]) => void, setError: any, loading: boolean, error: string | null } = useEvents();
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
+  const [searchText, setSearchText] = useState<string>('');
   const [selectedValues, setSelectedValues] = useState<{ [key: string]: string }>({}); // Track selected status values for each athlete
+  const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const meetid = localStorage.getItem('lastSelectedMeetId');
+  
+  
+  const parseTime = (time: string) => {  
+    let hours = 0;
+    let minutes = 0;
+  
+    if (time.includes(':')) {
+      // Check for 12-hour format (AM/PM)
+      if (time.includes('AM') || time.includes('PM')) {
+        const timeParts = time.split(':');
+        const hourPart = timeParts[0];
+        const minutePart = timeParts[1].substr(0, 2); // Ensure to only take first two characters of minutes part
+        const modifier = timeParts[1].substr(2); // Grab AM/PM part
+  
+        hours = parseInt(hourPart, 10);
+        minutes = parseInt(minutePart, 10);
+  
+        if (modifier === 'PM' && hours < 12) {
+          hours += 12;
+        }
+        if (modifier === 'AM' && hours === 12) {
+          hours = 0;
+        }
+      } else { // 24-hour format
+        const timeParts = time.split(':');
+        hours = parseInt(timeParts[0], 10);
+        minutes = parseInt(timeParts[1], 10);
+      }
+    }
+  
+    return new Date(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
+  };
 
   // Function to handle status change for an athlete
   const handleStatusChange = (value: string, athlete: any) => {
     const updatedValues = { ...selectedValues, [athlete.athleteNum]: value };
     setSelectedValues(updatedValues);
-
     const updatedEvents = events.map(event =>
-      event.athleteNum === athlete.athleteNum ? { ...event, startListValue: value } : event
+      event.athleteNum === athlete.athleteNum ? { ...event, finishPos: value } : event
     );
     setEvents(updatedEvents);
     if (selectedEventCode) {
@@ -45,59 +63,19 @@ const TrackJudge: React.FC = () => {
       setFilteredEvents(updatedEvents);
     }
   };
-
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        if (!meetid) {
-          setError('Meet ID is not provided');
-          setLoading(false);
-          return; // Exit early if meetId is null or undefined
-        }
+    if(events.length === 0) return;
+    const initialEventCode = events[0].eventCode;
+    setSelectedEventCode(initialEventCode);
+    setFilteredEvents(events.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+  }, [events]);
 
-        const response = await getEventbyMeetId(meetid);
-        const events = response.data.events;
-
-        // Order events based on eventCode
-        events.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
-
-        setEvents(events);
-
-        // Set the initial selected event code to the first event code in the list
-        if (response.data.events.length > 0) {
-          const initialEventCode = response.data.events[0].eventCode;
-          setSelectedEventCode(initialEventCode);
-          setFilteredEvents(response.data.events.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
-        } else {
-          setFilteredEvents(response.data.events); // Initialize filteredEvents with all events if no events are found
-        }
-
-        setLoading(false);
-      } catch (err) {
-        setError('Error fetching events');
-        setLoading(false);
-      }
-    };
-
-    fetchEvents();
-  }, [meetid]);
-
-  const handleFilter = (value: string) => {
-    const eventFound = events.find(event => event.eventCode.toLowerCase() === value.toLowerCase());
-    if (eventFound) {
-      setSelectedEventCode(eventFound.eventCode);
-      setFilteredEvents(events.filter(event => event.eventCode === eventFound.eventCode));
-      setError(null); // Clear any previous error
-    } else {
-      setFilteredEvents([]);
-      setError('Event not present in this meet'); // Set error if event is not found
-    }
-  };
 
   // Function to handle save operation
   const handleSave = async () => {
     try {
-      await updateEventAPI(filteredEvents);
+      const response = await updateEventAPI(filteredEvents);
+      setEvents(filteredEvents)
       message.success('Events status updated successfully!');
     } catch (err) {
       message.error('Error updating events status');
@@ -126,10 +104,44 @@ const TrackJudge: React.FC = () => {
     uniqueOptions.add('DNS');
     uniqueOptions.add('DNF');
     uniqueOptions.add('DQ');
-    const selectedValuesSet = new Set(Object.values(selectedValues));
+
+    // Exclude specific values from selectedValuesSet
+    const excludedValues = ['DNS', 'DNF', 'DQ'];
+    const selectedValuesSet = new Set(Object.values(selectedValues).filter(value => !excludedValues.includes(value)));
     // Convert the Set to an Array before filtering
     return Array.from(uniqueOptions).filter(option => !selectedValuesSet.has(option));
   };
+
+  // Handle time change in TimePicker
+  const handlefinishTimeChange = (time: any, record: Event) => {
+    console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
+    const timeString = time ? time.format('hh:mm:ss:SSS A') : null; // Convert Moment object to 12-hour format string
+    const updatedEvents = events.map(event =>
+      event.athleteNum === record.athleteNum ? { ...event, finishTime: timeString } : event
+    );
+    setEvents(updatedEvents);
+    if (selectedEventCode) {
+      setFilteredEvents(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+    } else {
+      setFilteredEvents(updatedEvents);
+    }
+  };
+
+  const handleSetTime = () => {
+    const currentTime = moment().format('hh:mm:ss:SSS A');
+    const updatedEvents = filteredEvents.map(event => {
+      if (event.eventCode === selectedEventCode) {
+        return {
+          ...event,
+          finishTime: currentTime,
+        };
+      }
+      return event;
+    });
+    setEvents(updatedEvents);
+    setFilteredEvents(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+  };
+
 
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(events);
@@ -163,15 +175,15 @@ const TrackJudge: React.FC = () => {
               { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
               { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
               {
-                title: 'Status',
-                dataIndex: 'startListValue',
-                key: 'startListValue',
+                title: 'Rank',
+                dataIndex: 'finishPos',
+                key: 'finishPos',
                 width: 100,
                 render: (text: string, record: any) => (
                   <Select
                     style={{ width: 120 }}
                     onChange={(value) => handleStatusChange(value, record)}
-                    value={selectedValues[record.athleteNum] || record.startListValue || 'Select'}
+                    value={selectedValues[record.athleteNum] || record.finishPos || 'Select'}
                   >
                     {getUniqueAthleteOptions(filteredEvents).map(optionValue => (
                       <Option key={optionValue} value={optionValue}>
@@ -181,6 +193,21 @@ const TrackJudge: React.FC = () => {
                   </Select>
                 ),
               },
+              {
+                title: 'Finish Time',
+                dataIndex: 'finishTime',
+                key: 'finishTime',
+                width: 250,
+                render: (text: string, record: any) => (
+
+                  <TimePicker
+                    value={record.finishTime ? moment(record.finishTime, 'hh:mm:ss:SSS A') : null} // Provide default moment object in 12-hour format
+                    onChange={(time) => handlefinishTimeChange(time, record)}
+                    format="hh:mm:ss:SSS A"
+                    use12Hours
+                  />
+                ),
+              }
             ]}
             rowKey="athleteNum"
             pagination={false}
@@ -214,4 +241,4 @@ const getUniqueEventOptions = (events: Event[]): string[] => {
   return Array.from(uniqueOptions);
 };
 
-export default TrackJudge;
+export default EventsList;

@@ -1,36 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { Input, Select, Table, message } from 'antd';
-import { getEventPhoto, getEventbyMeetId, getMeetByIdAPI, getPFEventbyMeetId, updateEventAPI } from '../apis/api';
+import { getEventPhoto, getEventbyEventId, getEventbyMeetId, getMeetByIdAPI, postPFEventbyEventId, updateEventAPI } from '../apis/api';
 import { Axios, AxiosError } from 'axios';
+import { useEvents } from '../Provider/EventProvider';
 
 const { Search } = Input;
 const { Option } = Select;
 
-interface Event {
-  eventCode: string;
-  eventDate: string;
-  eventTime: string;
-  laneOrder: string;
-  athleteNum: string;
-  lastName: string;
-  firstName: string;
-  athleteClub: string;
-  eventLength: string;
-  eventName: string;
-  title2: string;
-  sponsor: string;
-  startListValue: string;
-  finishPos: string;
-  finalPFTime: string;
-  finalPFPos: string;
-}
-
 const Photofinish: React.FC = () => {
-  const [events, setEvents] = useState<Event[]>([]);
+  const {events, setEvents, setError, setLoading, loading, error }: { events: Event[], setEvents: (updatedEvents: Event[]) => void, setError: any, setLoading: (loading: boolean) => void, loading: boolean, error: string | null } = useEvents();
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [searchText, setSearchText] = useState<string>('');
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const meetid = localStorage.getItem('lastSelectedMeetId');
   const [photos, setPhotos] = useState<string[]>([]);
@@ -46,42 +25,71 @@ const Photofinish: React.FC = () => {
         const response = await getMeetByIdAPI(meetid);
         const pfFolder = response.data.meet.pfFolder;
         const pfOutput = response.data.meet.pfOutput;
-        const folderParams = {
-          pfFolder: pfFolder,
-          pfOutput: pfOutput,
-          meetId: meetid
-        }
-        const responsePFEvent = await getPFEventbyMeetId(folderParams);
-        const status = responsePFEvent.data.status;
-        if (status === 'success') {
-          const responseEvent = await getEventbyMeetId(meetid);
-          const responseEvents = responseEvent.data.events;
-          console.log('events:', responseEvents);
-          // Order events based on eventCode
-          responseEvents.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
-
-          setEvents(responseEvents);
-
-          // Set the initial selected event code to the first event code in the list
-          if (responseEvents.length > 0) {
-            const initialEventCode = responseEvents.eventCode;
-            setSelectedEventCode(initialEventCode);
-            setFilteredEvents(responseEvents.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
-          } else {
-            setFilteredEvents(responseEvents); // Initialize filteredEvents with all events if no events are found
+        if (events.length > 0) {
+          if(selectedEventCode === '') {
+            setSelectedEventCode(events[0].eventCode);
           }
-          setLoading(false);
+        }
+        if(events.length > 0 && selectedEventCode !== '') { 
+          console.log('events:', selectedEventCode);
+          const folderParams = {
+            pfFolder: pfFolder,
+            pfOutput: pfOutput,
+            meetId: meetid,
+            eventCode: selectedEventCode
+          }
+          try{
+            const responsePFEvent = await postPFEventbyEventId(folderParams);
+            const status = responsePFEvent.data.status;
+            if (status === 'success') {
+              const responseEvent = await getEventbyEventId(meetid, selectedEventCode);
+              const pfEvent = responseEvent.data.events; // This is a list of events
+              console.log('pfevent:', pfEvent);
+
+              // Update the events list with the matching pfEvent data
+              const updatedEvents = events.map(event => {
+                // Find all corresponding events in the pfEvent list
+                const matchingPFEvents = pfEvent.filter((pfEventItem: { eventCode: string; athleteNum: string; }) => 
+                  pfEventItem.eventCode === event.eventCode && pfEventItem.athleteNum === event.athleteNum
+                );
+
+                // Merge the event with all matching pfEvent objects
+                return matchingPFEvents.length > 0 
+                  ? matchingPFEvents.map((matchingPFEvent: any) => ({ ...event, ...matchingPFEvent }))
+                  : event;
+              }).flat();
+
+              setEvents(updatedEvents);
+              // Set the initial selected event code to the first event code in the list
+              if (events.length > 0) {
+                const initialEventCode = selectedEventCode;
+                setSelectedEventCode(initialEventCode);
+                setFilteredEvents(updatedEvents.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+              } else {
+                setFilteredEvents(events); // Initialize filteredEvents with all events if no events are found
+              }
+              setLoading(false);
+            }
+          }
+          catch(err){
+            if (events.length > 0) {
+              const initialEventCode = selectedEventCode;
+              setSelectedEventCode(initialEventCode);
+              setFilteredEvents(events.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+            }
+            setLoading(false);
+          }
         }
       } catch (err) {
-        console.log('Error fetching events:', err);
-        setError('Error fetching events');
+        console.log('Error fetching event:', err);
+        setError('Error fetching event');
         setLoading(false);
       }
     };
 
     fetchEvents();
 
-  }, [meetid]);
+  }, [meetid, selectedEventCode]);
 
   const fetchPhotos = async () => {
     try {
@@ -119,18 +127,8 @@ const Photofinish: React.FC = () => {
   useEffect(() => {
     fetchPhotos();
   }, [selectedEventCode]);
-  const handleFilter = (value: string) => {
-    setSearchText(value);
-    const eventFound = events.find(event => event.eventCode.toLowerCase() === value.toLowerCase());
-    if (eventFound) {
-      setSelectedEventCode(eventFound.eventCode);
-      setFilteredEvents(events.filter(event => event.eventCode === eventFound.eventCode));
-      setError(null); // Clear any previous error
-    } else {
-      setFilteredEvents([]);
-      setError('Event not present in this meet'); // Set error if event is not found
-    }
-  };
+  useEffect(() => {
+  }, [selectedEventCode]);
 
   // Function to handle save operation
   const handleSave = async () => {
@@ -144,6 +142,7 @@ const Photofinish: React.FC = () => {
 
   // Handle event selection from dropdown
   const handleEventSelect = (value: string) => {
+    console.log('Selected event:', value);
     setSelectedEventCode(value);
     if (value === '') {
       setFilteredEvents(events); // Reset to show all events when no event is selected
@@ -194,11 +193,17 @@ const generateFilename = (eventCode: string): string => {
               { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
               { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
               {
-                title: 'Status',
-                dataIndex: 'startListValue',
-                key: 'startListValue',
+                title: 'Position',
+                dataIndex: 'finalPFPos',
+                key: 'finalPFPos',
                 width: 100
               },
+              {
+                title: 'Time',
+                dataIndex: 'finalPFTime',
+                key: 'finalPFTime',
+                width: 200
+              }
             ]}
             rowKey="athleteNum"
             pagination={false}

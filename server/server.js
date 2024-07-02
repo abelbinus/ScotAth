@@ -200,6 +200,24 @@ app.get('/api/rainbow/meet/:meetId', (req, res) => {
     });
 });
 
+// New endpoint to fetch a specific event by meetId and eventCode
+app.get('/api/rainbow/event/:meetId/:eventCode', (req, res) => {
+    const { meetId, eventCode } = req.params;
+    const query = 'SELECT * FROM tblevents WHERE meetId = ? AND eventCode = ?';
+    
+    db.all(query, [meetId, eventCode], (err, rows) => {
+        if (err) {
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        if (!rows) {
+            res.status(404).json({ error: 'Event not found' });
+            return;
+        }
+        res.json({ events: rows });
+    });
+});
+
 // POST endpoint to add a new meet
 app.post('/api/rainbow/meet', (req, res) => {
     const { meetId, meetName, meetDesc, pfFolder, pfOutput, eventList, intFolder, edit } = req.body;
@@ -349,21 +367,23 @@ app.post('/api/rainbow/event', async (req, res) => {
 });
 
 app.post('/api/rainbow/pfevent', async (req, res) => {
-    const { pfFolder, pfOutput, meetId } = req.body;
+    const { pfFolder, pfOutput, meetId, eventCode } = req.body;
     if (!pfFolder) {
         return res.status(400).json({ error: 'pfFolder path is required' });
     } else if (!pfOutput) {
         return res.status(400).json({ error: 'pfOutput type is required' });
     } else if (!meetId) {
         return res.status(400).json({ error: 'meetId is missing' });
+    } else if (!eventCode) {
+        return res.status(400).json({ error: 'eventCode is missing' });
     }
 
     try {
         const folderPath = path.resolve(pfFolder);
-        await readPFFiles(folderPath, pfOutput, meetId, db, res);
+        await readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res);
     } catch (error) {
         console.error('Error in /api/rainbow/event:', error);
-        res.status(500).json({ error: 'No files found in the provided directory' });
+        res.status(500).json({ error: 'Could not find the directory' });
     }
 });
 

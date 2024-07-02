@@ -1,8 +1,8 @@
 import { useState, useContext } from "react";
 import { Form, Input, Button, message, Layout, Card } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
-import { ILoginValues } from "../types/LoginValues";
-import { IUser } from "../types/User";
+import { ILoginValues } from "../modals/LoginValues";
+import { IUser } from "../modals/User";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../App.tsx";
 import { loginAPI } from "../apis/api.ts";

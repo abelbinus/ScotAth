@@ -4,11 +4,12 @@ import LoginPage from "../views/Login";
 import ProfilePage from "../views/Profile";
 import User from "../views/UserManagement";
 import Meet from "../views/MeetManagement";
-import CheckIn from "../views/CheckIn";
+import CheckIn from "../views/Marksmen";
 import ViewMeet from "../views/ViewMeet";
 import TrackJudge from "../views/TrackJudge";
 import PhotoFinish from "../views/PhotoFinish";
 import ViewEvent from "../views/ViewEvent";
+import AllResults from "../views/AllResults";
 
 const router = createBrowserRouter([
   {
@@ -24,6 +25,7 @@ const router = createBrowserRouter([
       { path: "/checkin", element: <CheckIn />},
       { path: "/trackjudge", element: <TrackJudge />},
       { path: "/photofinish", element: <PhotoFinish />},
+      { path: "/allresults", element: <AllResults />},
     ],
   },
   { path: "login", element: <LoginPage /> }, // super router

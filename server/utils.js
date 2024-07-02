@@ -2,7 +2,6 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const logger = require('./logger');
-const { log, count } = require('console');
 
 // async function fileExists(filePath) {
 //     try {
@@ -115,7 +114,6 @@ async function copyFile(srcFolder, destFolder, fileName) {
 }
 
 async function readEventListFiles (folderPath, intFolder, eventList, meetId, db, res) {
-    let fileContents = [];
     let evtContents = [];
     let pplContents = [];
     let copyError = null;
@@ -194,9 +192,20 @@ async function readEventListFiles (folderPath, intFolder, eventList, meetId, db,
     }
 }
 
-async function readPFFiles(folderPath, pfOutput, meetId, db, res) {
+function reformatEventCode(eventCode) {
+    // Match the pattern to capture groups: first part, second part without last 2 digits, and last 2 digits
+    const match = eventCode.match(/(\d+)-(\d)(\d{2})/);
+    if (match) {
+      // Construct the new format with an additional hyphen before the last 2 digits
+      return `${match[1]}-${match[2]}-${match[3]}`;
+    } else {
+      throw new Error('Invalid event code format');
+    }
+  }
+
+async function readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res) {
     let extension;
-    
+    eventCode = reformatEventCode(eventCode);
     if (pfOutput === 'lif') {
         extension = '.lif';
     } else if (pfOutput === 'cl') {
@@ -204,44 +213,40 @@ async function readPFFiles(folderPath, pfOutput, meetId, db, res) {
     } else {
         throw new Error('Invalid pfOutput value. Expected "lif" or "cl".');
     }
-
+    const fileName = `${eventCode}${extension}`;
     try {
-        const files = await fs.promises.readdir(folderPath);
-        const targetFiles = files.filter(file => path.extname(file) === extension);
         let failedFlagEventInfo = 0;
         let failedFlagEvents = 0;
         let totalFlagEventinfo = 0; // Total number of event info rows
         let totalFlagEvents = 0; // Total number of event rows
         let dbError = null;
-        for (const file of targetFiles) {
-            const content = await readFile(folderPath, file);
-            // Process the content as needed, e.g., insert into the database
-            [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertPFIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db);
-        }
+        const content = await readFile(folderPath, fileName);
+        // Process the content as needed, e.g., insert into the database
+        [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertPFIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db);
 
         if (failedFlagEventInfo > 0 && failedFlagEvents > 0) {
-            dbError = `Database error updating event info and events: ${failedFlagEventInfo} eventinfo errors out of ${totalFlagEventinfo} rows and ${failedFlagEvents} event errors out of ${totalFlagEvents} rows`;
+            dbError = `Database error updating event info and events.`;
         } else if (failedFlagEventInfo > 0) {
-            dbError = `Database error updating event info: ${failedFlagEventInfo} errors out of ${totalFlagEventinfo} rows`;
+            dbError = `Database error updating event info.`;
         } else if (failedFlagEvents > 0) {
-            dbError = `Database error updating events: ${failedFlagEvents} errors out of ${totalFlagEvents} rows`;
+            dbError = `Database error updating events.`;
         }
         if (dbError) {
             res.json({
                 error: {
-                    message: `Failed to update phtofinish.`,
+                    message: `Failed to update phtofinish results for ${fileName}.`,
                     dbError
                 },
                 status: 'failure'
             });
         } else {
-            res.json({message: 'Updated photofinish results successfully', status: 'success'});
+            res.json({message: `Updated photofinish results successfully for ${fileName}.`, status: 'success'});
         }
     } catch (error) {
         logger.error(`Error reading file: ${error.message}`);
         res.json({
             error: {
-                message: `Failed to update photofinish.`
+                message: `Failed to update photofinish for ${fileName}.`
             },
             status: 'failure'
         });
@@ -380,7 +385,7 @@ async function insertPFIntoDatabase(content, failedFlagEventInfo, failedFlagEven
             totalFlagEventinfo, failedFlagEventInfo = await updateDBQueryTblEventInfo(eventCode, eventName, finalPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db);
         } else if (currentEvent && columns.length > 1) { // Athlete row
             const eventCode = makeEventNum(currentEvent[0], currentEvent[1], currentEvent[2]);
-            totalFlagEvents, failedFlagEvents = await updateDBQueryTblEvents(eventCode, columns[0], columns[1], columns[5], totalFlagEvents, failedFlagEvents, meetId, db);
+            totalFlagEvents, failedFlagEvents = await updateDBQueryTblEvents(eventCode, columns[0], columns[1], columns[6], totalFlagEvents, failedFlagEvents, meetId, db);
             
         }
     }

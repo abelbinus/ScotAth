@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import { Card, Descriptions, Modal, Form, Input, Space, Button, message, Select, Divider } from "antd";
 import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import { UserContext } from "../App";
-import { IUser } from "../types/User";
+import { IUser } from "../modals/User";
 import { changePasswordAPI, updateUserAPI, getUserByIdAPI } from "../apis/api";
 
 interface PasswordChange {

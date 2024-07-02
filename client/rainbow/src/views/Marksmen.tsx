@@ -4,34 +4,14 @@ import { getEventbyMeetId, updateEventAPI } from '../apis/api';
 
 import { TimePicker } from '../components';
 import moment from 'moment';
+import { useEvents } from '../Provider/EventProvider';
 
 const { Search } = Input;
 const { Option } = Select;
 
-interface Event {
-  eventCode: string;
-  eventDate: string;
-  eventTime: string;
-  laneOrder: string;
-  athleteNum: string;
-  lastName: string;
-  firstName: string;
-  athleteClub: string;
-  eventLength: string;
-  eventName: string;
-  title2: string;
-  sponsor: string;
-  startPos: string;
-  finishPos: string;
-  startTime: string;
-  finishtime: string;
-}
-
 const EventsList: React.FC = () => {
-  const [events, setEvents] = useState<Event[]>([]);
+  const {events, setEvents, setError, loading, error }: { events: Event[], setEvents: (updatedEvents: Event[]) => void, setError: any, loading: boolean, error: string | null } = useEvents();
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchText, setSearchText] = useState<string>('');
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const meetid = localStorage.getItem('lastSelectedMeetId');
@@ -79,60 +59,19 @@ const EventsList: React.FC = () => {
       setFilteredEvents(updatedEvents);
     }
   };
-
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        if (!meetid) {
-          setError('Meet ID is not provided');
-          setLoading(false);
-          return; // Exit early if meetId is null or undefined
-        }
+    if(events.length === 0) return;
+    const initialEventCode = events[0].eventCode;
+    setSelectedEventCode(initialEventCode);
+    setFilteredEvents(events.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+  }, [events]);
 
-        const response = await getEventbyMeetId(meetid);
-        const responseEvents = response.data.events;
-
-        // Order events based on eventCode
-        responseEvents.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
-
-        setEvents(responseEvents);
-
-        // Set the initial selected event code to the first event code in the list
-        if (response.data.events.length > 0) {
-          const initialEventCode = response.data.events[0].eventCode;
-          setSelectedEventCode(initialEventCode);
-          setFilteredEvents(response.data.events.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
-        } else {
-          setFilteredEvents(response.data.events); // Initialize filteredEvents with all events if no events are found
-        }
-
-        setLoading(false);
-      } catch (err) {
-        setError('Error fetching events');
-        setLoading(false);
-      }
-    };
-
-    fetchEvents();
-  }, [meetid]);
-
-  const handleFilter = (value: string) => {
-    setSearchText(value);
-    const eventFound = events.find(event => event.eventCode.toLowerCase() === value.toLowerCase());
-    if (eventFound) {
-      setSelectedEventCode(eventFound.eventCode);
-      setFilteredEvents(events.filter(event => event.eventCode === eventFound.eventCode));
-      setError(null); // Clear any previous error
-    } else {
-      setFilteredEvents([]);
-      setError('Event not present in this meet'); // Set error if event is not found
-    }
-  };
 
   // Function to handle save operation
   const handleSave = async () => {
     try {
       const response = await updateEventAPI(filteredEvents);
+      setEvents(filteredEvents)
       message.success('Events status updated successfully!');
     } catch (err) {
       message.error('Error updating events status');
@@ -151,19 +90,6 @@ const EventsList: React.FC = () => {
     }
   };
 
-  const handleOk = (record: Event) => {
-    const updatedEvents = events.map(event => {
-      if (event.athleteNum === record.athleteNum) {
-        console.log(`Updating event for athleteNum ${record.startTime}`);
-        return { ...event, startTime: record.startTime };
-      } else {
-        return event;
-      }
-    });
-  
-    setEvents(updatedEvents);
-  };
-
   // Handle time change in TimePicker
   const handleStartTimeChange = (time: any, record: Event) => {
     console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
@@ -178,6 +104,22 @@ const EventsList: React.FC = () => {
       setFilteredEvents(updatedEvents);
     }
   };
+
+  const handleSetTime = () => {
+    const currentTime = moment().format('hh:mm:ss:SSS A');
+    const updatedEvents = filteredEvents.map(event => {
+      if (event.eventCode === selectedEventCode) {
+        return {
+          ...event,
+          startTime: currentTime,
+        };
+      }
+      return event;
+    });
+    setEvents(updatedEvents);
+    setFilteredEvents(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+  };
+
 
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(events);
@@ -211,7 +153,7 @@ const EventsList: React.FC = () => {
               { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
               { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
               {
-                title: 'Status',
+                title: 'Check In',
                 dataIndex: 'startPos',
                 key: 'startPos',
                 width: 100,
@@ -222,8 +164,8 @@ const EventsList: React.FC = () => {
                     onChange={(value) => handleStatusChange(value, record)}
                   >
                     <Option value="Y">Y</Option>
-                    <Option value="DNF">DNS</Option>
-                    <Option value="DNS">DNF</Option>
+                    <Option value="DNS">DNS</Option>
+                    <Option value="DNF">DNF</Option>
                     <Option value="DQ">DQ</Option>
                   </Select>
                 ),
@@ -250,6 +192,7 @@ const EventsList: React.FC = () => {
           />
         )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '25px'}}>
+          <Button type="primary" style={{ marginRight: '10px' }} onClick={handleSetTime}>Set Time</Button>
           <Button type="primary" onClick={handleSave}>Save</Button>
         </div>
       </div>

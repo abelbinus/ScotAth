@@ -1,5 +1,5 @@
 import { request } from "./index.ts"
-import { ILoginValues } from "../types/LoginValues";
+import { ILoginValues } from "../modals/LoginValues";
 
 // Login API endpoint
 export function loginAPI(loginValues: ILoginValues) {
@@ -128,7 +128,16 @@ export function getEventbyMeetId(meetId: any) {
 }
 
 // get all event details from folder
-export function getPFEventbyMeetId(folderParams: any) {
+export function getEventbyEventId(meetId: any, eventCode: any) {
+    return request({
+        url: `/api/rainbow/event/${meetId}/${eventCode}`,
+        method: "GET",
+    })
+}
+
+// get all event details from folder
+export function postPFEventbyEventId(folderParams: any) {
+    console.log("folderParams");
     return request({
         url: `/api/rainbow/pfevent/`,
         method: "POST",
@@ -136,13 +145,6 @@ export function getPFEventbyMeetId(folderParams: any) {
     })
 }
 
-// get all event details from folder
-export function getEventbyEventCode(eventCode: any) {
-    return request({
-        url: `/api/rainbow/event/${eventCode}`,
-        method: "GET",
-    })
-}
 // update all event details
 export function updateEventAPI(eventGroup: any) {
     return request({

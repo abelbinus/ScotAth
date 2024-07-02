@@ -4,6 +4,7 @@ import { UserOutlined, LogoutOutlined, ReadOutlined } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { UserContext } from "../App";
 import useProtectedRoute from "../router/ProtectedRoute";
+import { useVisibility } from "../Provider/VisibilityProvider";
 
 const { Header, Content, Sider } = Layout;
 const { useBreakpoint } = Grid;
@@ -26,7 +27,7 @@ const Home: React.FC = () => {
   const { user } = useContext(UserContext);
   const screens = useBreakpoint();
   const [selectedKeys, setSelectedKeys] = useState<string[]>(['/']); // State to track selected menu item
-
+  const { showLabels } = useVisibility();
   useEffect(() => {
     // Update selectedKeys based on location pathname
     setSelectedKeys([location.pathname]);
@@ -75,10 +76,13 @@ const Home: React.FC = () => {
     } else if (user?.userRole === "volunteer") {
       baseItems.push(
         { label: "View Meets", icon: <ReadOutlined />, key: "/view-meet", "data-testid": "menu-item-view-meet" },
-        { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
-        { label: "Check In Athletes", icon: <ReadOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
-        { label: "Track Judge Screen", icon: <ReadOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
-        { label: "PhotoFinish", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
+        ...(showLabels ? [
+          { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
+          { label: "Marksmen Screen", icon: <ReadOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
+          { label: "Track Judge Screen", icon: <ReadOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
+          { label: "PhotoFinish Screen", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
+          { label: "All Results", icon: <ReadOutlined />, key: "/allresults", "data-testid": "menu-item-all-results"}
+        ] : [])
       );
     }
 
