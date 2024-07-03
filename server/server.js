@@ -474,5 +474,5 @@ app.post('/api/rainbow/getEventPhotoAPI/', (req, res) => {
   
 // All other requests go to React app
 app.get('*', (req, res) => {
-    res.sendFile(path.join(clientPath + 'client', 'rainbow', 'build', 'index.html'));
+    res.sendFile(path.join(clientPath + '/' + 'client', 'rainbow', 'build', 'index.html'));
 });
