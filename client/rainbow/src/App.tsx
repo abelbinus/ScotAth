@@ -3,7 +3,6 @@ import { RouterProvider } from "react-router-dom";
 import { IUser } from "./modals/User";
 import router from "./router/router.tsx";
 import { EventProvider } from "./Provider/EventProvider.tsx";
-import { Visibility } from "@mui/icons-material";
 import { VisibilityProvider } from "./Provider/VisibilityProvider.tsx";
 
 
