@@ -1,20 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import { Input, Select, Table, Button, message } from 'antd';
-import { getEventbyMeetId, updateEventAPI } from '../apis/api';
+import { Select, Table, Button, message, Divider, Modal, Checkbox, Card, Row, Col, Typography } from 'antd';
+import { updateEventAPI } from '../apis/api';
 
 import { TimePicker } from '../components';
 import moment from 'moment';
 import { useEvents } from '../Provider/EventProvider';
+import './../styles/CustomCSS.css'
+import { formatEventCode } from './Eventutils';
 
-const { Search } = Input;
 const { Option } = Select;
 
 const EventsList: React.FC = () => {
   const {events, setEvents, setError, loading, error }: { events: Event[], setEvents: (updatedEvents: Event[]) => void, setError: any, loading: boolean, error: string | null } = useEvents();
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
-  const [searchText, setSearchText] = useState<string>('');
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const meetid = localStorage.getItem('lastSelectedMeetId');
+  const { Title, Text } = Typography;
+  
+  type ColumnVisibility = {
+    [key: string]: boolean;
+    lastName: boolean;
+    firstName: boolean;
+    athleteNum: boolean;
+    athleteClub: boolean;
+    startPos: boolean;
+    startTime: boolean;
+    finishPos: boolean;
+    finishTime: boolean;
+    finalPFPos: boolean;
+    finalPFTime: boolean;
+  };
+  
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>({
+    lastName: true,
+    firstName: true,
+    athleteNum: true,
+    athleteClub: true,
+    startPos: true,
+    startTime: true,
+    finishPos: true,
+    finishTime: true,
+    finalPFPos: true,
+    finalPFTime: true,
+  });
+  const [isModalVisible, setIsModalVisible] = useState(false);
   
   const parseTime = (time: string) => {  
     let hours = 0;
@@ -120,28 +149,51 @@ const EventsList: React.FC = () => {
     setFilteredEvents(updatedEvents.filter(event => event.eventCode === selectedEventCode));
   };
 
+  const handleColumnVisibilityChange = (column: string, isChecked: boolean) => {
+    setColumnVisibility(prev => ({ ...prev, [column]: isChecked }));
+  };
+
+  const showModal = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleCancel = () => {
+    setIsModalVisible(false);
+  };
+
+
 
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(events);
 
     return (
       <div>
-        <Select
-          placeholder="Select an event"
-          style={{ width: '100%', maxWidth: '300px', marginBottom: '16px' }} // Increase width
-          value={selectedEventCode}
-          onChange={handleEventSelect}
-          showSearch
-          filterOption={(input, option) =>
-            `${option?.value}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
-          }
-        >
-          {eventOptions.map(eventCode => (
-            <Option key={eventCode} value={eventCode}>
-              {eventCode}
-            </Option>
-          ))}
-        </Select>
+        <div className="container">
+          <div className="select-container">
+            <Select
+              placeholder="Select an event"
+              className="select"
+              value={selectedEventCode}
+              onChange={handleEventSelect}
+              showSearch
+              filterOption={(input, option) =>
+                `${option?.value}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
+              }
+            >
+              {eventOptions.map(eventCode => (
+                <Option key={eventCode} value={eventCode}>
+                  {formatEventCode(eventCode)}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="button-container">
+            <Button onClick={showModal} type="primary">
+              Filter Columns
+            </Button>
+          </div>
+        </div>
         {error ? (
           <div>{error}</div>
         ) : (
@@ -185,7 +237,7 @@ const EventsList: React.FC = () => {
                   />
                 ),
               }
-            ]}
+            ].filter(column => columnVisibility[column.dataIndex])}
             rowKey="athleteNum"
             pagination={false}
             scroll={{ x: 'max-content' }}
@@ -203,9 +255,49 @@ const EventsList: React.FC = () => {
   if (error && !selectedEventCode) return <div>{error}</div>;
 
   return (
-    <div>
-      <h2>Events List for Meet ID: {meetid}</h2>
+    <div style={{ padding: '20px' }}>
+      <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+        <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
+          <Col span={24}>
+            <Title level={2} style={{ margin: 0, color: '#001529' }}>Marksmen Screen</Title>
+            <Text type="secondary">Check In Athletes and set Start Times</Text>
+          </Col>
+          <Col span={24} style={{ marginTop: '20px' }}>
+            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>{formatEventCode(selectedEventCode)}</Title>
+          </Col>
+          <Col span={24} style={{ marginTop: '10px' }}>
+            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>Meet ID: {meetid}</Title>
+          </Col>
+        </Row>
+      </Card>
       {renderEvents()}
+
+      <Modal title="Select Columns to Display" open={isModalVisible} footer = {[]}onCancel={handleCancel}>
+        <Checkbox
+          checked={columnVisibility.lastName}
+          onChange={(e) => handleColumnVisibilityChange('lastName', e.target.checked)}
+        >Last Name</Checkbox>
+        <Checkbox
+          checked={columnVisibility.firstName}
+          onChange={(e) => handleColumnVisibilityChange('firstName', e.target.checked)}
+        >First Name</Checkbox>
+        <Checkbox
+          checked={columnVisibility.athleteNum}
+          onChange={(e) => handleColumnVisibilityChange('athleteNum', e.target.checked)}
+        >Athlete Number</Checkbox>
+        <Checkbox
+          checked={columnVisibility.athleteClub}
+          onChange={(e) => handleColumnVisibilityChange('athleteClub', e.target.checked)}
+        >Athlete Club</Checkbox>
+        <Checkbox
+          checked={columnVisibility.startPos}
+          onChange={(e) => handleColumnVisibilityChange('startPos', e.target.checked)}
+        >Check In</Checkbox>
+        <Checkbox
+          checked={columnVisibility.startTime}
+          onChange={(e) => handleColumnVisibilityChange('startTime', e.target.checked)}
+        >Start Time</Checkbox>
+      </Modal>
     </div>
   );
 };

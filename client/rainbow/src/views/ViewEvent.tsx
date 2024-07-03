@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Collapse, Input, Select, Table, Button, message } from 'antd';
+import { Collapse, Input, Select, Table, Button, message, Divider, Card, Row, Col, Typography } from 'antd';
 import { getEventbyMeetId, updateEventAPI } from '../apis/api';
 import { useEvents } from '../Provider/EventProvider';
+import { formatEventCode } from './Eventutils';
 
 const { Panel } = Collapse;
 const { Search } = Input;
@@ -14,6 +15,7 @@ const EventsList: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [searchText, setSearchText] = useState<string>('');
   const meetid = localStorage.getItem("lastSelectedMeetId");
+  const { Title, Text } = Typography;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -109,10 +111,15 @@ const EventsList: React.FC = () => {
     if (value.trim() === '') {
       setFilteredEvents(events); // Reset filter, show all events
     } else {
-      const filtered = events.filter((event: { eventCode: string; eventName: string; }) =>
-        event.eventCode.toLowerCase().includes(value.toLowerCase()) ||
-        event.eventName.toLowerCase().includes(value.toLowerCase())
-      );
+      const filtered = events.filter((event: { eventCode: string; eventName: string; }) => {
+        const formattedEventCode = formatEventCode(event.eventCode).toLowerCase();
+        const lowerCaseValue = value.toLowerCase();
+        return (
+          event.eventCode.toLowerCase().includes(lowerCaseValue) ||
+          event.eventName.toLowerCase().includes(lowerCaseValue) ||
+          formattedEventCode.includes(lowerCaseValue)
+        );
+      });
       setFilteredEvents(filtered);
     }
   };
@@ -135,16 +142,16 @@ const EventsList: React.FC = () => {
       <Collapse accordion>
         {Object.keys(eventGroups).map(eventCode => (
           <Panel 
-              header={
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>{`${eventCode} - ${eventGroups[eventCode][0]?.eventName}`}</span>
-                  {eventGroups[eventCode][0]?.eventDate && eventGroups[eventCode][0]?.eventTime ? (
-                    <span>{`${eventGroups[eventCode][0]?.eventDate} - ${eventGroups[eventCode][0]?.eventTime}`}</span>
-                  ) : null}
-                </div>
-              }
-              key={eventCode}
-            >
+            header={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>{formatEventCode(eventCode)} - {eventGroups[eventCode][0]?.eventName}</span>
+                {eventGroups[eventCode][0]?.eventDate && eventGroups[eventCode][0]?.eventTime ? (
+                  <span>{`${eventGroups[eventCode][0]?.eventDate} - ${eventGroups[eventCode][0]?.eventTime}`}</span>
+                ) : null}
+              </div>
+            }
+            key={eventCode}
+          >
     
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <Table
@@ -170,17 +177,26 @@ const EventsList: React.FC = () => {
   if (error) return <div>{error}</div>;
 
   return (
-    <div>
-      <h2>Events List for Meet ID: {meetid}</h2>
+      <div style={{ padding: '20px' }}>
+      <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+        <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
+          <Col span={24}>
+            <Title level={2} style={{ margin: 0, color: '#001529' }}>View Events</Title>
+          </Col>
+          <Col span={24} style={{ marginTop: '10px' }}>
+            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>Meet ID: {meetid}</Title>
+          </Col>
+        </Row>
+      </Card>
       <Search
         placeholder="Search by eventCode or Title"
         allowClear
         enterButton="Search"
         size="large"
         onSearch={value => handleFilter(value)}
-        style={{ marginBottom: '16px' }}
+        style={{ marginBottom: 30 }}
       />
-      <div style={{ marginBottom: '16px' }}>
+      <div style={{ marginBottom: 30, display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <span style={{ marginRight: '8px' }}>Sort By:</span>
         <Select value={sortBy} onChange={(value) => handleSort(value as 'eventCode' | 'eventName' | 'eventDate')}>
           <Option value="eventCode">Event Code</Option>

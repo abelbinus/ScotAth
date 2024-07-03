@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Input, Select, Table, message } from 'antd';
+import { Card, Col, Divider, Input, Row, Select, Table, Typography, message } from 'antd';
 import { getEventPhoto, getEventbyEventId, getEventbyMeetId, getMeetByIdAPI, postPFEventbyEventId, updateEventAPI } from '../apis/api';
 import { Axios, AxiosError } from 'axios';
 import { useEvents } from '../Provider/EventProvider';
+import { formatEventCode } from './Eventutils';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -13,6 +14,7 @@ const Photofinish: React.FC = () => {
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const meetid = localStorage.getItem('lastSelectedMeetId');
   const [photos, setPhotos] = useState<string[]>([]);
+  const { Title, Text } = Typography;
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -67,6 +69,15 @@ const Photofinish: React.FC = () => {
                 setFilteredEvents(updatedEvents.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
               } else {
                 setFilteredEvents(events); // Initialize filteredEvents with all events if no events are found
+              }
+              setLoading(false);
+            }
+            else{
+              if (events.length > 0) {
+                message.error(`Failed to read photo finish results for ${selectedEventCode}`);
+                const initialEventCode = selectedEventCode;
+                setSelectedEventCode(initialEventCode);
+                setFilteredEvents(events.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
               }
               setLoading(false);
             }
@@ -130,16 +141,6 @@ const Photofinish: React.FC = () => {
   useEffect(() => {
   }, [selectedEventCode]);
 
-  // Function to handle save operation
-  const handleSave = async () => {
-    try {
-      await updateEventAPI(filteredEvents);
-      message.success('Events status updated successfully!');
-    } catch (err) {
-      message.error('Error updating events status');
-    }
-  };
-
   // Handle event selection from dropdown
   const handleEventSelect = (value: string) => {
     console.log('Selected event:', value);
@@ -178,7 +179,7 @@ const generateFilename = (eventCode: string): string => {
         >
           {eventOptions.map(eventCode => (
             <Option key={eventCode} value={eventCode}>
-              {eventCode}
+              {formatEventCode(eventCode)}
             </Option>
           ))}
         </Select>
@@ -228,8 +229,22 @@ const generateFilename = (eventCode: string): string => {
   if (error && !selectedEventCode) return <div>{error}</div>;
 
   return (
-    <div>
-      <h2>Events List for Meet ID: {meetid}</h2>
+    <div style={{ padding: '20px' }}>
+      <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+        <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
+          <Col span={24}>
+            <Title level={2} style={{ margin: 0, color: '#001529' }}>Photofinish Results</Title>
+            <Text type="secondary">View Results from Photofinish</Text>
+          </Col>
+          <Col span={24} style={{ marginTop: '20px' }}>
+            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>{formatEventCode(selectedEventCode)}</Title>
+          </Col>
+          <Col span={24} style={{ marginTop: '10px' }}>
+            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>Meet ID: {meetid}</Title>
+          </Col>
+        </Row>
+      </Card>
+      <Divider style={{ marginTop: 28, marginBottom: 40 }} />
       {renderEvents()}
     </div>
   );

@@ -1,0 +1,62 @@
+.container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+  }
+  
+  .select-container {
+    flex-grow: 1; /* Ensure the select container takes remaining space */
+  }
+  
+  .select {
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 16px;
+  }
+  
+  .button-container {
+    margin-left: 10px; /* Add margin between select and button */
+  }
+  
+  @media (max-width: 1098px) {
+    .button-container .ant-btn {
+        margin-bottom: 10px; /* Add spacing between buttons on mobile */
+      }
+  }
+  
+  @media (max-width: 768px) {
+    .container {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  
+    .button-container {
+      margin-left: 0; /* Reset margin for mobile layout */
+      width: 100%; /* Ensure full width on smaller screens */
+      text-align: left; /* Align button to the left */
+    }
+
+    .button-container .ant-btn {
+        margin-bottom: 10px; /* Add spacing between buttons on mobile */
+      }
+  }
+  
+  @media (max-width: 425px) {
+    .hide-on-xs {
+      display: none;
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .action-button {
+    width: 75%;
+    margin-bottom: 8px; /* Optional: Add spacing between buttons */
+  }
+
+  

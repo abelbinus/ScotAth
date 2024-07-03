@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
-import { Layout, Menu, Tooltip, Drawer, message, Grid, theme } from "antd";
-import { UserOutlined, LogoutOutlined, ReadOutlined } from "@ant-design/icons";
+import { Layout, Menu, Tooltip, Drawer, message, Grid, theme, Button } from "antd";
+import { UserOutlined, LogoutOutlined, ReadOutlined, MenuOutlined } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { UserContext } from "../App";
 import useProtectedRoute from "../router/ProtectedRoute";
@@ -135,6 +135,15 @@ const Home: React.FC = () => {
         position: 'relative'
       }}>
         <div style={{ display: "flex", alignItems: "center" }}>
+           {/* Hamburger Icon */}
+           {!screens.md && (
+            <Button
+              style={{ border: "none", background: "none", fontSize: "20px", color: "#fff" }}
+              onClick={toggleDrawer}
+            >
+              <MenuOutlined />
+            </Button>
+          )}
           {/* Logo */}
           {screens.md && (
             <img
@@ -148,7 +157,7 @@ const Home: React.FC = () => {
         </div>
 
         {/* Title */}
-        <h1
+        <h1 className="hide-on-xs"
           data-testid="title"
           style={{
             color: "#fff",
@@ -156,7 +165,7 @@ const Home: React.FC = () => {
             position: screens.md ? "absolute" : "static",
             left: screens.md ? "50%" : "auto",
             transform: screens.md ? "translateX(-50%)" : "none",
-            fontSize: screens.md ? "50px" : "25px", // Adjust the font size based on screen size
+            fontSize: screens.md ? "35px" : "25px", // Adjust the font size based on screen size
           }}
         >
           Rainbow
@@ -197,31 +206,25 @@ const Home: React.FC = () => {
             <div>Login</div>
           )}
         </div>
-
-        {/* Burger Menu (Drawer) for Mobile */}
-        {!screens.md && (
-          <div className="burger-menu">
-            <Drawer
-              title="Menu"
-              placement="right"
-              closable={true}
-              onClose={closeDrawer}
-              open={drawerVisible}
-              style={{ padding: 0 }}
-            >
-              <Menu
-                mode="inline"
-                defaultSelectedKeys={["/"]}
-                selectedKeys={selectedKeys} // Use selectedKeys state
-                onClick={onMenuClick}
-                style={{ height: "100%", borderRight: 0 }}
-                items={getMenuItems()}
-              />
-            </Drawer>
-          </div>
-        )}
       </Header>
 
+      {/* Side Drawer */}
+      <Drawer
+        placement="left"
+        closable={false}
+        onClose={closeDrawer}
+        open={drawerVisible}
+        width={250}
+      >
+        <Menu
+          mode="inline"
+          defaultSelectedKeys={["/"]}
+          selectedKeys={selectedKeys}
+          onClick={onMenuClick}
+          style={{ background: "transparent", borderRight: 0 }}
+          items={getMenuItems()}
+        />
+      </Drawer>
 
       <Layout>
         {/* Left Sider Area for Desktop */}
