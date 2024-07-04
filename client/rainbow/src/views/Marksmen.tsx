@@ -270,6 +270,7 @@ const EventsList: React.FC = () => {
           </Col>
         </Row>
       </Card>
+      <Divider style={{ marginTop: 28, marginBottom: 40 }} />
       {renderEvents()}
 
       <Modal title="Select Columns to Display" open={isModalVisible} footer = {[]}onCancel={handleCancel}>

@@ -233,7 +233,7 @@ const generateFilename = (eventCode: string): string => {
       <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
-            <Title level={2} style={{ margin: 0, color: '#001529' }}>Photofinish Results</Title>
+            <Title level={2} style={{ margin: 0, color: '#001529' }}>PhotoFinish Results</Title>
             <Text type="secondary">View Results from Photofinish</Text>
           </Col>
           <Col span={24} style={{ marginTop: '20px' }}>

@@ -197,21 +197,22 @@ const AllResults: React.FC = () => {
   return (
     <div>
       <div style={{ padding: '20px' }}>
-      <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
-        <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
-          <Col span={24}>
-            <Title level={2} style={{ margin: 0, color: '#001529' }}>All Results</Title>
-            <Text type="secondary">View all the Results of the Events</Text>
-          </Col>
-          <Col span={24} style={{ marginTop: '20px' }}>
-            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>{formatEventCode(selectedEventCode)}</Title>
-          </Col>
-          <Col span={24} style={{ marginTop: '10px' }}>
-            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>Meet ID: {meetid}</Title>
-          </Col>
-        </Row>
-      </Card>
-        <div className="button-container">
+        <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+          <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
+            <Col span={24}>
+              <Title level={2} style={{ margin: 0, color: '#001529' }}>All Results</Title>
+              <Text type="secondary">View all the Results of the Events</Text>
+            </Col>
+            <Col span={24} style={{ marginTop: '20px' }}>
+              <Title level={3} style={{ margin: 0, color: '#1890ff' }}>{formatEventCode(selectedEventCode)}</Title>
+            </Col>
+            <Col span={24} style={{ marginTop: '10px' }}>
+              <Title level={3} style={{ margin: 0, color: '#1890ff' }}>Meet ID: {meetid}</Title>
+            </Col>
+          </Row>
+        </Card>
+      
+        <div className="button-download">
           <Popconfirm
             title="Choose Output Option"
             onConfirm={() => {
@@ -224,7 +225,7 @@ const AllResults: React.FC = () => {
             okText="CSV"
             cancelText="PDF"
           >
-            <Button type="primary" style={{ marginRight: '10px' }}>
+            <Button type="primary" style={{ marginRight: '10px', marginBottom: '20px'}}>
               Download Single Event CSV
             </Button>
           </Popconfirm>
@@ -235,12 +236,12 @@ const AllResults: React.FC = () => {
             okText="CSV"
             cancelText="PDF"
           >
-            <Button type="primary">Download All Events CSV</Button>
+            <Button type="primary" style={{ marginBottom: '20px'}}>Download All Events CSV</Button>
           </Popconfirm>
         </div>
-      </div>
-      <Divider style={{ marginTop: 10, marginBottom: 40 }} />
+      
       {renderEvents()}
+      </div>
       <Modal title="Select Columns to Display" open={isModalVisible} footer={[]} onCancel={handleCancel}>
         <Checkbox
           checked={columnVisibility.lastName}
