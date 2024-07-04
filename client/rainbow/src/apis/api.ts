@@ -147,8 +147,18 @@ export function postPFEventbyEventId(folderParams: any) {
 
 // update all event details
 export function updateEventAPI(eventGroup: any) {
+    console.log("eventGroup");
     return request({
         url: `/api/rainbow/updateEventAPI/`,
+        method: "POST",
+        data: eventGroup,
+    })
+}
+
+// update all event details
+export function updateAthleteAPI(eventGroup: any) {
+    return request({
+        url: `/api/rainbow/updateAthleteAPI/`,
         method: "POST",
         data: eventGroup,
     })

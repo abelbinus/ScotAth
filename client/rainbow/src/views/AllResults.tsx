@@ -7,8 +7,8 @@ import { formatEventCode } from './Eventutils';
 const { Option } = Select;
 
 const AllResults: React.FC = () => {
-  const { events, setError, loading, error }: { events: Event[], setEvents: (updatedEvents: Event[]) => void, setError: any, setLoading: (loading: boolean) => void, loading: boolean, error: string | null } = useEvents();
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const {athletes, eventsInfo, setAthleteinfo, setError, setLoading, loading, error } = useEvents();
+  const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const { Title, Text } = Typography;
   
@@ -43,18 +43,31 @@ const AllResults: React.FC = () => {
   const meetid = localStorage.getItem('lastSelectedMeetId');
 
   useEffect(() => {
-    if (events.length === 0) return;
-    const initialEventCode = events[0].eventCode;
-    setSelectedEventCode(initialEventCode);
-    setFilteredEvents(events.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
-  }, [events]);
+    if(eventsInfo.length === 0) return;
+    const initialEventCode = eventsInfo[0].eventCode;
+    if(!selectedEventCode) {
+      setSelectedEventCode(initialEventCode);
+      setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+    }
+  }, [meetid]);
 
   const downloadCSV = () => {
+    // Prepare the headers for the CSV
+    const athleteHeaders = Object.keys(athletes[0] || {}).join(',');
+    const eventHeaders = Object.keys(eventsInfo[0] || {}).join(',');
+  
     const csvContent = [
-      Object.keys(events[0]).join(','),
-      ...events.map(event => Object.values(event).join(','))
+      `${eventHeaders},${athleteHeaders}`, // Combine headers for both events and athletes
+      ...eventsInfo.flatMap(event => {
+        const eventValues = Object.values(event).join(',');
+        const relatedAthletes = athletes
+          .filter(athlete => athlete.eventCode === event.eventCode)
+          .map(athlete => `${eventValues},${Object.values(athlete).join(',')}`);
+  
+        return relatedAthletes.length > 0 ? relatedAthletes : [`${eventValues},No Athletes`];
+      })
     ].join('\n');
-
+  
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -64,26 +77,61 @@ const AllResults: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  const downloadSingleEventCSV = (event: Event) => {
-    const csvContent = Object.keys(event).join(',') + '\n' + Object.values(event).join(',');
-
+  const downloadSingleCSV = () => {
+    // Filter eventInfo and athletes based on selectedEventCode
+    const selectedEvent = eventsInfo.find(event => event.eventCode === selectedEventCode);
+    const relatedAthletes = athletes.filter(athlete => athlete.eventCode === selectedEventCode);
+  
+    if (!selectedEvent) {
+      console.error('No event found for the given event code');
+      return;
+    }
+  
+    // Prepare the headers for the CSV
+    const eventHeaders = Object.keys(selectedEvent).filter(key => key !== 'eventCode' && key !== 'meetId');
+    const athleteHeaders = relatedAthletes.length > 0 ? Object.keys(relatedAthletes[0]).filter(key => key !== 'eventCode' && key !== 'meetId') : [];
+  
+    // Combine headers for both events and athletes
+    const headers = [...eventHeaders, ...athleteHeaders].join(',');
+  
+    // Prepare the event data line
+    const eventData = eventHeaders.map(key => selectedEvent[key as keyof EventInfo]).join(',');
+  
+    // Prepare the athlete data lines
+    const athleteDataLines = relatedAthletes.map(athlete => {
+      const athleteData = athleteHeaders.map(key => athlete[key as keyof AthleteInfo]).join(',');
+      return `${eventData},${athleteData}`;
+    });
+  
+    // Handle case when no athletes are found
+    const csvContent = [
+      headers,
+      ...(
+        athleteDataLines.length > 0 
+          ? athleteDataLines 
+          : [`${eventData},No Athletes`]
+      )
+    ].join('\n');
+  
+    // Create a blob and trigger the download
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${event.eventCode}_event.csv`; // Example: eventCode_event.csv
+    a.download = `${selectedEventCode}_event.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
-
+  
+  // Handle event selection from dropdown
   const handleEventSelect = (value: string) => {
     setSelectedEventCode(value);
     if (value === '') {
-      setFilteredEvents(events);
+      setFilteredAthletesInfo(athletes); // Reset to show all events when no event is selected
     } else {
-      const filtered = events.filter(event => event.eventCode === value);
-      setFilteredEvents(filtered);
-      setError(filtered.length === 0 ? 'Event not present in this meet' : null);
+      const filtered = athletes.filter(event => event.eventCode === value);
+      setFilteredAthletesInfo(filtered);
+      setError(filtered.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
     }
   };
 
@@ -99,8 +147,22 @@ const AllResults: React.FC = () => {
     setIsModalVisible(false);
   };
 
+  const handleNextEvent = () => {
+    if (!selectedEventCode || eventsInfo.length === 0) return;
+  
+    // Find the index of the current selected event code
+    const currentIndex = eventsInfo.findIndex(event => event.eventCode === selectedEventCode);
+  
+    // Calculate the index of the next event code
+    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % eventsInfo.length;
+  
+    // Update the selected event code with the next event code
+    setSelectedEventCode(eventsInfo[nextIndex].eventCode);
+    handleEventSelect(eventsInfo[nextIndex].eventCode);
+  };
+
   const renderEvents = () => {
-    const eventOptions = getUniqueEventOptions(events);
+    const eventOptions = getUniqueEventOptions(eventsInfo);
     const columns = [
       { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
       { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
@@ -168,6 +230,7 @@ const AllResults: React.FC = () => {
                 }
               })}
             </Select>
+            <Button onClick={handleNextEvent} className='button-next' type="primary">Next</Button>
           </div>
 
           <div className="button-container">
@@ -180,7 +243,7 @@ const AllResults: React.FC = () => {
           <div>{error}</div>
         ) : (
           <Table
-            dataSource={filteredEvents}
+            dataSource={filteredAthletesInfo}
             columns={columns}
             rowKey="athleteNum"
             pagination={false}
@@ -216,10 +279,7 @@ const AllResults: React.FC = () => {
           <Popconfirm
             title="Choose Output Option"
             onConfirm={() => {
-              const matchingEvents = events.filter(event => event.eventCode === selectedEventCode);
-              if (matchingEvents.length > 0) {
-                downloadSingleEventCSV(matchingEvents[0]);
-              }
+              downloadSingleCSV();
             }}
             onCancel={() => {}}
             okText="CSV"
@@ -289,7 +349,7 @@ const AllResults: React.FC = () => {
 };
 
 // Utility function to get unique event codes
-const getUniqueEventOptions = (events: Event[]): string[] => {
+const getUniqueEventOptions = (events: EventInfo[]): string[] => {
   const uniqueOptions = new Set<string>();
   events.forEach(event => {
     uniqueOptions.add(event.eventCode);

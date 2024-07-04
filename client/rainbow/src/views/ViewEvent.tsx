@@ -9,8 +9,9 @@ const { Search } = Input;
 const { Option } = Select;
 
 const EventsList: React.FC = () => {
-  const {events, fetchEvents, loading, error } = useEvents();
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const {athletes, eventsInfo, fetchEvents, loading, error } = useEvents();
+  const [filteredEventsInfo, setFilteredEventsInfo] = useState<EventInfo[]>([]);
+  const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [sortBy, setSortBy] = useState<'eventCode' | 'eventName' | 'eventDate'>('eventCode');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [searchText, setSearchText] = useState<string>('');
@@ -30,8 +31,11 @@ const EventsList: React.FC = () => {
   }, [meetid]);
 
   useEffect(() => {
-    setFilteredEvents(events);
-  }, [events]);
+    setFilteredAthletesInfo(athletes);
+  }, [athletes]);
+  useEffect(() => { 
+    setFilteredEventsInfo(eventsInfo);
+  }, [eventsInfo]);
 
   const parseDateTime = (date: string, time: string) => {
     let separator = '.';
@@ -48,18 +52,17 @@ const EventsList: React.FC = () => {
   
     let hours = 0;
     let minutes = 0;
-  
+    
     if (time.includes(':')) {
       // Check for 12-hour format (AM/PM)
       if (time.includes('AM') || time.includes('PM')) {
         const timeParts = time.split(':');
         const hourPart = timeParts[0];
-        const minutePart = timeParts[1].substr(0, 2); // Ensure to only take first two characters of minutes part
-        const modifier = timeParts[1].substr(2); // Grab AM/PM part
+        const minutePart = timeParts[1].substring(0, 2); // Ensure to only take first two characters of minutes part
+        const modifier = timeParts[1].substring(2).trim(); // Grab AM/PM part
   
         hours = parseInt(hourPart, 10);
         minutes = parseInt(minutePart, 10);
-  
         if (modifier === 'PM' && hours < 12) {
           hours += 12;
         }
@@ -71,13 +74,12 @@ const EventsList: React.FC = () => {
         hours = parseInt(timeParts[0], 10);
         minutes = parseInt(timeParts[1], 10);
       }
-    }
-  
+    }  
     return new Date(`${year}-${month}-${day}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
   };
 
-  const sortedAndFilteredEvents = useMemo(() => {
-    let sortedEvents = [...filteredEvents];
+  const sortedAndFilteredEventsInfo = useMemo(() => {
+    let sortedEvents = [...filteredEventsInfo];
     if (sortBy === 'eventCode') {
       sortedEvents.sort((a, b) => sortOrder === 'asc' ? a.eventCode.localeCompare(b.eventCode) : b.eventCode.localeCompare(a.eventCode));
     } else if (sortBy === 'eventName') {
@@ -94,7 +96,7 @@ const EventsList: React.FC = () => {
       event.eventCode.toLowerCase().includes(searchText.toLowerCase()) ||
       event.eventName.toLowerCase().includes(searchText.toLowerCase())
     );
-  }, [filteredEvents, searchText, sortBy, sortOrder]);
+  }, [filteredEventsInfo, searchText, sortBy, sortOrder]);
 
   const handleSort = (sortBy: 'eventCode' | 'eventName' | 'eventDate') => {
     setSortBy(sortBy);
@@ -109,9 +111,9 @@ const EventsList: React.FC = () => {
   const handleFilter = (value: string) => {
     setSearchText(value);
     if (value.trim() === '') {
-      setFilteredEvents(events); // Reset filter, show all events
+      setFilteredEventsInfo(eventsInfo); // Reset filter, show all events
     } else {
-      const filtered = events.filter((event: { eventCode: string; eventName: string; }) => {
+      const filtered = eventsInfo.filter((event: { eventCode: string; eventName: string; }) => {
         const formattedEventCode = formatEventCode(event.eventCode).toLowerCase();
         const lowerCaseValue = value.toLowerCase();
         return (
@@ -120,46 +122,41 @@ const EventsList: React.FC = () => {
           formattedEventCode.includes(lowerCaseValue)
         );
       });
-      setFilteredEvents(filtered);
+      setFilteredEventsInfo(filtered);
     }
   };
 
   const renderEvents = () => {
-    const eventGroups: { [key: string]: Event[] } = {};
+    const eventGroups: { [key: string]: AthleteInfo[] } = {};
 
-    sortedAndFilteredEvents.forEach(event => {
-      if (!eventGroups[event.eventCode]) {
-        eventGroups[event.eventCode] = [];
+    filteredAthletesInfo.forEach(athlete => {
+      if (!eventGroups[athlete.eventCode]) {
+        eventGroups[athlete.eventCode] = [];
       }
-      eventGroups[event.eventCode].push(event);
+      eventGroups[athlete.eventCode].push(athlete);
     });
-    const eventCodeCount = Object.keys(eventGroups).length;
-    // console.log(eventCodeCount);
-    // if (Object.keys(eventGroups).length === 0) {
-    //     return <div>No events available for this meet ID.</div>;
-    // }
+
     return (
       <Collapse accordion>
-        {Object.keys(eventGroups).map(eventCode => (
-          <Panel 
+        {sortedAndFilteredEventsInfo.map(eventInfo => (
+          <Panel
             header={
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span>{formatEventCode(eventCode)} - {eventGroups[eventCode][0]?.eventName}</span>
-                {eventGroups[eventCode][0]?.eventDate && eventGroups[eventCode][0]?.eventTime ? (
-                  <span>{`${eventGroups[eventCode][0]?.eventDate} - ${eventGroups[eventCode][0]?.eventTime}`}</span>
+                <span>{formatEventCode(eventInfo.eventCode)} - {eventInfo.eventName}</span>
+                {eventInfo.eventDate && eventInfo.eventTime ? (
+                  <span>{`${eventInfo.eventDate} - ${eventInfo.eventTime}`}</span>
                 ) : null}
               </div>
             }
-            key={eventCode}
+            key={eventInfo.eventCode}
           >
-    
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <Table
-                dataSource={eventGroups[eventCode]}
+                dataSource={eventGroups[eventInfo.eventCode] || []}
                 columns={[
-                  { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200, },
-                  { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200, },
-                  { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175, },
+                  { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
+                  { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
+                  { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
                   { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub' },
                 ]}
                 rowKey="athleteNum"

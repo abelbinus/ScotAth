@@ -4,9 +4,11 @@ import { getEventbyMeetId } from '../apis/api'; // Adjust the import path as nec
   
 
 interface EventContextType {
-  events: Event[];
+  athletes: AthleteInfo[];
+  eventsInfo: EventInfo[];
   fetchEvents: (meetId: any) => Promise<void>;
-  setEvents: (updatedEvent: Event[]) => void;
+  setAthleteinfo: (updatedEvent: AthleteInfo[]) => void;
+  setEventsInfo: (updatedEvent: EventInfo[]) => void;
   setError: (error: string | null) => void;
   setLoading: (loading: boolean) => void;
   loading: boolean;
@@ -24,7 +26,8 @@ export const useEvents = () => {
 };
 
 export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [athletes, setAthleteinfo] = useState<AthleteInfo[]>([]);
+  const [eventsInfo, setEventsInfo] = useState<EventInfo[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [meetId, setMeetId] = useState<string | null>(null);
@@ -45,12 +48,15 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
 
         const response = await getEventbyMeetId(meetId);
-        const events = response.data.events;
+        const athleteInfo = response.data.athleteInfo;
+        const eventInfo = response.data.eventInfo;
 
         // Order events based on eventCode
-        events.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
+        athleteInfo.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
+        eventInfo.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
 
-        setEvents(events);
+        setAthleteinfo(athleteInfo);
+        setEventsInfo(eventInfo);
       } catch (err) {
         setError('Error fetching events');
       } finally {
@@ -63,7 +69,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [fetchEvents, meetId]);
 
   return (
-    <EventContext.Provider value={{ events, setEvents, fetchEvents, setError, setLoading, loading, error }}>
+    <EventContext.Provider value={{ athletes, eventsInfo, setAthleteinfo, setEventsInfo, fetchEvents, setError, setLoading, loading, error }}>
       {children}
     </EventContext.Provider>
   );

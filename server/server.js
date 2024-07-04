@@ -388,28 +388,42 @@ app.post('/api/rainbow/pfevent', async (req, res) => {
 });
 
   // New endpoint to fetch eventinfo and events based on meetId
-app.get('/api/rainbow/eventinfo/:meetId', (req, res) => {
+  app.get('/api/rainbow/eventinfo/:meetId', (req, res) => {
     const { meetId } = req.params;
-    
-    // Query to join tbleventinfo and tblevents based on eventCode and meetId
-    const query = `
-      SELECT ei.*, e.* 
-      FROM tbleventinfo ei 
-      JOIN tblevents e ON ei.eventCode = e.eventCode AND ei.meetId = e.meetId
-      WHERE ei.meetId = ?`;
-      
-    db.all(query, [meetId], (err, rows) => {
+  
+    // Query to get event information based on meetId
+    const eventInfoQuery = `
+      SELECT * 
+      FROM tbleventinfo 
+      WHERE meetId = ?`;
+  
+    // Query to get athlete information based on meetId
+    const athleteInfoQuery = `
+      SELECT * 
+      FROM tblevents 
+      WHERE meetId = ?`;
+  
+    // Execute both queries in parallel
+    db.all(eventInfoQuery, [meetId], (err, eventInfoRows) => {
       if (err) {
         res.status(500).json({ error: err.message });
         return;
       }
-      res.json({ events: rows });
+  
+      db.all(athleteInfoQuery, [meetId], (err, athleteInfoRows) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+  
+        res.json({ eventInfo: eventInfoRows, athleteInfo: athleteInfoRows });
+      });
     });
   });
 
-  // Update event API
-app.post('/api/rainbow/updateEventAPI', (req, res) => {
-    const events = req.body;
+  // Update tblevents API
+app.post('/api/rainbow/updateAthleteAPI', (req, res) => {
+    const athletes = req.body;
     const updateQuery = `
       UPDATE tblevents
       SET startPos = ?, finishPos = ?, startTime = ?, finishTime = ?
@@ -419,8 +433,37 @@ app.post('/api/rainbow/updateEventAPI', (req, res) => {
     db.serialize(() => {
       const stmt = db.prepare(updateQuery);
   
-      events.forEach(event => {
+      athletes.forEach(event => {
         stmt.run(event.startPos, event.finishPos, event.startTime, event.finishTime, event.meetId, event.eventCode, event.athleteNum, event.lastName, event.firstName, function(err) {
+          if (err) {
+            return res.status(500).json({ error: err.message });
+          }
+        });
+      });
+  
+      stmt.finalize((err) => {
+        if (err) {
+          return res.status(500).json({ error: err.message });
+        }
+        res.json({ message: 'Athletes Information updated successfully!' });
+      });
+    });
+  });
+
+    // Update tbleventsinfo API
+app.post('/api/rainbow/updateEventAPI/', (req, res) => {
+    const events = req.body;
+    const updateQuery = `
+      UPDATE tbleventinfo
+      SET eventDescription = ?, eventComments = ?, eventDate = ?, eventTime = ?, eventLength = ?, eventName = ?, sponsor = ?, title2 = ?
+      WHERE meetId = ? AND eventCode = ?
+    `;
+  
+    db.serialize(() => {
+      const stmt = db.prepare(updateQuery);
+  
+      events.forEach(event => {
+        stmt.run(event.eventDescription, event.eventComments, event.eventDate, event.eventTime, event.eventLength, event.eventName, event.sponsor, event.title2, event.meetId, event.eventCode, function(err) {
           if (err) {
             return res.status(500).json({ error: err.message });
           }
@@ -435,7 +478,6 @@ app.post('/api/rainbow/updateEventAPI', (req, res) => {
       });
     });
   });
-
   
 
   

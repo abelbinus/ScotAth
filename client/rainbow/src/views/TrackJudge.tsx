@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Select, Table, Button, message, Divider, Checkbox, Modal, Card, Row, Typography, Col } from 'antd';
-import { updateEventAPI } from '../apis/api';
+import { Select, Table, Button, message, Divider, Checkbox, Modal, Card, Row, Typography, Col, Input } from 'antd';
+import { updateAthleteAPI, updateEventAPI } from '../apis/api';
 
 import { TimePicker } from '../components';
 import moment from 'moment';
@@ -10,13 +10,15 @@ import { formatEventCode } from './Eventutils';
 const { Option } = Select;
 
 const EventsList: React.FC = () => {
-  const {events, setEvents, setError, loading, error }: { events: Event[], setEvents: (updatedEvents: Event[]) => void, setError: any, loading: boolean, error: string | null } = useEvents();
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const {athletes, eventsInfo, setAthleteinfo, setEventsInfo, setError, loading, error } = useEvents();
+  const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedValues, setSelectedValues] = useState<{ [key: string]: string }>({}); // Track selected status values for each athlete
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
+  const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
+  const [eventComments, setEventComments] = useState<string>(''); // State to hold event description
+  const { Title, Text, Paragraph } = Typography;
   const meetid = localStorage.getItem('lastSelectedMeetId');
-  const { Title, Text } = Typography;
-  
+
   type ColumnVisibility = {
     [key: string]: boolean;
     lastName: boolean;
@@ -49,29 +51,44 @@ const EventsList: React.FC = () => {
   const handleStatusChange = (value: string, athlete: any) => {
     const updatedValues = { ...selectedValues, [athlete.athleteNum]: value };
     setSelectedValues(updatedValues);
-    const updatedEvents = events.map(event =>
+    const updatedEvents = athletes.map(event =>
       event.athleteNum === athlete.athleteNum ? { ...event, finishPos: value } : event
     );
-    setEvents(updatedEvents);
+    setAthleteinfo(updatedEvents);
     if (selectedEventCode) {
-      setFilteredEvents(updatedEvents.filter(event => event.eventCode === selectedEventCode)); // Update filtered events based on the selected event
+      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode)); // Update filtered events based on the selected event
     } else {
-      setFilteredEvents(updatedEvents);
+      setFilteredAthletesInfo(updatedEvents);
     }
   };
+
   useEffect(() => {
-    if(events.length === 0) return;
-    const initialEventCode = events[0].eventCode;
-    setSelectedEventCode(initialEventCode);
-    setFilteredEvents(events.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
-  }, [events]);
+    if(eventsInfo.length === 0) return;
+    const initialEventCode = eventsInfo[0].eventCode;
+    if(!selectedEventCode) {
+      setSelectedEventCode(initialEventCode);
+      setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+    }
+  }, [meetid]);
 
 
   // Function to handle save operation
   const handleSave = async () => {
     try {
-      const response = await updateEventAPI(filteredEvents);
-      setEvents(filteredEvents)
+      await updateAthleteAPI(filteredAthletesInfo);
+      // Update the events list with the matching pfEvent data
+      const updatedEvents = athletes.map(event => {
+        // Find all corresponding events in the pfEvent list
+        const matchingAthleteEvents = filteredAthletesInfo.filter((filteredAthletes: { eventCode: string; athleteNum: string; }) => 
+          filteredAthletes.eventCode === event.eventCode && filteredAthletes.athleteNum === event.athleteNum
+        );
+
+        // Merge the event with all matching pfEvent objects
+        return matchingAthleteEvents.length > 0 
+          ? matchingAthleteEvents.map((matchingAthleteEvents: any) => ({ ...event, ...matchingAthleteEvents }))
+          : event;
+      }).flat();
+      setAthleteinfo(updatedEvents);
       message.success('Events status updated successfully!');
     } catch (err) {
       message.error('Error updating events status');
@@ -81,45 +98,50 @@ const EventsList: React.FC = () => {
   // Handle event selection from dropdown
   const handleEventSelect = (value: string) => {
     setSelectedEventCode(value);
+    console.log(value);
     if (value === '') {
-      setFilteredEvents(events); // Reset to show all events when no event is selected
+      setFilteredAthletesInfo(athletes);
     } else {
-      const filtered = events.filter(event => event.eventCode === value);
-      setFilteredEvents(filtered);
-      setError(filtered.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
+      const filteredEvents = eventsInfo.filter(event => event.eventCode === value);
+      const filteredAthletes = athletes.filter(event => event.eventCode === value);
+      setFilteredAthletesInfo(filteredAthletes);
+      setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
     }
   };
 
-  const getUniqueAthleteOptions = (events: Event[]): string[] => {
+  const getUniqueAthleteOptions = (events: AthleteInfo[]): string[] => {
     const uniqueOptions = new Set<string>();
+    const presentOptions = new Set<string>();
     let count = 0;
     events.forEach(event => {
         count++;
+        if(event.finishPos !== 'DNS' && event.finishPos !== 'DNF' && event.finishPos !== 'DQ' && event.finishPos !== '' && event.finishPos !== null) {
+          presentOptions.add(event.finishPos);
+        }
       uniqueOptions.add(count.toString());
     });
     uniqueOptions.add('DNS');
     uniqueOptions.add('DNF');
     uniqueOptions.add('DQ');
-
     // Exclude specific values from selectedValuesSet
     const excludedValues = ['DNS', 'DNF', 'DQ'];
     const selectedValuesSet = new Set(Object.values(selectedValues).filter(value => !excludedValues.includes(value)));
     // Convert the Set to an Array before filtering
-    return Array.from(uniqueOptions).filter(option => !selectedValuesSet.has(option));
+    return Array.from(uniqueOptions).filter(option => !selectedValuesSet.has(option)).filter(option => !presentOptions.has(option));
   };
 
   // Handle time change in TimePicker
-  const handlefinishTimeChange = (time: any, record: Event) => {
+  const handlefinishTimeChange = (time: any, record: AthleteInfo) => {
     console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
     const timeString = time ? time.format('hh:mm:ss:SSS A') : null; // Convert Moment object to 12-hour format string
-    const updatedEvents = events.map(event =>
+    const updatedEvents = athletes.map(event =>
       event.athleteNum === record.athleteNum ? { ...event, finishTime: timeString } : event
     );
-    setEvents(updatedEvents);
+    setAthleteinfo(updatedEvents);
     if (selectedEventCode) {
-      setFilteredEvents(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
     } else {
-      setFilteredEvents(updatedEvents);
+      setFilteredAthletesInfo(updatedEvents);
     }
   };
 
@@ -135,9 +157,63 @@ const EventsList: React.FC = () => {
     setIsModalVisible(false);
   };
 
+  const showCommentModal = () => {
+    setIsCommentModalVisible(true);
+  };
+
+  const handleCommentOk = async () => {
+    console.log(eventsInfo.filter((event: { eventCode: any; }) => event.eventCode === selectedEventCode));
+    // Find the event with the selected event code and update its description
+    const updatedEvent = eventsInfo.find(event => event.eventCode === selectedEventCode);
+  
+    if (!updatedEvent) {
+      message.error('Event not found');
+      return;
+    }
+  
+    const eventToUpdate = {
+      ...updatedEvent,
+      eventComments: eventComments,
+    };
+  
+    // Update the local state with the updated event description
+    const updatedEvents = eventsInfo.map(event =>
+      event.eventCode === selectedEventCode ? eventToUpdate : event
+    );
+    setEventsInfo(updatedEvents);
+  
+    try {
+      // Update the event description in the backend
+      await updateEventAPI([eventToUpdate]);
+      message.success('Comment added successfully!');
+    } catch (error) {
+      message.error('Failed to update comment');
+    }
+  
+    setIsCommentModalVisible(false);
+  };
+
+  const handleCommentCancel = () => {
+    setIsCommentModalVisible(false);
+  };
+
+  const handleNextEvent = () => {
+    if (!selectedEventCode || eventsInfo.length === 0) return;
+  
+    // Find the index of the current selected event code
+    const currentIndex = eventsInfo.findIndex(event => event.eventCode === selectedEventCode);
+  
+    // Calculate the index of the next event code
+    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % eventsInfo.length;
+  
+    // Update the selected event code with the next event code
+    setSelectedEventCode(eventsInfo[nextIndex].eventCode);
+    handleEventSelect(eventsInfo[nextIndex].eventCode);
+  };
+
 
   const renderEvents = () => {
-    const eventOptions = getUniqueEventOptions(events);
+    const eventOptions = getUniqueEventOptions(eventsInfo);
 
     return (
       <div>
@@ -159,10 +235,14 @@ const EventsList: React.FC = () => {
                 </Option>
               ))}
             </Select>
+            <Button onClick={handleNextEvent} className='button-next' type="primary">Next</Button>
           </div>
           <div className="button-container">
-            <Button onClick={showModal} type="primary">
+            <Button onClick={showModal} style={{ marginRight: '10px' }} type="primary">
               Filter Columns
+            </Button>
+            <Button onClick={showCommentModal} type="primary">
+              Add Comments
             </Button>
           </div>
         </div>
@@ -170,7 +250,7 @@ const EventsList: React.FC = () => {
           <div>{error}</div>
         ) : (
           <Table
-            dataSource={filteredEvents}
+            dataSource={filteredAthletesInfo}
             columns={[
               { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
               { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
@@ -187,7 +267,7 @@ const EventsList: React.FC = () => {
                     onChange={(value) => handleStatusChange(value, record)}
                     value={selectedValues[record.athleteNum] || record.finishPos || 'Select'}
                   >
-                    {getUniqueAthleteOptions(filteredEvents).map(optionValue => (
+                    {getUniqueAthleteOptions(filteredAthletesInfo).map(optionValue => (
                       <Option key={optionValue} value={optionValue}>
                         {optionValue}
                       </Option>
@@ -242,6 +322,17 @@ const EventsList: React.FC = () => {
           </Col>
         </Row>
       </Card>
+      {eventComments.trim() !== '' && (
+          <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+            <Row gutter={[16, 16]} style={{ textAlign: 'center' }}>
+              <Col span={24} style={{ marginTop: '20px' }}>
+                <Paragraph style={{ whiteSpace: 'pre-line', color: '#1890ff' }}>
+                  {eventComments}
+                </Paragraph>
+              </Col>
+            </Row>
+          </Card>
+        )}
       <Divider style={{ marginTop: 28, marginBottom: 40 }} />
       {renderEvents()}
       <Modal title="Select Columns to Display" open={isModalVisible} footer={[]} onCancel={handleCancel}>
@@ -270,12 +361,20 @@ const EventsList: React.FC = () => {
           onChange={(e) => handleColumnVisibilityChange('finishTime', e.target.checked)}
         >Finish Time</Checkbox>
       </Modal>
+      <Modal title="Add Comments" open={isCommentModalVisible} onOk={handleCommentOk} onCancel={handleCommentCancel}>
+        <Input.TextArea
+          rows={4}
+          value={eventComments}
+          onChange={(e) => setEventComments(e.target.value)}
+          placeholder="Enter Comments"
+        />
+      </Modal>
     </div>
   );
 };
 
 // Utility function to get unique event codes
-const getUniqueEventOptions = (events: Event[]): string[] => {
+const getUniqueEventOptions = (events: EventInfo[]): string[] => {
   const uniqueOptions = new Set<string>();
   events.forEach(event => {
     uniqueOptions.add(event.eventCode);

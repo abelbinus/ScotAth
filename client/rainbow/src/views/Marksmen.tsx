@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Select, Table, Button, message, Divider, Modal, Checkbox, Card, Row, Col, Typography } from 'antd';
-import { updateEventAPI } from '../apis/api';
+import { Select, Table, Button, message, Divider, Modal, Checkbox, Card, Row, Col, Typography, Input } from 'antd';
+import { updateAthleteAPI, updateEventAPI } from '../apis/api';
 
 import { TimePicker } from '../components';
 import moment from 'moment';
@@ -11,12 +11,13 @@ import { formatEventCode } from './Eventutils';
 const { Option } = Select;
 
 const EventsList: React.FC = () => {
-  const {events, setEvents, setError, loading, error }: { events: Event[], setEvents: (updatedEvents: Event[]) => void, setError: any, loading: boolean, error: string | null } = useEvents();
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const {athletes, eventsInfo, setAthleteinfo, setEventsInfo, setError, setLoading, loading, error } = useEvents();
+  const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const meetid = localStorage.getItem('lastSelectedMeetId');
-  const { Title, Text } = Typography;
-  
+  const { Title, Text, Paragraph } = Typography;
+  const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
+  const [eventComments, setEventComments] = useState<string>(''); // State to hold event Comment
   type ColumnVisibility = {
     [key: string]: boolean;
     lastName: boolean;
@@ -45,62 +46,52 @@ const EventsList: React.FC = () => {
   });
   const [isModalVisible, setIsModalVisible] = useState(false);
   
-  const parseTime = (time: string) => {  
-    let hours = 0;
-    let minutes = 0;
-  
-    if (time.includes(':')) {
-      // Check for 12-hour format (AM/PM)
-      if (time.includes('AM') || time.includes('PM')) {
-        const timeParts = time.split(':');
-        const hourPart = timeParts[0];
-        const minutePart = timeParts[1].substr(0, 2); // Ensure to only take first two characters of minutes part
-        const modifier = timeParts[1].substr(2); // Grab AM/PM part
-  
-        hours = parseInt(hourPart, 10);
-        minutes = parseInt(minutePart, 10);
-  
-        if (modifier === 'PM' && hours < 12) {
-          hours += 12;
-        }
-        if (modifier === 'AM' && hours === 12) {
-          hours = 0;
-        }
-      } else { // 24-hour format
-        const timeParts = time.split(':');
-        hours = parseInt(timeParts[0], 10);
-        minutes = parseInt(timeParts[1], 10);
-      }
-    }
-  
-    return new Date(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
-  };
-
   // Function to handle status change for an athlete
   const handleStatusChange = (value: string, athlete: any) => {
-    const updatedEvents = events.map(event =>
+    const updatedEvents = athletes.map(event =>
       event.athleteNum === athlete.athleteNum ? { ...event, startPos: value } : event
     );
-    setEvents(updatedEvents);
+    setAthleteinfo(updatedEvents);
     if (selectedEventCode) {
-      setFilteredEvents(updatedEvents.filter(event => event.eventCode === selectedEventCode)); // Update filtered events based on the selected event
+      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode)); // Update filtered events based on the selected event
     } else {
-      setFilteredEvents(updatedEvents);
+      setFilteredAthletesInfo(updatedEvents);
     }
   };
+
   useEffect(() => {
-    if(events.length === 0) return;
-    const initialEventCode = events[0].eventCode;
-    setSelectedEventCode(initialEventCode);
-    setFilteredEvents(events.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
-  }, [events]);
+    if(eventsInfo.length === 0) return;
+    const initialEventCode = eventsInfo[0].eventCode;
+    if(!selectedEventCode) {
+      setSelectedEventCode(initialEventCode);
+      setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+    }
+  }, [meetid]);
+
+  useEffect(() => {
+    if (selectedEventCode) {
+      setEventComments(eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventComments || '');
+    }
+  }, [selectedEventCode]);
 
 
   // Function to handle save operation
   const handleSave = async () => {
     try {
-      const response = await updateEventAPI(filteredEvents);
-      setEvents(filteredEvents)
+      await updateAthleteAPI(filteredAthletesInfo);
+      // Update the events list with the matching pfEvent data
+      const updatedEvents = athletes.map(event => {
+        // Find all corresponding events in the pfEvent list
+        const matchingAthleteEvents = filteredAthletesInfo.filter((filteredAthletes: { eventCode: string; athleteNum: string; }) => 
+          filteredAthletes.eventCode === event.eventCode && filteredAthletes.athleteNum === event.athleteNum
+        );
+
+        // Merge the event with all matching athlete objects
+        return matchingAthleteEvents.length > 0 
+          ? matchingAthleteEvents.map((matchingAthleteEvents: any) => ({ ...event, ...matchingAthleteEvents }))
+          : event;
+      }).flat();
+      setAthleteinfo(updatedEvents);
       message.success('Events status updated successfully!');
     } catch (err) {
       message.error('Error updating events status');
@@ -111,32 +102,32 @@ const EventsList: React.FC = () => {
   const handleEventSelect = (value: string) => {
     setSelectedEventCode(value);
     if (value === '') {
-      setFilteredEvents(events); // Reset to show all events when no event is selected
+      setFilteredAthletesInfo(athletes); // Reset to show all events when no event is selected
     } else {
-      const filtered = events.filter(event => event.eventCode === value);
-      setFilteredEvents(filtered);
+      const filtered = athletes.filter(event => event.eventCode === value);
+      setFilteredAthletesInfo(filtered);
       setError(filtered.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
     }
   };
 
   // Handle time change in TimePicker
-  const handleStartTimeChange = (time: any, record: Event) => {
+  const handleStartTimeChange = (time: any, record: AthleteInfo) => {
     console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
     const timeString = time ? time.format('hh:mm:ss:SSS A') : null; // Convert Moment object to 12-hour format string
-    const updatedEvents = events.map(event =>
+    const updatedEvents = athletes.map(event =>
       event.athleteNum === record.athleteNum ? { ...event, startTime: timeString } : event
     );
-    setEvents(updatedEvents);
+    setAthleteinfo(updatedEvents);
     if (selectedEventCode) {
-      setFilteredEvents(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
     } else {
-      setFilteredEvents(updatedEvents);
+      setFilteredAthletesInfo(updatedEvents);
     }
   };
 
   const handleSetTime = () => {
     const currentTime = moment().format('hh:mm:ss:SSS A');
-    const updatedEvents = filteredEvents.map(event => {
+    const updatedEvents = filteredAthletesInfo.map(event => {
       if (event.eventCode === selectedEventCode) {
         return {
           ...event,
@@ -145,8 +136,8 @@ const EventsList: React.FC = () => {
       }
       return event;
     });
-    setEvents(updatedEvents);
-    setFilteredEvents(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+    setAthleteinfo(updatedEvents);
+    setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
   };
 
   const handleColumnVisibilityChange = (column: string, isChecked: boolean) => {
@@ -161,10 +152,63 @@ const EventsList: React.FC = () => {
     setIsModalVisible(false);
   };
 
+  const showCommentModal = () => {
+    setIsCommentModalVisible(true);
+  };
+
+  const handleCommentOk = async () => {
+    console.log(eventsInfo.filter((event: { eventCode: any; }) => event.eventCode === selectedEventCode));
+    // Find the event with the selected event code and update its Comment
+    const updatedEvent = eventsInfo.find(event => event.eventCode === selectedEventCode);
+  
+    if (!updatedEvent) {
+      message.error('Event not found');
+      return;
+    }
+  
+    const eventToUpdate = {
+      ...updatedEvent,
+      eventComments: eventComments,
+    };
+  
+    // Update the local state with the updated event Comment
+    const updatedEvents = eventsInfo.map(event =>
+      event.eventCode === selectedEventCode ? eventToUpdate : event
+    );
+    setEventsInfo(updatedEvents);
+  
+    try {
+      // Update the event Comment in the backend
+      await updateEventAPI([eventToUpdate]);
+      message.success('Comment added successfully!');
+    } catch (error) {
+      message.error('Failed to update Comment');
+    }
+  
+    setIsCommentModalVisible(false);
+  };
+
+  const handleCommentCancel = () => {
+    setIsCommentModalVisible(false);
+  };
+
+  const handleNextEvent = () => {
+    if (!selectedEventCode || eventsInfo.length === 0) return;
+  
+    // Find the index of the current selected event code
+    const currentIndex = eventsInfo.findIndex(event => event.eventCode === selectedEventCode);
+  
+    // Calculate the index of the next event code
+    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % eventsInfo.length;
+  
+    // Update the selected event code with the next event code
+    setSelectedEventCode(eventsInfo[nextIndex].eventCode);
+    handleEventSelect(eventsInfo[nextIndex].eventCode);
+  };
 
 
   const renderEvents = () => {
-    const eventOptions = getUniqueEventOptions(events);
+    const eventOptions = getUniqueEventOptions(eventsInfo);
 
     return (
       <div>
@@ -186,11 +230,15 @@ const EventsList: React.FC = () => {
                 </Option>
               ))}
             </Select>
+            <Button onClick={handleNextEvent} className='button-next' type="primary">Next</Button>
           </div>
 
           <div className="button-container">
-            <Button onClick={showModal} type="primary">
+            <Button onClick={showModal} style={{marginRight:'10px'}} type="primary">
               Filter Columns
+            </Button>
+            <Button onClick={showCommentModal} type="primary">
+              Add Comment
             </Button>
           </div>
         </div>
@@ -198,7 +246,7 @@ const EventsList: React.FC = () => {
           <div>{error}</div>
         ) : (
           <Table
-            dataSource={filteredEvents}
+            dataSource={filteredAthletesInfo}
             columns={[
               { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
               { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
@@ -270,6 +318,17 @@ const EventsList: React.FC = () => {
           </Col>
         </Row>
       </Card>
+      {eventComments.trim() !== '' && (
+          <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+            <Row gutter={[16, 16]} style={{ textAlign: 'center' }}>
+              <Col span={24} style={{ marginTop: '20px' }}>
+                <Paragraph style={{ whiteSpace: 'pre-line', color: '#1890ff' }}>
+                  {eventComments}
+                </Paragraph>
+              </Col>
+            </Row>
+          </Card>
+        )}
       <Divider style={{ marginTop: 28, marginBottom: 40 }} />
       {renderEvents()}
 
@@ -299,12 +358,20 @@ const EventsList: React.FC = () => {
           onChange={(e) => handleColumnVisibilityChange('startTime', e.target.checked)}
         >Start Time</Checkbox>
       </Modal>
+      <Modal title="Add Comment" open={isCommentModalVisible} onOk={handleCommentOk} onCancel={handleCommentCancel}>
+        <Input.TextArea
+          rows={4}
+          value={eventComments}
+          onChange={(e) => setEventComments(e.target.value)}
+          placeholder="Enter Comment"
+        />
+      </Modal>
     </div>
   );
 };
 
 // Utility function to get unique event codes
-const getUniqueEventOptions = (events: Event[]): string[] => {
+const getUniqueEventOptions = (events: EventInfo[]): string[] => {
   const uniqueOptions = new Set<string>();
   events.forEach(event => {
     uniqueOptions.add(event.eventCode);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Col, Divider, Input, Row, Select, Table, Typography, message } from 'antd';
+import { Button, Card, Col, Divider, Input, Row, Select, Table, Typography, message } from 'antd';
 import { getEventPhoto, getEventbyEventId, getEventbyMeetId, getMeetByIdAPI, postPFEventbyEventId, updateEventAPI } from '../apis/api';
 import { Axios, AxiosError } from 'axios';
 import { useEvents } from '../Provider/EventProvider';
@@ -9,8 +9,8 @@ const { Search } = Input;
 const { Option } = Select;
 
 const Photofinish: React.FC = () => {
-  const {events, setEvents, setError, setLoading, loading, error }: { events: Event[], setEvents: (updatedEvents: Event[]) => void, setError: any, setLoading: (loading: boolean) => void, loading: boolean, error: string | null } = useEvents();
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const {athletes, eventsInfo, setAthleteinfo, setError, setLoading, loading, error } = useEvents();
+  const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const meetid = localStorage.getItem('lastSelectedMeetId');
   const [photos, setPhotos] = useState<string[]>([]);
@@ -27,13 +27,12 @@ const Photofinish: React.FC = () => {
         const response = await getMeetByIdAPI(meetid);
         const pfFolder = response.data.meet.pfFolder;
         const pfOutput = response.data.meet.pfOutput;
-        if (events.length > 0) {
+        if (eventsInfo.length > 0) {
           if(selectedEventCode === '') {
-            setSelectedEventCode(events[0].eventCode);
+            setSelectedEventCode(eventsInfo[0].eventCode);
           }
         }
-        if(events.length > 0 && selectedEventCode !== '') { 
-          console.log('events:', selectedEventCode);
+        if(eventsInfo.length > 0 && selectedEventCode !== '') { 
           const folderParams = {
             pfFolder: pfFolder,
             pfOutput: pfOutput,
@@ -49,7 +48,7 @@ const Photofinish: React.FC = () => {
               console.log('pfevent:', pfEvent);
 
               // Update the events list with the matching pfEvent data
-              const updatedEvents = events.map(event => {
+              const updatedEvents = athletes.map(event => {
                 // Find all corresponding events in the pfEvent list
                 const matchingPFEvents = pfEvent.filter((pfEventItem: { eventCode: string; athleteNum: string; }) => 
                   pfEventItem.eventCode === event.eventCode && pfEventItem.athleteNum === event.athleteNum
@@ -61,32 +60,32 @@ const Photofinish: React.FC = () => {
                   : event;
               }).flat();
 
-              setEvents(updatedEvents);
+              setAthleteinfo(updatedEvents);
               // Set the initial selected event code to the first event code in the list
-              if (events.length > 0) {
+              if (athletes.length > 0) {
                 const initialEventCode = selectedEventCode;
                 setSelectedEventCode(initialEventCode);
-                setFilteredEvents(updatedEvents.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+                setFilteredAthletesInfo(updatedEvents.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
               } else {
-                setFilteredEvents(events); // Initialize filteredEvents with all events if no events are found
+                setFilteredAthletesInfo(athletes); // Initialize filteredEvents with all events if no events are found
               }
               setLoading(false);
             }
             else{
-              if (events.length > 0) {
+              if (athletes.length > 0) {
                 message.error(`Failed to read photo finish results for ${selectedEventCode}`);
                 const initialEventCode = selectedEventCode;
                 setSelectedEventCode(initialEventCode);
-                setFilteredEvents(events.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+                setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
               }
               setLoading(false);
             }
           }
           catch(err){
-            if (events.length > 0) {
+            if (athletes.length > 0) {
               const initialEventCode = selectedEventCode;
               setSelectedEventCode(initialEventCode);
-              setFilteredEvents(events.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+              setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
             }
             setLoading(false);
           }
@@ -143,15 +142,29 @@ const Photofinish: React.FC = () => {
 
   // Handle event selection from dropdown
   const handleEventSelect = (value: string) => {
-    console.log('Selected event:', value);
     setSelectedEventCode(value);
+    console.log(value);
     if (value === '') {
-      setFilteredEvents(events); // Reset to show all events when no event is selected
+      setFilteredAthletesInfo(athletes);
     } else {
-      const filtered = events.filter(event => event.eventCode === value);
-      setFilteredEvents(filtered);
-      setError(filtered.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
+      const filteredEvents = eventsInfo.filter(event => event.eventCode === value);
+      const filteredAthletes = athletes.filter(event => event.eventCode === value);
+      setFilteredAthletesInfo(filteredAthletes);
+      setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
     }
+  };
+  const handleNextEvent = () => {
+    if (!selectedEventCode || eventsInfo.length === 0) return;
+  
+    // Find the index of the current selected event code
+    const currentIndex = eventsInfo.findIndex(event => event.eventCode === selectedEventCode);
+  
+    // Calculate the index of the next event code
+    const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % eventsInfo.length;
+  
+    // Update the selected event code with the next event code
+    setSelectedEventCode(eventsInfo[nextIndex].eventCode);
+    handleEventSelect(eventsInfo[nextIndex].eventCode);
   };
 
   // Utility function to generate lifFilename from eventCode
@@ -163,31 +176,37 @@ const generateFilename = (eventCode: string): string => {
 };
 
   const renderEvents = () => {
-    const eventOptions = getUniqueEventOptions(events);
+    const eventOptions = getUniqueEventOptions(eventsInfo);
 
     return (
       <div>
-        <Select
-          placeholder="Select an event"
-          style={{ width: '100%', maxWidth: '300px', marginBottom: '16px' }} // Increase width
-          value={selectedEventCode}
-          onChange={handleEventSelect}
-          showSearch
-          filterOption={(input, option) =>
-            `${option?.value}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
-          }
-        >
-          {eventOptions.map(eventCode => (
-            <Option key={eventCode} value={eventCode}>
-              {formatEventCode(eventCode)}
-            </Option>
-          ))}
-        </Select>
+        <div className="container">
+          <div className="select-container">
+            <Select
+              placeholder="Select an event"
+              style={{ width: '100%', maxWidth: '300px', marginBottom: '16px' }} // Increase width
+              value={selectedEventCode}
+              onChange={handleEventSelect}
+              className='select'
+              showSearch
+              filterOption={(input, option) =>
+                `${option?.value}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
+              }
+            >
+              {eventOptions.map(eventCode => (
+                <Option key={eventCode} value={eventCode}>
+                  {formatEventCode(eventCode)}
+                </Option>
+              ))}
+            </Select>
+            <Button onClick={handleNextEvent} className='button-next' type="primary">Next</Button>
+          </div>
+        </div>
         {error ? (
           <div>{error}</div>
         ) : (
           <Table
-            dataSource={filteredEvents}
+            dataSource={filteredAthletesInfo}
             columns={[
               { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
               { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
@@ -251,7 +270,7 @@ const generateFilename = (eventCode: string): string => {
 };
 
 // Utility function to get unique event codes
-const getUniqueEventOptions = (events: Event[]): string[] => {
+const getUniqueEventOptions = (events: EventInfo[]): string[] => {
   const uniqueOptions = new Set<string>();
   events.forEach(event => {
     uniqueOptions.add(event.eventCode);
