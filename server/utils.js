@@ -221,7 +221,7 @@ async function readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res) {
         let dbError = null;
         const content = await readFile(folderPath, fileName);
         // Process the content as needed, e.g., insert into the database
-        [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertPFIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db);
+        [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertLifIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db);
 
         if (failedFlagEventInfo > 0 && failedFlagEvents > 0) {
             dbError = `Database error updating event info and events.`;
@@ -233,6 +233,7 @@ async function readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res) {
         if (dbError) {
             res.json({
                 error: {
+                    eventCode: eventCode,
                     message: `Failed to update phtofinish results for ${fileName}.`,
                     dbError
                 },
@@ -245,6 +246,7 @@ async function readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res) {
         logger.error(`Error reading file: ${error.message}`);
         res.json({
             error: {
+                eventCode: eventCode,
                 message: `Failed to update photofinish for ${fileName}.`
             },
             status: 'failure'
@@ -357,12 +359,12 @@ async function insertCSVIntoDatabase(content, meetId, db) {
     return [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents];
 }
 
-async function insertPFIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db) {
+async function insertLifIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db) {
     const data = content;
     const rows = data.split('\n');
     let currentEvent = null;
     let titleRow = false;
-    let finalPFTime = null;
+    let eventPFTime = null;
     for (let i=0; i<rows.length; i++) {
         const row = rows[i];
         const columns = row.split(',').map(col => col.trim());
@@ -379,9 +381,9 @@ async function insertPFIntoDatabase(content, failedFlagEventInfo, failedFlagEven
                 makeEventNum(currentEvent[0], currentEvent[1], currentEvent[2]), currentEvent[3]
             ];
             if(numColumns > 9) {
-                finalPFTime = currentEvent[10];
+                eventPFTime = currentEvent[10];
             }
-            totalFlagEventinfo, failedFlagEventInfo = await updateDBQueryTblEventInfo(eventCode, eventName, finalPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db);
+            totalFlagEventinfo, failedFlagEventInfo = await updateDBQueryTblEventInfo(eventCode, eventName, eventPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db);
         } else if (currentEvent && columns.length > 1) { // Athlete row
             const eventCode = makeEventNum(currentEvent[0], currentEvent[1], currentEvent[2]);
             totalFlagEvents, failedFlagEvents = await updateDBQueryTblEvents(eventCode, columns[0], columns[1], columns[6], totalFlagEvents, failedFlagEvents, meetId, db);

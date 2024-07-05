@@ -61,9 +61,14 @@ const ViewMeet: React.FC = () => {
   );
   
   return (
-    <div>
-      <Title level={3}>All Meets</Title>
-      <Divider />
+    <div style={{ padding: '20px' }}>
+      <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+        <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
+          <Col span={24}>
+            <Title level={2} style={{ margin: 0, color: '#1677FF' }}>View Meets</Title>
+          </Col>
+        </Row>
+      </Card>
 
       {/* Display meets as cards */}
       {loading ? (

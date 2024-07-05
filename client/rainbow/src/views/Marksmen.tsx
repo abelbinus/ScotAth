@@ -11,7 +11,7 @@ import { formatEventCode } from './Eventutils';
 const { Option } = Select;
 
 const EventsList: React.FC = () => {
-  const {athletes, eventsInfo, setAthleteinfo, setEventsInfo, setError, setLoading, loading, error } = useEvents();
+  const {athletes, eventsInfo, setAthleteinfo, setEventsInfo, setError, loading, error } = useEvents();
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const meetid = localStorage.getItem('lastSelectedMeetId');
@@ -307,14 +307,14 @@ const EventsList: React.FC = () => {
       <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
-            <Title level={2} style={{ margin: 0, color: '#001529' }}>Marksmen Screen</Title>
+            <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Marksmen Screen</Title>
             <Text type="secondary">Check In Athletes and set Start Times</Text>
           </Col>
           <Col span={24} style={{ marginTop: '20px' }}>
-            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>{formatEventCode(selectedEventCode)}</Title>
+            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
           </Col>
           <Col span={24} style={{ marginTop: '10px' }}>
-            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>Meet ID: {meetid}</Title>
+            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
           </Col>
         </Row>
       </Card>

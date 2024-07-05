@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from "react";
 import { Layout, Menu, Tooltip, Drawer, message, Grid, theme, Button } from "antd";
-import { UserOutlined, LogoutOutlined, ReadOutlined, MenuOutlined } from "@ant-design/icons";
+import { UserOutlined, LogoutOutlined, ReadOutlined, MenuOutlined, EditOutlined } from "@ant-design/icons";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { UserContext } from "../App";
 import useProtectedRoute from "../router/ProtectedRoute";
@@ -71,17 +71,25 @@ const Home: React.FC = () => {
     if (user?.userRole === "admin") {
       baseItems.push(
         { label: "User Management", icon: <UserOutlined />, key: "/admin-dashboard", "data-testid": "menu-item-admin" },
-        { label: "Meet Management", icon: <UserOutlined />, key: "/meet-management", "data-testid": "menu-item-meet-management" }
+        { label: "Meet Management", icon: <UserOutlined />, key: "/meet-management", "data-testid": "menu-item-meet-management" },
+        { label: "View Meets", icon: <ReadOutlined />, key: "/view-meet", "data-testid": "menu-item-view-meet" },
+        ...(showLabels ? [
+          { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
+          { label: "Marksmen Screen", icon: <EditOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
+          { label: "Track Judge Screen", icon: <EditOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
+          { label: "PhotoFinish Screen", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
+          { label: "All Results", icon: <ReadOutlined />, key: "/allresults", "data-testid": "menu-item-all-results"}
+        ] : [])
       );
     } else if (user?.userRole === "volunteer") {
       baseItems.push(
         { label: "View Meets", icon: <ReadOutlined />, key: "/view-meet", "data-testid": "menu-item-view-meet" },
         ...(showLabels ? [
           { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
-          { label: "Marksmen Screen", icon: <ReadOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
-          { label: "Track Judge Screen", icon: <ReadOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
+          { label: "Marksmen Screen", icon: <EditOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
+          { label: "Track Judge Screen", icon: <EditOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
           { label: "PhotoFinish Screen", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
-          { label: "All Results", icon: <ReadOutlined />, key: "/allresults", "data-testid": "menu-item-all-results"}
+          { label: "Results", icon: <ReadOutlined />, key: "/results", "data-testid": "menu-item-results"}
         ] : [])
       );
     }

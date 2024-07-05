@@ -9,7 +9,7 @@ import ViewMeet from "../views/ViewMeet";
 import TrackJudge from "../views/TrackJudge";
 import PhotoFinish from "../views/PhotoFinish";
 import ViewEvent from "../views/ViewEvent";
-import AllResults from "../views/AllResults";
+import Results from "../views/Results";
 
 const router = createBrowserRouter([
   {
@@ -25,7 +25,7 @@ const router = createBrowserRouter([
       { path: "/checkin", element: <CheckIn />},
       { path: "/trackjudge", element: <TrackJudge />},
       { path: "/photofinish", element: <PhotoFinish />},
-      { path: "/allresults", element: <AllResults />},
+      { path: "/results", element: <Results />},
     ],
   },
   { path: "login", element: <LoginPage /> }, // super router

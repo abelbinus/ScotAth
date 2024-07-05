@@ -311,14 +311,14 @@ const EventsList: React.FC = () => {
       <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
-            <Title level={2} style={{ margin: 0, color: '#001529' }}>Track Judge Screen</Title>
+            <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>TrackJudge Screen</Title>
             <Text type="secondary">Rank Athletes and set Finish Times</Text>
           </Col>
           <Col span={24} style={{ marginTop: '20px' }}>
-            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>{formatEventCode(selectedEventCode)}</Title>
+            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
           </Col>
           <Col span={24} style={{ marginTop: '10px' }}>
-            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>Meet ID: {meetid}</Title>
+            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
           </Col>
         </Row>
       </Card>
@@ -336,38 +336,44 @@ const EventsList: React.FC = () => {
       <Divider style={{ marginTop: 28, marginBottom: 40 }} />
       {renderEvents()}
       <Modal title="Select Columns to Display" open={isModalVisible} footer={[]} onCancel={handleCancel}>
-        <Checkbox
-          checked={columnVisibility.lastName}
-          onChange={(e) => handleColumnVisibilityChange('lastName', e.target.checked)}
-        >Last Name</Checkbox>
-        <Checkbox
-          checked={columnVisibility.firstName}
-          onChange={(e) => handleColumnVisibilityChange('firstName', e.target.checked)}
-        >First Name</Checkbox>
-        <Checkbox
-          checked={columnVisibility.athleteNum}
-          onChange={(e) => handleColumnVisibilityChange('athleteNum', e.target.checked)}
-        >Athlete Number</Checkbox>
-        <Checkbox
-          checked={columnVisibility.athleteClub}
-          onChange={(e) => handleColumnVisibilityChange('athleteClub', e.target.checked)}
-        >Athlete Club</Checkbox>
-        <Checkbox
-          checked={columnVisibility.finishPos}
-          onChange={(e) => handleColumnVisibilityChange('finishPos', e.target.checked)}
-        >Rank</Checkbox>
-        <Checkbox
-          checked={columnVisibility.finishTime}
-          onChange={(e) => handleColumnVisibilityChange('finishTime', e.target.checked)}
-        >Finish Time</Checkbox>
-      </Modal>
-      <Modal title="Add Comments" open={isCommentModalVisible} onOk={handleCommentOk} onCancel={handleCommentCancel}>
-        <Input.TextArea
-          rows={4}
-          value={eventComments}
-          onChange={(e) => setEventComments(e.target.value)}
-          placeholder="Enter Comments"
-        />
+        <div className="checkbox-container">
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.lastName}
+              onChange={(e) => handleColumnVisibilityChange('lastName', e.target.checked)}
+            >Last Name</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.firstName}
+              onChange={(e) => handleColumnVisibilityChange('firstName', e.target.checked)}
+            >First Name</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.athleteNum}
+              onChange={(e) => handleColumnVisibilityChange('athleteNum', e.target.checked)}
+            >Athlete Number</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.athleteClub}
+              onChange={(e) => handleColumnVisibilityChange('athleteClub', e.target.checked)}
+            >Athlete Club</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.finishPos}
+              onChange={(e) => handleColumnVisibilityChange('finishPos', e.target.checked)}
+            >Rank</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.finishTime}
+              onChange={(e) => handleColumnVisibilityChange('finishTime', e.target.checked)}
+            >Finish Time</Checkbox>
+          </div>
+        </div>
       </Modal>
     </div>
   );

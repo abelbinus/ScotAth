@@ -234,7 +234,7 @@ const AllResults: React.FC = () => {
           </div>
 
           <div className="button-container">
-            <Button onClick={showModal} type="primary">
+            <Button onClick={showModal} className = 'button-singleDownload' type="primary">
               Filter Columns
             </Button>
           </div>
@@ -263,19 +263,20 @@ const AllResults: React.FC = () => {
         <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
           <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
             <Col span={24}>
-              <Title level={2} style={{ margin: 0, color: '#001529' }}>All Results</Title>
+              <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Results</Title>
               <Text type="secondary">View all the Results of the Events</Text>
             </Col>
             <Col span={24} style={{ marginTop: '20px' }}>
-              <Title level={3} style={{ margin: 0, color: '#1890ff' }}>{formatEventCode(selectedEventCode)}</Title>
+              <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
             </Col>
             <Col span={24} style={{ marginTop: '10px' }}>
-              <Title level={3} style={{ margin: 0, color: '#1890ff' }}>Meet ID: {meetid}</Title>
+              <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
             </Col>
           </Row>
         </Card>
       
-        <div className="button-download">
+      {renderEvents()}
+      <div className="button-download">
           <Popconfirm
             title="Choose Output Option"
             onConfirm={() => {
@@ -285,7 +286,7 @@ const AllResults: React.FC = () => {
             okText="CSV"
             cancelText="PDF"
           >
-            <Button type="primary" style={{ marginRight: '10px', marginBottom: '20px'}}>
+            <Button type="primary" className='button-singleDownload' style={{  marginRight: '10px', marginBottom: '20px'}}>
               Download Single Event CSV
             </Button>
           </Popconfirm>
@@ -296,53 +297,73 @@ const AllResults: React.FC = () => {
             okText="CSV"
             cancelText="PDF"
           >
-            <Button type="primary" style={{ marginBottom: '20px'}}>Download All Events CSV</Button>
+            <Button type="primary" className='button-singleDownload' style={{ marginBottom: '20px'}}>Download All Events CSV</Button>
           </Popconfirm>
         </div>
-      
-      {renderEvents()}
       </div>
       <Modal title="Select Columns to Display" open={isModalVisible} footer={[]} onCancel={handleCancel}>
-        <Checkbox
-          checked={columnVisibility.lastName}
-          onChange={(e) => handleColumnVisibilityChange('lastName', e.target.checked)}
-        >Last Name</Checkbox>
-        <Checkbox
-          checked={columnVisibility.firstName}
-          onChange={(e) => handleColumnVisibilityChange('firstName', e.target.checked)}
-        >First Name</Checkbox>
-        <Checkbox
-          checked={columnVisibility.athleteNum}
-          onChange={(e) => handleColumnVisibilityChange('athleteNum', e.target.checked)}
-        >Athlete Number</Checkbox>
-        <Checkbox
-          checked={columnVisibility.athleteClub}
-          onChange={(e) => handleColumnVisibilityChange('athleteClub', e.target.checked)}
-        >Athlete Club</Checkbox>
-        <Checkbox
-          checked={columnVisibility.startPos}
-          onChange={(e) => handleColumnVisibilityChange('startPos', e.target.checked)}
-        >Check In</Checkbox>
-        <Checkbox
-          checked={columnVisibility.startTime}
-          onChange={(e) => handleColumnVisibilityChange('startTime', e.target.checked)}
-        >Start Time</Checkbox>
-        <Checkbox
-          checked={columnVisibility.finishPos}
-          onChange={(e) => handleColumnVisibilityChange('finishPos', e.target.checked)}
-        >Rank</Checkbox>
-        <Checkbox
-          checked={columnVisibility.finishTime}
-          onChange={(e) => handleColumnVisibilityChange('finishTime', e.target.checked)}
-        >Finish Time</Checkbox>
-        <Checkbox
-          checked={columnVisibility.finalPFPos}
-          onChange={(e) => handleColumnVisibilityChange('finalPFPos', e.target.checked)}
-        >Final PF Ranking</Checkbox>
-        <Checkbox
-          checked={columnVisibility.finalPFTime}
-          onChange={(e) => handleColumnVisibilityChange('finalPFTime', e.target.checked)}
-        >Final PF Time</Checkbox>
+        <div className="checkbox-container">
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.lastName}
+              onChange={(e) => handleColumnVisibilityChange('lastName', e.target.checked)}
+            >Last Name</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.firstName}
+              onChange={(e) => handleColumnVisibilityChange('firstName', e.target.checked)}
+            >First Name</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.athleteNum}
+              onChange={(e) => handleColumnVisibilityChange('athleteNum', e.target.checked)}
+            >Athlete Number</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.athleteClub}
+              onChange={(e) => handleColumnVisibilityChange('athleteClub', e.target.checked)}
+            >Athlete Club</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.startPos}
+              onChange={(e) => handleColumnVisibilityChange('startPos', e.target.checked)}
+            >Check In</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.startTime}
+              onChange={(e) => handleColumnVisibilityChange('startTime', e.target.checked)}
+            >Start Time</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.finishPos}
+              onChange={(e) => handleColumnVisibilityChange('finishPos', e.target.checked)}
+            >Rank</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.finishTime}
+              onChange={(e) => handleColumnVisibilityChange('finishTime', e.target.checked)}
+            >Finish Time</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.finalPFPos}
+              onChange={(e) => handleColumnVisibilityChange('finalPFPos', e.target.checked)}
+            >Final PF Ranking</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.finalPFTime}
+              onChange={(e) => handleColumnVisibilityChange('finalPFTime', e.target.checked)}
+            >Final PF Time</Checkbox>
+          </div>
+        </div>
       </Modal>
     </div>
   );

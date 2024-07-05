@@ -178,10 +178,10 @@ const EventsList: React.FC = () => {
       <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
-            <Title level={2} style={{ margin: 0, color: '#001529' }}>View Events</Title>
+            <Title level={2} style={{ margin: 0, color: '#1677FF' }}>View Events</Title>
           </Col>
           <Col span={24} style={{ marginTop: '10px' }}>
-            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>Meet ID: {meetid}</Title>
+            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
           </Col>
         </Row>
       </Card>

@@ -1,6 +1,7 @@
 // EventContext.tsx
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getEventbyMeetId } from '../apis/api'; // Adjust the import path as necessary
+import { message } from 'antd';
   
 
 interface EventContextType {
@@ -37,7 +38,6 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     try {
         setMeetId(meetId);
         if (!meetId) {
-            console.log("Hi");
             setError('Meet ID is not provided');
             setLoading(false);
             return; // Exit early if meetId is null or undefined
@@ -54,6 +54,18 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Order events based on eventCode
         athleteInfo.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
         eventInfo.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
+
+        if (eventInfo === null || eventInfo.length == 0) {
+            setError('No events found');
+            setLoading(false);
+            return; // Exit early if meetId is null or undefined
+        }
+
+        if (athleteInfo === null || athleteInfo.length == 0) {
+            setError('No athletes found');
+            setLoading(false);
+            return; // Exit early if meetId is null or undefined
+        }
 
         setAthleteinfo(athleteInfo);
         setEventsInfo(eventInfo);

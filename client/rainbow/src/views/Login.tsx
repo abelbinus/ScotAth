@@ -36,7 +36,7 @@ const LoginPage = () => {
                 userMob: response.data.user.userMob
             };
 
-            message.success("Login successful");
+            message.success("Login Successful");
 
             // Update user context
             setUser(loginUser);
@@ -49,7 +49,7 @@ const LoginPage = () => {
                 navigate("/view-meet");
             }
         } catch (error: any) {
-            const errMsg = error.response?.data?.msg || "Login failed";
+            const errMsg = error.response?.data?.msg || "Login Failed";
             console.error(errMsg);
             message.error(errMsg);
             setLoading(false);
