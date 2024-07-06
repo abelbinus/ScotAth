@@ -12,14 +12,10 @@ const { useBreakpoint } = Grid;
 const Home: React.FC = () => {
   useProtectedRoute();
   const [selectedMeetId, setSelectedMeetId] = useState<string | null>(() => {
-    const storedMeetId = localStorage.getItem("lastSelectedMeetId");
+    const storedMeetId = sessionStorage.getItem("lastSelectedMeetId");
     return storedMeetId || null;
   });
 
-  // const [selectedEventId, setSelectedEventId] = useState<string | null>(() => {
-  //   const storedEventId = localStorage.getItem("lastSelectedEventId");
-  //   return storedEventId || null;
-  // });
   const [drawerVisible, setDrawerVisible] = useState<boolean>(false);
   const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
   const navigate = useNavigate();
@@ -34,14 +30,10 @@ const Home: React.FC = () => {
   }, [location.pathname]);
 
   useEffect(() => {
-    if (localStorage.getItem("lastSelectedMeetId")) {
-      const currentMeetId = localStorage.getItem("lastSelectedMeetId") || '';
+    if (sessionStorage.getItem("lastSelectedMeetId")) {
+      const currentMeetId = sessionStorage.getItem("lastSelectedMeetId") || '';
       setSelectedMeetId(currentMeetId);
     }
-    // if(localStorage.getItem("lastSelectedEventId")) {
-    //   const currentEventId = localStorage.getItem("lastSelectedEventId") || '';
-    //   setSelectedEventId(currentEventId);
-    // }
   }, [location.state]);
 
   const onMenuClick = (route: any) => {
@@ -57,12 +49,8 @@ const Home: React.FC = () => {
     const clickedMenuItem = getMenuItems().find(item => item.key === path);
     if (clickedMenuItem?.meetId) {
       setSelectedMeetId(clickedMenuItem.meetId);
-      localStorage.setItem("lastSelectedMeetId", clickedMenuItem.meetId); // Update localStorage with new meetId
+      sessionStorage.setItem("lastSelectedMeetId", clickedMenuItem.meetId); // Update sessionStorage with new meetId
     }
-    // if(clickedMenuItem?.eventId) {
-    //   setSelectedEventId(clickedMenuItem.eventId);
-    //   localStorage.setItem("lastSelectedEventId", clickedMenuItem.eventId);
-    // }
   };
 
   const getMenuItems = () => {
@@ -73,24 +61,20 @@ const Home: React.FC = () => {
         { label: "User Management", icon: <UserOutlined />, key: "/admin-dashboard", "data-testid": "menu-item-admin" },
         { label: "Meet Management", icon: <UserOutlined />, key: "/meet-management", "data-testid": "menu-item-meet-management" },
         { label: "View Meets", icon: <ReadOutlined />, key: "/view-meet", "data-testid": "menu-item-view-meet" },
-        ...(showLabels ? [
           { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
           { label: "Marksmen Screen", icon: <EditOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
           { label: "Track Judge Screen", icon: <EditOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
           { label: "PhotoFinish Screen", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
-          { label: "All Results", icon: <ReadOutlined />, key: "/allresults", "data-testid": "menu-item-all-results"}
-        ] : [])
+          { label: "Results", icon: <ReadOutlined />, key: "/results", "data-testid": "menu-item-all-results"}
       );
     } else if (user?.userRole === "volunteer") {
       baseItems.push(
         { label: "View Meets", icon: <ReadOutlined />, key: "/view-meet", "data-testid": "menu-item-view-meet" },
-        ...(showLabels ? [
           { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
           { label: "Marksmen Screen", icon: <EditOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
           { label: "Track Judge Screen", icon: <EditOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
           { label: "PhotoFinish Screen", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
           { label: "Results", icon: <ReadOutlined />, key: "/results", "data-testid": "menu-item-results"}
-        ] : [])
       );
     }
 
@@ -103,7 +87,10 @@ const Home: React.FC = () => {
 
   const handleLogoutClick = async () => {
     try {
-      //await logoutAPI();
+      if (user) {
+        sessionStorage.removeItem("user");
+        sessionStorage.removeItem("lastSelectedMeetId");
+      }
       message.success("Logout successful");
       navigate("/login");
     } catch (error: any) {

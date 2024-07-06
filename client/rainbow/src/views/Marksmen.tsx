@@ -11,10 +11,10 @@ import { formatEventCode } from './Eventutils';
 const { Option } = Select;
 
 const EventsList: React.FC = () => {
-  const {athletes, eventsInfo, setAthleteinfo, setEventsInfo, setError, loading, error } = useEvents();
+  const {athletes, eventsInfo, setAthleteinfo, setEventsInfo, fetchEvents, setError, loading, error } = useEvents();
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
-  const meetid = localStorage.getItem('lastSelectedMeetId');
+  const meetid = sessionStorage.getItem('lastSelectedMeetId');
   const { Title, Text, Paragraph } = Typography;
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [eventComments, setEventComments] = useState<string>(''); // State to hold event Comment
@@ -206,8 +206,29 @@ const EventsList: React.FC = () => {
     handleEventSelect(eventsInfo[nextIndex].eventCode);
   };
 
+  useEffect(() => {
+    const updateEvents = async () => {
+      if(eventsInfo.length === 0 && meetid) {
+        await fetchEvents(meetid);
+      }
+    }
+    updateEvents();
+
+  }, [meetid]);
+
+  useEffect(() => {
+    if(eventsInfo.length > 0 && selectedEventCode === '') {
+      const initialEventCode = eventsInfo[0].eventCode;
+      if(!selectedEventCode) {
+        setSelectedEventCode(initialEventCode);
+        setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+      }
+    }
+  }, [eventsInfo]);
+
 
   const renderEvents = () => {
+
     const eventOptions = getUniqueEventOptions(eventsInfo);
 
     return (
@@ -298,10 +319,8 @@ const EventsList: React.FC = () => {
       </div>
     );
   };
-
   if (loading) return <div>Loading...</div>;
-  if (error && !selectedEventCode) return <div>{error}</div>;
-
+  if (error && !meetid) return <div>{error}</div>;
   return (
     <div style={{ padding: '20px' }}>
       <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>

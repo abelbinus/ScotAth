@@ -9,16 +9,19 @@ const { Search } = Input;
 const { Option } = Select;
 
 const Photofinish: React.FC = () => {
-  const {athletes, eventsInfo, setAthleteinfo, setEventsInfo, setError, setLoading, loading, error } = useEvents();
+  const {athletes, eventsInfo, setAthleteinfo, setEventsInfo, fetchEvents, setError, setLoading, loading, error } = useEvents();
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
-  const meetid = localStorage.getItem('lastSelectedMeetId');
+  let meetid = sessionStorage.getItem('lastSelectedMeetId');
   const [photos, setPhotos] = useState<string[]>([]);
   const { Title, Text } = Typography;
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const updateEvents = async () => {
       try {
+        if(!meetid) {
+          meetid = sessionStorage.getItem('lastSelectedMeetId');
+        }
         if (!meetid) {
           setError('Meet ID is not provided');
           setLoading(false);
@@ -31,6 +34,9 @@ const Photofinish: React.FC = () => {
           if(selectedEventCode === '') {
             setSelectedEventCode(eventsInfo[0].eventCode);
           }
+        }
+        else {
+          await fetchEvents(meetid);
         }
         if(eventsInfo.length > 0 && selectedEventCode !== '') { 
           const folderParams = {
@@ -96,9 +102,16 @@ const Photofinish: React.FC = () => {
       }
     };
 
-    fetchEvents();
+    updateEvents();
 
   }, [meetid, selectedEventCode]);
+
+  useEffect(() => {
+    if(eventsInfo.length > 0 && selectedEventCode === '') {
+      setSelectedEventCode(eventsInfo[0].eventCode);
+      setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === selectedEventCode));
+    }
+  }, [eventsInfo]);
 
   const fetchPhotos = async () => {
     try {
@@ -135,8 +148,6 @@ const Photofinish: React.FC = () => {
 };
   useEffect(() => {
     fetchPhotos();
-  }, [selectedEventCode]);
-  useEffect(() => {
   }, [selectedEventCode]);
 
   // Handle event selection from dropdown
@@ -175,6 +186,7 @@ const generateFilename = (eventCode: string): string => {
 };
 const updateAllPF = async () => {
   try {
+    //setLoading(true);
     if (!meetid) {
       setError('Meet ID is not provided');
       setLoading(false);
@@ -341,7 +353,7 @@ const updateAllPF = async () => {
   };
 
   if (loading) return <div>Loading...</div>;
-  if (error && !selectedEventCode) return <div>{error}</div>;
+  if (error && !meetid) return <div>{error}</div>;
 
   return (
     <div style={{ padding: '20px' }}>

@@ -236,7 +236,14 @@ app.post('/api/rainbow/meet', (req, res) => {
     
     db.run(query, [meetId, meetName, meetDesc, pfFolder, pfOutput, eventList, intFolder, edit], function(err) {
         if (err) {
-            res.status(500).json({ error: err.message });
+            if(err.message.includes('UNIQUE constraint failed') && err.message.includes('tblmeets.meetId')) {
+                res.status(400).json({ error: 'Meet ID already exists' });
+                return;
+            }
+            else {
+              res.status(500).json({ error: err.message });
+              return
+            }
             return;
         }
         res.status(201).json({ message: 'Meet added successfully', meetId: this.lastID });
@@ -307,6 +314,8 @@ app.delete('/api/rainbow/meet/:meetId', (req, res) => {
         }
 
         // Delete the meet
+        deleteExistingEvents(meetId, db);
+        deleteEventInfo(meetId, db);
         const deleteQuery = 'DELETE FROM tblmeets WHERE MeetID = ?';
         db.run(deleteQuery, [meetId], function (err) {
             if (err) {
@@ -353,8 +362,8 @@ app.post('/api/rainbow/event', async (req, res) => {
     let responseSent = false;
 
     try {
-        await deleteExistingEvents(meetId, db);
-        await deleteEventInfo(meetId, db);
+        deleteExistingEvents(meetId, db);
+        deleteEventInfo(meetId, db);
 
         const folderPath = path.resolve(pfFolder);
         await readEventListFiles(folderPath, intFolder, eventList, meetId, db, res);

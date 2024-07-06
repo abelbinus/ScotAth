@@ -47,10 +47,10 @@ const ViewMeet: React.FC = () => {
     fetchMeets();
   }, [userContext]); // Reload meets if user context changes
 
-  const handleMeetSelection = (meetId: string) => {
-    localStorage.setItem("lastSelectedMeetId", meetId);
+  const handleMeetSelection = (meetid: string) => {
+    sessionStorage.setItem("lastSelectedMeetId", meetid);
     setShowLabels(true);  // Show labels when "View Events" is clicked
-    navigate('/view-event', { state: { meetId } });
+    navigate('/view-event', { state: { meetid } });
   };
 
   const renderPanelHeader = (meetName: string, meetId: string) => (
@@ -69,6 +69,7 @@ const ViewMeet: React.FC = () => {
           </Col>
         </Row>
       </Card>
+      <Divider />
 
       {/* Display meets as cards */}
       {loading ? (

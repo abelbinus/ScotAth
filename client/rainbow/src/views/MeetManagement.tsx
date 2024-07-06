@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import { Divider, Input, Col, Row, Space, Tag, Table, Button, Form, Modal, Select, Popconfirm, message, Tabs } from "antd";
+import { Divider, Input, Col, Row, Space, Table, Button, Form, Modal, Select, Popconfirm, message, Tabs, Typography } from "antd";
 import { ColumnsType } from "antd/es/table";
 import { UserContext } from "../App.tsx";
 import { IMeet } from "../modals/Meet";
@@ -33,32 +33,10 @@ const MeetListAdmin = () => {
 
   const [fileList, setFileList] = useState<string[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const {Title} = Typography;
 
   // userInfo
   const userContext = useContext(UserContext);
- 
-
-  // Function to handle folder selection
-  // const handleFolderSelect = async () => {
-  //   try {
-  //     const dirHandle = await window.showDirectoryPicker();
-    
-  //     // Access the directory handle properties or perform operations
-  //     console.log("Selected directory:", dirHandle);
-      
-  //     // Example: List directory contents
-  //     for await (const entry of dirHandle.values()) {
-  //       console.log(entry.name, entry.kind);
-  //     }
-
-  //     // Example: Set selected folder path to state or form field
-  //     setSelectedFolder(dirHandle.name);
-  //     editForm.setFieldsValue({ pfFolder: dirHandle.name });
-  //   } catch (error) {
-  //     console.error("Error selecting directory:", error);
-  //     // Handle error as needed
-  //   }
-  // };
 
   // add
   const onAddClick = () => {
@@ -91,7 +69,7 @@ const MeetListAdmin = () => {
       addform.resetFields();
       getMeetList();
     } catch (error: any) {
-      const errMsg = error.response?.data?.msg || "Add meet failed";
+      const errMsg = error.response?.data?.error|| "Failed to add new meet";
       console.error(errMsg);
       message.error(errMsg);
     }
@@ -396,10 +374,10 @@ const MeetListAdmin = () => {
 
       {/*Add button area */}
       <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
-        <Col span={8}>
-          <p style={{ fontWeight: "bold", marginBottom: 0 }}> Meet Management</p>
-        </Col>
         <Col span={8}></Col>
+        <Col span={8}>
+          <Title level={2} style={{ margin: 0, color: '#1677FF' }}>Meet Management</Title>
+        </Col>
         <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>
           <Button type="primary" onClick={onAddClick}>Add</Button>
         </Col>

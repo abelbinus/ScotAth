@@ -15,7 +15,7 @@ const EventsList: React.FC = () => {
   const [sortBy, setSortBy] = useState<'eventCode' | 'eventName' | 'eventDate'>('eventCode');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [searchText, setSearchText] = useState<string>('');
-  const meetid = localStorage.getItem("lastSelectedMeetId");
+  const meetid = sessionStorage.getItem("lastSelectedMeetId");
   const { Title, Text } = Typography;
 
   useEffect(() => {
@@ -171,7 +171,7 @@ const EventsList: React.FC = () => {
   };
 
   if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
+  if (error && !meetid) return <div>{error}</div>;
 
   return (
       <div style={{ padding: '20px' }}>
@@ -185,6 +185,7 @@ const EventsList: React.FC = () => {
           </Col>
         </Row>
       </Card>
+      <Divider />
       <Search
         placeholder="Search by eventCode or Title"
         allowClear

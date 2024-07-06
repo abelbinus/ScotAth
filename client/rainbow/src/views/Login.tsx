@@ -1,4 +1,4 @@
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import { Form, Input, Button, message, Layout, Card } from "antd";
 import { UserOutlined, LockOutlined } from "@ant-design/icons";
 import { ILoginValues } from "../modals/LoginValues";
@@ -16,9 +16,9 @@ const LoginPage = () => {
 
     const onFinish = async (values: ILoginValues) => {
         setLoading(true);
-
             
     try {
+
             // login
             const response: any = await loginAPI(values);
 
@@ -35,6 +35,19 @@ const LoginPage = () => {
                 userAddress: response.data.user.userAddress,
                 userMob: response.data.user.userMob
             };
+
+            const user = {
+                userId: loginUser.userId,
+                firstName: loginUser.firstName,
+                middleName: loginUser.middleName,
+                lastName: loginUser.lastName,
+                userRole: loginUser.userRole
+            };
+            // Convert user object to JSON string
+            const userJSON = JSON.stringify(user);
+
+            // Save user details to sessionStorage
+            sessionStorage.setItem('user', userJSON);
 
             message.success("Login Successful");
 

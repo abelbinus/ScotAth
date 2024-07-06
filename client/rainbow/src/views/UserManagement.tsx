@@ -1,5 +1,5 @@
 import { useState, useEffect, useContext } from "react";
-import { Divider, Input, Col, Row, Button, Space, Table, Modal, Form, message, Popconfirm, Tag, Radio, Select, Tabs, Grid} from "antd";
+import { Divider, Input, Col, Row, Button, Space, Table, Modal, Form, message, Popconfirm, Tag, Radio, Select, Tabs, Grid, Typography} from "antd";
 import type { TableColumnsType } from "antd";
 import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import { UserContext } from "../App";
@@ -21,6 +21,8 @@ const User = () => {
   const [adminList, setAdminList] = useState<IUser[]>([]);
   const [addform] = Form.useForm();
   const [editForm] = Form.useForm();
+
+  const { Title } = Typography;
 
   const columns: TableColumnsType<IUser> = [
     { title: "User ID", dataIndex: "userId", key: "userId" },
@@ -289,10 +291,10 @@ const User = () => {
 
       {/*Add button area */}
     <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
-      <Col span={8}>
-        <p style={{ fontWeight: "bold", marginBottom: 0 }}>User Management</p>
-      </Col>
       <Col span={8}></Col>
+        <Col span={8}>
+          <Title level={2} style={{ margin: 0, color: '#1677FF' }}>Meet Management</Title>
+        </Col>
       <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>
         <Button type="primary" onClick={onAddClick}>Add</Button>
       </Col>

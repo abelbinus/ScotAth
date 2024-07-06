@@ -10,14 +10,14 @@ import { formatEventCode } from './Eventutils';
 const { Option } = Select;
 
 const EventsList: React.FC = () => {
-  const {athletes, eventsInfo, setAthleteinfo, setEventsInfo, setError, loading, error } = useEvents();
+  const {athletes, eventsInfo, setAthleteinfo, fetchEvents, setEventsInfo, setError, loading, error } = useEvents();
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedValues, setSelectedValues] = useState<{ [key: string]: string }>({}); // Track selected status values for each athlete
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [eventComments, setEventComments] = useState<string>(''); // State to hold event description
   const { Title, Text, Paragraph } = Typography;
-  const meetid = localStorage.getItem('lastSelectedMeetId');
+  const meetid = sessionStorage.getItem('lastSelectedMeetId');
 
   type ColumnVisibility = {
     [key: string]: boolean;
@@ -63,7 +63,9 @@ const EventsList: React.FC = () => {
   };
 
   useEffect(() => {
-    if(eventsInfo.length === 0) return;
+    if(eventsInfo.length === 0) {
+      return;
+    }
     const initialEventCode = eventsInfo[0].eventCode;
     if(!selectedEventCode) {
       setSelectedEventCode(initialEventCode);
@@ -71,6 +73,25 @@ const EventsList: React.FC = () => {
     }
   }, [meetid]);
 
+  useEffect(() => {
+    const updateEvents = async () => {
+      if(eventsInfo.length === 0 && meetid) {
+        await fetchEvents(meetid);
+      }
+    }
+    updateEvents();
+
+  }, [meetid]);
+
+  useEffect(() => {
+    if(eventsInfo.length > 0 && selectedEventCode === '') {
+      const initialEventCode = eventsInfo[0].eventCode;
+      if(!selectedEventCode) {
+        setSelectedEventCode(initialEventCode);
+        setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+      }
+    }
+  }, [eventsInfo]);
 
   // Function to handle save operation
   const handleSave = async () => {
@@ -211,6 +232,12 @@ const EventsList: React.FC = () => {
     handleEventSelect(eventsInfo[nextIndex].eventCode);
   };
 
+  useEffect(() => {
+    if (selectedEventCode) {
+      setEventComments(eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventComments || '');
+    }
+  }, [selectedEventCode]);
+
 
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(eventsInfo);
@@ -304,7 +331,7 @@ const EventsList: React.FC = () => {
   };
 
   if (loading) return <div>Loading...</div>;
-  if (error && !selectedEventCode) return <div>{error}</div>;
+  if (error && !meetid) return <div>{error}</div>;
 
   return (
     <div style={{ padding: '20px' }}>
@@ -374,6 +401,14 @@ const EventsList: React.FC = () => {
             >Finish Time</Checkbox>
           </div>
         </div>
+      </Modal>
+      <Modal title="Add Comment" open={isCommentModalVisible} onOk={handleCommentOk} onCancel={handleCommentCancel}>
+        <Input.TextArea
+          rows={4}
+          value={eventComments}
+          onChange={(e) => setEventComments(e.target.value)}
+          placeholder="Enter Comment"
+        />
       </Modal>
     </div>
   );

@@ -36,6 +36,9 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const fetchEvents = useCallback(async (meetId: any) => {
     setLoading(true);
     try {
+        if(!meetId) {
+          meetId = sessionStorage.getItem("lastSelectedMeetId");
+        }
         setMeetId(meetId);
         if (!meetId) {
             setError('Meet ID is not provided');
@@ -56,12 +59,16 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         eventInfo.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
 
         if (eventInfo === null || eventInfo.length == 0) {
+            setEventsInfo([]); // Reset events info
+            setAthleteinfo([]); // Reset athlete info
             setError('No events found');
             setLoading(false);
             return; // Exit early if meetId is null or undefined
         }
 
         if (athleteInfo === null || athleteInfo.length == 0) {
+            setEventsInfo([]); // Reset events info
+            setAthleteinfo([]); // Reset athlete info
             setError('No athletes found');
             setLoading(false);
             return; // Exit early if meetId is null or undefined

@@ -7,7 +7,7 @@ import { formatEventCode } from './Eventutils';
 const { Option } = Select;
 
 const AllResults: React.FC = () => {
-  const {athletes, eventsInfo, setAthleteinfo, setError, setLoading, loading, error } = useEvents();
+  const {athletes, eventsInfo, setError, fetchEvents, loading, error } = useEvents();
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const { Title, Text } = Typography;
@@ -40,7 +40,7 @@ const AllResults: React.FC = () => {
   });
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const meetid = localStorage.getItem('lastSelectedMeetId');
+  const meetid = sessionStorage.getItem('lastSelectedMeetId');
 
   useEffect(() => {
     if(eventsInfo.length === 0) return;
@@ -50,6 +50,27 @@ const AllResults: React.FC = () => {
       setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
     }
   }, [meetid]);
+
+
+  useEffect(() => {
+    const updateEvents = async () => {
+      if(eventsInfo.length === 0 && meetid) {
+        await fetchEvents(meetid);
+      }
+    }
+    updateEvents();
+
+  }, [meetid]);
+
+  useEffect(() => {
+    if(eventsInfo.length > 0 && selectedEventCode === '') {
+      const initialEventCode = eventsInfo[0].eventCode;
+      if(!selectedEventCode) {
+        setSelectedEventCode(initialEventCode);
+        setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+      }
+    }
+  }, [eventsInfo]);
 
   const downloadCSV = () => {
     // Prepare the headers for the CSV
@@ -255,7 +276,7 @@ const AllResults: React.FC = () => {
   };
 
   if (loading) return <div>Loading...</div>;
-  if (error && !selectedEventCode) return <div>{error}</div>;
+  if (error && !meetid) return <div>{error}</div>;
 
   return (
     <div>
@@ -276,29 +297,11 @@ const AllResults: React.FC = () => {
         </Card>
       
       {renderEvents()}
-      <div className="button-download">
-          <Popconfirm
-            title="Choose Output Option"
-            onConfirm={() => {
-              downloadSingleCSV();
-            }}
-            onCancel={() => {}}
-            okText="CSV"
-            cancelText="PDF"
-          >
-            <Button type="primary" className='button-singleDownload' style={{  marginRight: '10px', marginBottom: '20px'}}>
-              Download Single Event CSV
-            </Button>
-          </Popconfirm>
-          <Popconfirm
-            title="Choose Output Option"
-            onConfirm={() => downloadCSV()}
-            onCancel={() => {}}
-            okText="CSV"
-            cancelText="PDF"
-          >
-            <Button type="primary" className='button-singleDownload' style={{ marginBottom: '20px'}}>Download All Events CSV</Button>
-          </Popconfirm>
+        <div className="button-download">
+          <Button type="primary" className='button-singleDownload' onClick={downloadSingleCSV} style={{  marginRight: '10px', marginBottom: '20px'}}>
+            Download Single Event CSV
+          </Button>
+          <Button type="primary" className='button-singleDownload' onClick={downloadCSV} style={{ marginBottom: '20px'}}>Download All Events CSV</Button>
         </div>
       </div>
       <Modal title="Select Columns to Display" open={isModalVisible} footer={[]} onCancel={handleCancel}>
