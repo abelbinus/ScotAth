@@ -351,39 +351,45 @@ const EventsList: React.FC = () => {
       <Divider style={{ marginTop: 28, marginBottom: 40 }} />
       {renderEvents()}
 
-      <Modal title="Select Columns to Display" open={isModalVisible} footer = {[]}onCancel={handleCancel}>
-        <Checkbox
-          checked={columnVisibility.lastName}
-          onChange={(e) => handleColumnVisibilityChange('lastName', e.target.checked)}
-        >Last Name</Checkbox>
-        <Checkbox
-          checked={columnVisibility.firstName}
-          onChange={(e) => handleColumnVisibilityChange('firstName', e.target.checked)}
-        >First Name</Checkbox>
-        <Checkbox
-          checked={columnVisibility.athleteNum}
-          onChange={(e) => handleColumnVisibilityChange('athleteNum', e.target.checked)}
-        >Athlete Number</Checkbox>
-        <Checkbox
-          checked={columnVisibility.athleteClub}
-          onChange={(e) => handleColumnVisibilityChange('athleteClub', e.target.checked)}
-        >Athlete Club</Checkbox>
-        <Checkbox
-          checked={columnVisibility.startPos}
-          onChange={(e) => handleColumnVisibilityChange('startPos', e.target.checked)}
-        >Check In</Checkbox>
-        <Checkbox
-          checked={columnVisibility.startTime}
-          onChange={(e) => handleColumnVisibilityChange('startTime', e.target.checked)}
-        >Start Time</Checkbox>
-      </Modal>
-      <Modal title="Add Comment" open={isCommentModalVisible} onOk={handleCommentOk} onCancel={handleCommentCancel}>
-        <Input.TextArea
-          rows={4}
-          value={eventComments}
-          onChange={(e) => setEventComments(e.target.value)}
-          placeholder="Enter Comment"
-        />
+      <Modal title="Select Columns to Display" open={isModalVisible} footer={[]} onCancel={handleCancel}>
+        <div className="checkbox-container">
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.lastName}
+              onChange={(e) => handleColumnVisibilityChange('lastName', e.target.checked)}
+            >Last Name</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.firstName}
+              onChange={(e) => handleColumnVisibilityChange('firstName', e.target.checked)}
+            >First Name</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.athleteNum}
+              onChange={(e) => handleColumnVisibilityChange('athleteNum', e.target.checked)}
+            >Athlete Number</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.athleteClub}
+              onChange={(e) => handleColumnVisibilityChange('athleteClub', e.target.checked)}
+            >Athlete Club</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.startPos}
+              onChange={(e) => handleColumnVisibilityChange('startPos', e.target.checked)}
+            >Check In</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.startTime}
+              onChange={(e) => handleColumnVisibilityChange('startTime', e.target.checked)}
+            >Start Time</Checkbox>
+          </div>
+        </div>
       </Modal>
     </div>
   );

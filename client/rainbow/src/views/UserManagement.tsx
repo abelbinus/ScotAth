@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
 import { useState, useEffect, useContext } from "react";
 import { Divider, Input, Col, Row, Button, Space, Table, Modal, Form, message, Popconfirm, Tag, Radio, Select, Tabs, Grid, Typography} from "antd";
 import type { TableColumnsType } from "antd";
@@ -372,10 +373,19 @@ const User = () => {
             <Form.Item name="userId" label="User ID" rules={[{ required: true, message: "Please input the user ID!" }]}>
               <Input disabled />
             </Form.Item>
-            <Form.Item name="userName" label="Name" rules={[{ message: "Please input the user name!" }]}>
+            <Form.Item name="userName" label="userName" rules={[{ message: "Please input the user name!" }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="email" label="Email" rules={[{ message: "Please input the email address!" }]}>
+            <Form.Item name="firstName" label="First Name" rules={[{ message: "Please input the user name!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="middleName" label="Middle Name" rules={[{ message: "Please input the user name!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="lastName" label="Last Name" rules={[{ message: "Please input the user name!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="userEmail" label="Email" rules={[{ message: "Please input the email address!" }]}>
               <Input type="email" />
             </Form.Item>
             <Form.Item name="userPass" label="Password"
@@ -392,7 +402,7 @@ const User = () => {
                 }
               />
             </Form.Item>
-            <Form.Item name="role" label="Role" rules={[{ message: "Please select the role!" }]}>
+            <Form.Item name="userRole" label="Role" rules={[{ message: "Please select the role!" }]}>
               <Radio.Group disabled>
                 <Radio value="admin">Admin</Radio>
                 <Radio value="volunteer">Volunteer</Radio>

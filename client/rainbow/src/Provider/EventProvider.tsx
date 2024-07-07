@@ -1,7 +1,6 @@
 // EventContext.tsx
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getEventbyMeetId } from '../apis/api'; // Adjust the import path as necessary
-import { message } from 'antd';
   
 
 interface EventContextType {
@@ -41,7 +40,7 @@ export const EventProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
         setMeetId(meetId);
         if (!meetId) {
-            setError('Meet ID is not provided');
+            setError('Please select a Meet');
             setLoading(false);
             return; // Exit early if meetId is null or undefined
         }

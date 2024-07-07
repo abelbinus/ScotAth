@@ -1,5 +1,6 @@
+/* eslint-disable jsx-a11y/img-redundant-alt */
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Col, Divider, Input, Row, Select, Table, Typography, message } from 'antd';
+import { Button, Card, Checkbox, Col, Divider, Input, Modal, Row, Select, Table, Typography, message } from 'antd';
 import { getEventPhoto, getEventbyEventId, getEventbyMeetId, getMeetByIdAPI, postPFEventbyEventId, updateEventAPI } from '../apis/api';
 import { Axios, AxiosError } from 'axios';
 import { useEvents } from '../Provider/EventProvider';
@@ -15,6 +16,34 @@ const Photofinish: React.FC = () => {
   let meetid = sessionStorage.getItem('lastSelectedMeetId');
   const [photos, setPhotos] = useState<string[]>([]);
   const { Title, Text } = Typography;
+
+  type ColumnVisibility = {
+    [key: string]: boolean;
+    lastName: boolean;
+    firstName: boolean;
+    athleteNum: boolean;
+    athleteClub: boolean;
+    startPos: boolean;
+    startTime: boolean;
+    finishPos: boolean;
+    finishTime: boolean;
+    finalPFPos: boolean;
+    finalPFTime: boolean;
+  };
+  
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>({
+    lastName: true,
+    firstName: true,
+    athleteNum: true,
+    athleteClub: true,
+    startPos: true,
+    startTime: true,
+    finishPos: true,
+    finishTime: true,
+    finalPFPos: true,
+    finalPFTime: true,
+  });
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
     const updateEvents = async () => {
@@ -278,6 +307,18 @@ const updateAllPF = async () => {
   }
 };
 
+const handleColumnVisibilityChange = (column: string, isChecked: boolean) => {
+  setColumnVisibility(prev => ({ ...prev, [column]: isChecked }));
+};
+
+const showModal = () => {
+  setIsModalVisible(true);
+};
+
+const handleCancel = () => {
+  setIsModalVisible(false);
+};
+
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(eventsInfo);
 
@@ -305,6 +346,11 @@ const updateAllPF = async () => {
             <Button onClick={handleNextEvent} className='button-next' type="primary">Next</Button>
           </div>
           <div className="button-container">
+            <Button onClick={showModal} style = {{marginRight: '10px'}} className = 'button-singleDownload' type="primary">
+              Filter Columns
+            </Button>
+          </div>
+          <div className="button-container">
             <Button onClick={updateAllPF} className = 'button-singleDownload' type="primary">
               Update All PF Events
             </Button>
@@ -321,18 +367,18 @@ const updateAllPF = async () => {
               { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
               { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
               {
-                title: 'Position',
+                title: 'Final Positions',
                 dataIndex: 'finalPFPos',
                 key: 'finalPFPos',
                 width: 100
               },
               {
-                title: 'Time',
+                title: 'Final Times',
                 dataIndex: 'finalPFTime',
                 key: 'finalPFTime',
                 width: 200
               }
-            ]}
+            ].filter(column => columnVisibility[column.dataIndex])}
             rowKey="athleteNum"
             pagination={false}
             scroll={{ x: 'max-content' }}
@@ -373,6 +419,46 @@ const updateAllPF = async () => {
       </Card>
       <Divider style={{ marginTop: 28, marginBottom: 40 }} />
       {renderEvents()}
+      <Modal title="Select Columns to Display" open={isModalVisible} footer={[]} onCancel={handleCancel}>
+        <div className="checkbox-container">
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.lastName}
+              onChange={(e) => handleColumnVisibilityChange('lastName', e.target.checked)}
+            >Last Name</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.firstName}
+              onChange={(e) => handleColumnVisibilityChange('firstName', e.target.checked)}
+            >First Name</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.athleteNum}
+              onChange={(e) => handleColumnVisibilityChange('athleteNum', e.target.checked)}
+            >Athlete Number</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.athleteClub}
+              onChange={(e) => handleColumnVisibilityChange('athleteClub', e.target.checked)}
+            >Athlete Club</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.finalPFPos}
+              onChange={(e) => handleColumnVisibilityChange('finalPFPos', e.target.checked)}
+            >Final Rankings</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.finalPFTime}
+              onChange={(e) => handleColumnVisibilityChange('finalPFTime', e.target.checked)}
+            >Final Times</Checkbox>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

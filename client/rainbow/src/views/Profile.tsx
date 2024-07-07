@@ -1,5 +1,5 @@
 import { useContext, useState } from "react";
-import { Card, Descriptions, Modal, Form, Input, Space, Button, message, Select, Divider } from "antd";
+import { Card, Descriptions, Modal, Form, Input, Space, Button, message, Select, Divider, Radio } from "antd";
 import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import { UserContext } from "../App";
 import { IUser } from "../modals/User";
@@ -14,6 +14,7 @@ interface PasswordChange {
 const ProfilePage = () => {
   const userContext = useContext(UserContext);
   const { setUser } = useContext(UserContext);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   // edit info
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [, setEditingUser] = useState<IUser | null>(null);
@@ -25,27 +26,31 @@ const ProfilePage = () => {
   const [isPasswordVisibleRetype, setIsPasswordVisibleRetype] = useState(false);
   const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] = useState(false);
 
-  const handleEditCancel = () => {
-    setIsEditModalVisible(false);
-  };
-
   const onEditClick = (user: IUser) => {
-    setEditingUser(user);
+    setEditingUser(user)
     setIsEditModalVisible(true);
+
     editForm.setFieldsValue({
       userId: user.userId,
       firstName: user.firstName,
-      middleName: user.middleName || '',
+      middleName: user.middleName,
       lastName: user.lastName,
       userName: user.userName,
-      userPass: user.userPass,
-      userEmail: user.userEmail || '',
+      userEmail: user.userEmail,
       userRole: user.userRole,
-      userMob: user.userMob || '',
-      userAddress: user.userAddress || ''
+      userMob: user.userMob,
+      userAddress: user.userAddress,
+      userPass: null
     });
   };
 
+  // edit
+  const handleEditCancel = () => {
+    setIsEditModalVisible(false);
+    setEditingUser(null);
+  };
+
+  // edit
   const handleEditSubmit = async (user: IUser) => {
     try {
       const userParams = {
@@ -54,11 +59,10 @@ const ProfilePage = () => {
         middleName: user.middleName,
         lastName: user.lastName,
         userName: user.userName,
-        userPass: user.userPass,
         userEmail: user.userEmail,
         userRole: user.userRole,
-        userMob: user.userMob,
-        userAddress: user.userAddress
+        usermob: user.userMob
+
       };
 
       await updateUserAPI(userParams);
@@ -67,28 +71,8 @@ const ProfilePage = () => {
       setIsEditModalVisible(false);
       setEditingUser(null);
 
-      // re-get user info
-      const response = await getUserByIdAPI(userContext.user!.userId);
-
-      // change obj to IUser
-      const loginUser: IUser = {
-        userId: response.data.user.id,
-        firstName: response.data.user.first_name,
-        middleName: response.data.user.middle_name || '',
-        lastName: response.data.user.last_name,
-        userName: response.data.user.username,
-        userEmail: response.data.user.userEmail || '', // You need to handle this if email is not provided in the response
-        userRole: response.data.user.role,
-        userPass: null,
-        userAddress: response.data.user.address || '',
-        userMob: response.data.user.userMob || ''
-      };
-
-      // UserContext
-      setUser(loginUser);
-
     } catch (error: any) {
-      const errMsg = error.response?.data?.msg || "Update user failed";
+      const errMsg = error.response?.data?.error || "Update user failed";
       console.error(errMsg);
       message.error(errMsg);
     }
@@ -138,6 +122,10 @@ const ProfilePage = () => {
     });
   };
 
+  const handlePasswordVisibility = () => {
+    setIsPasswordVisible(!isPasswordVisible);
+  };
+
   const handlePasswordVisibilityOld = () => {
     setIsPasswordVisibleOld(!isPasswordVisibleOld);
   };
@@ -153,9 +141,20 @@ const ProfilePage = () => {
       <Card title="My Profile" bordered={false} data-testid="profile-card">
         <Descriptions layout="vertical" column={1} colon={false}>
           <Descriptions.Item label="User ID">{userContext?.user?.userId}</Descriptions.Item>
-          <Descriptions.Item label="Name" >{userContext?.user?.userName}</Descriptions.Item>
+          <Descriptions.Item label="Username">{userContext?.user?.userName}</Descriptions.Item>
+          {/* Conditional rendering based on middleName */}
+          {userContext?.user?.firstName && (
+            <Descriptions.Item label="Name">
+              {userContext?.user?.firstName}
+              {userContext?.user?.middleName && ' ' + userContext?.user?.middleName}
+              {userContext?.user?.lastName && ' ' + userContext?.user?.lastName}
+            </Descriptions.Item>
+          )}
+          
           <Descriptions.Item label="Email" >{userContext?.user?.userEmail}</Descriptions.Item>
           <Descriptions.Item label="Role" >{userContext?.user?.userRole}</Descriptions.Item>
+          <Descriptions.Item label="Mobile" >{userContext?.user?.userMob}</Descriptions.Item>
+          <Descriptions.Item label="Address" >{userContext?.user?.userAddress}</Descriptions.Item>
         </Descriptions>
         <Divider />
         <Space>
@@ -164,34 +163,40 @@ const ProfilePage = () => {
         </Space>
       </Card>
   
-      {/* Edit user modal */}
+      {/*Edit a user dialog box*/}
       <Modal
-        title="Edit User"
-        open={isEditModalVisible}
-        onCancel={handleEditCancel}
-        footer={null}
-      >
-        <Form form={editForm} layout="vertical" onFinish={handleEditSubmit}>
-          <Form.Item label="User ID" name="id" rules={[{ required: true, message: "Please input the user id!" }]}>
-            <Input disabled data-testid="edit-user-id" />
-          </Form.Item>
-          <Form.Item label="Name" name="name" rules={[{ required: true, message: "Please input the user name!" }]}>
-            <Input data-testid="edit-user-name" />
-          </Form.Item>
-          <Form.Item label="Email" name="email" rules={[{ required: true, message: "Please input the email!" }]}>
-            <Input data-testid="edit-user-email" />
-          </Form.Item>
-          <Form.Item label="Role" name="role" rules={[{ required: true, message: "Please select the role!" }]}>
-            <Input disabled data-testid="edit-user-role" />
-          </Form.Item>
-          <Form.Item>
-            <Space>
-              <Button type="primary" htmlType="submit" data-testid="edit-save-button">Save</Button>
-              <Button onClick={handleEditCancel} data-testid="edit-cancel-button">Cancel</Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+          title="Edit User"
+          open={isEditModalVisible}
+          onOk={() => editForm.submit()}
+          onCancel={handleEditCancel}
+        >
+          <Form form={editForm} layout="vertical" onFinish={handleEditSubmit}>
+            <Form.Item name="userId" label="User ID" rules={[{ required: true, message: "Please input the user ID!" }]}>
+              <Input disabled />
+            </Form.Item>
+            <Form.Item name="userName" label="userName" rules={[{ message: "Please input the user name!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="firstName" label="First Name" rules={[{ message: "Please input the user name!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="middleName" label="Middle Name" rules={[{ message: "Please input the user name!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="lastName" label="Last Name" rules={[{ message: "Please input the user name!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="userEmail" label="Email" rules={[{ message: "Please input the email address!" }]}>
+              <Input type="email" />
+            </Form.Item>
+            <Form.Item name="userRole" label="Role" rules={[{ message: "Please select the role!" }]}>
+              <Radio.Group disabled>
+                <Radio value="admin">Admin</Radio>
+                <Radio value="volunteer">Volunteer</Radio>
+              </Radio.Group>
+            </Form.Item>
+          </Form>
+        </Modal>
   
       {/* Change password modal */}
       <Modal

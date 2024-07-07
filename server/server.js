@@ -36,6 +36,8 @@ app.use(express.static(path.join(clientPath, 'client', 'rainbow', 'build')));
 app.use(bodyParser.json());
 // Enable CORS for all routes
 app.use(cors());
+app.options('*', cors());
+
 
 // Connect to SQLite database
 const db = new sqlite3.Database(dbPath, (err) => {
@@ -135,26 +137,53 @@ app.put('/api/rainbow/user', async (req, res) => {
     // }
   
     // Update user in the database
-    const sql = `
-      UPDATE tblusers
-      SET firstName = ?, middleName = ?, lastName = ?, userName = ?, userEmail = ?, userRole = ?, userPass = ?, userMob = ?, userAddress = ?
-      WHERE userId = ?
-    `;
-    const values = [
-      user.firstName,
-      user.middleName,
-      user.lastName,
-      user.userName,
-      user.userEmail,
-      user.userRole,
-      hashedPassword,
-      user.userMob,
-      user.userAddress,
-      user.userId,
-    ];
+    let sql;
+    let values;
+    console.log(user.userPass);
+    if(user.userPass === '' || user.userPass === null || user.userPass === undefined){
+        sql = `
+          UPDATE tblusers
+          SET firstName = ?, middleName = ?, lastName = ?, userName = ?, userEmail = ?, userRole = ?, userMob = ?, userAddress = ?
+          WHERE userId = ?
+        `;
+        values = [
+          user.firstName,
+          user.middleName,
+          user.lastName,
+          user.userName,
+          user.userEmail,
+          user.userRole,
+          user.userMob,
+          user.userAddress,
+          user.userId,
+        ];
+    }
+    else {
+      sql = `
+        UPDATE tblusers
+        SET firstName = ?, middleName = ?, lastName = ?, userName = ?, userEmail = ?, userRole = ?, userPass = ?, userMob = ?, userAddress = ?
+        WHERE userId = ?
+      `;
+      values = [
+        user.firstName,
+        user.middleName,
+        user.lastName,
+        user.userName,
+        user.userEmail,
+        user.userRole,
+        user.userPass,
+        user.userMob,
+        user.userAddress,
+        user.userId,
+      ];
+
+    }
   
     db.run(sql, values, function (err) {
       if (err) {
+        if (err.message.includes('UNIQUE constraint failed') && err.message.includes('tblusers.userName')) {
+          return res.status(400).json({ error: 'Username already exists' });
+        }
         console.error(err.message);
         return res.status(500).json({ error: `Failed to update user\n${err.message}` });
       }
