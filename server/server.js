@@ -7,8 +7,10 @@ const fs = require('fs');
 const logger = require('./logger'); // Import the logger
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5912;
 const cors = require('cors');
+const IP = process.env.IP || 'localhost';
+console.log('IP:', IP);
 
 const {
     findScotathClientDir,
@@ -18,11 +20,6 @@ const {
     deleteExistingEvents,
     deleteEventInfo
 } = require('./utils'); // Import utility functions
-
-// Start the server
-app.listen(port, () => {
-    logger.info(`Server is running on http://localhost:${port}`);
-});
 
 // Determine the client path
 const clientPath = path.resolve(findScotathClientDir(__dirname));
@@ -35,8 +32,14 @@ app.use(express.static(path.join(clientPath, 'client', 'rainbow', 'build')));
 
 app.use(bodyParser.json());
 // Enable CORS for all routes
-app.use(cors());
+//app.use(cors());
 app.options('*', cors());
+
+app.use(cors({
+  origin: '*', // or specify the origin you want to allow
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 
 // Connect to SQLite database
@@ -46,6 +49,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
     } else {
         logger.info('Connected to the SQLite database.');
     }
+});
+
+app.get('/env', (req, res) => {
+  res.json({ IP: IP, PORT: port });
+});
+
+// Start the server
+app.listen(port, () => {
+  logger.info(`Server is running on http://${IP}:${port}`);
 });
 
 // API endpoint to fetch all users
@@ -359,6 +371,7 @@ app.delete('/api/rainbow/meet/:meetId', (req, res) => {
 
 // Login API endpoint
 app.post('/api/login', (req, res) => {
+  console.log('Login API called');
     const { userName, userPass } = req.body;
     const query = 'SELECT * FROM tblusers WHERE userName = ? AND userPass = ?';
     db.get(query, [userName, userPass], (err, row) => {
@@ -595,4 +608,9 @@ app.post('/api/rainbow/getEventPhotoAPI/', (req, res) => {
 // All other requests go to React app
 app.get('*', (req, res) => {
     res.sendFile(path.join(clientPath + '/' + 'client', 'rainbow', 'build', 'index.html'));
+});
+
+app.get('/api', (req, res) => {
+  console.log('API called');
+    res.send('API is running');
 });

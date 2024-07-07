@@ -7,6 +7,7 @@ import moment from 'moment';
 import { useEvents } from '../Provider/EventProvider';
 import './../styles/CustomCSS.css'
 import { formatEventCode } from './Eventutils';
+import { start } from 'repl';
 
 const { Option } = Select;
 
@@ -14,6 +15,7 @@ const EventsList: React.FC = () => {
   const {athletes, eventsInfo, setAthleteinfo, setEventsInfo, fetchEvents, setError, loading, error } = useEvents();
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
+  const [selectedValues, setSelectedValues] = useState<{ [key: string]: string }>({}); // Track selected status values for each athlete
   const meetid = sessionStorage.getItem('lastSelectedMeetId');
   const { Title, Text, Paragraph } = Typography;
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
@@ -48,6 +50,8 @@ const EventsList: React.FC = () => {
   
   // Function to handle status change for an athlete
   const handleStatusChange = (value: string, athlete: any) => {
+    const updatedValues = { ...selectedValues, [athlete.athleteNum]: value };
+    setSelectedValues(updatedValues);
     const updatedEvents = athletes.map(event =>
       event.athleteNum === athlete.athleteNum ? { ...event, startPos: value } : event
     );
@@ -214,6 +218,16 @@ const EventsList: React.FC = () => {
         startPos: null,
         startTime: null
       }));
+      // Initialize a temporary object with the current selectedValues
+      let tempSelectedValues = { ...selectedValues };
+      //console.log(updatedFilteredAthletesInfo);
+      // Accumulate updates in tempSelectedValues
+      updatedFilteredAthletesInfo.forEach((athlete: any) => {
+        tempSelectedValues[athlete.athleteNum] = '';
+      });
+
+      // Update selectedValues state once with the accumulated changes
+      setSelectedValues(tempSelectedValues);
       // Update the events list with the matching pfEvent data
       const updatedEvents = athletes.map(event => {
         // Find all corresponding events in the pfEvent list
@@ -226,7 +240,9 @@ const EventsList: React.FC = () => {
           ? matchingAthleteEvents.map((matchingAthleteEvents: any) => ({ ...event, ...matchingAthleteEvents }))
           : event;
       }).flat();
+      console.log(updatedEvents);
       setAthleteinfo(updatedEvents);
+      console.log(updatedFilteredAthletesInfo);
       setFilteredAthletesInfo(updatedFilteredAthletesInfo);
       await updateAthleteAPI(updatedFilteredAthletesInfo);
       message.success('Current events reset successfully!');
@@ -237,18 +253,31 @@ const EventsList: React.FC = () => {
 
   const handleResetAll = async () => {
     try {
-      const updatedFilteredAthletesInfo = athletes.map((athlete: any) => ({
+      const updatedAthletesInfo = athletes.map((athlete: any) => ({
         ...athlete,
         startPos: null,
         startTime: null
       }));
+
+      const updatedFilteredAthletesInfo = updatedAthletesInfo.filter(event => event.eventCode === selectedEventCode)
+      
+      // Initialize a temporary object with the current selectedValues
+      let tempSelectedValues = { ...selectedValues };
+
+      // Accumulate updates in tempSelectedValues
+      updatedFilteredAthletesInfo.forEach((athlete: any) => {
+        tempSelectedValues[athlete.athleteNum] = '';
+      });
+
+      // Update selectedValues state once with the accumulated changes
+      setSelectedValues(tempSelectedValues);
       
       // Update the local state with the reset values
-      setAthleteinfo(updatedFilteredAthletesInfo);
+      setAthleteinfo(updatedAthletesInfo);
       if (selectedEventCode) {
-        setFilteredAthletesInfo(updatedFilteredAthletesInfo.filter(event => event.eventCode === selectedEventCode));
-      } else {
         setFilteredAthletesInfo(updatedFilteredAthletesInfo);
+      } else {
+        setFilteredAthletesInfo(updatedAthletesInfo);
       }
       
       // Update the backend with the reset values
@@ -338,9 +367,9 @@ const EventsList: React.FC = () => {
                 width: 100,
                 render: (text: string, record: any) => (
                   <Select
-                    defaultValue={record.startPos || 'Select'}
                     style={{ width: 120 }}
                     onChange={(value) => handleStatusChange(value, record)}
+                    value={selectedValues[record.athleteNum] || record.startPos || 'Select'}
                   >
                     <Option value="Y">Y</Option>
                     <Option value="DNS">DNS</Option>

@@ -1,8 +1,10 @@
-import { request } from "./index.ts"
+
+import { getAxiosInstance } from ".";
 import { ILoginValues } from "../modals/LoginValues";
 
 // Login API endpoint
 export function loginAPI(loginValues: ILoginValues) {
+    const request=getAxiosInstance();
   return request({
     method: 'POST',
     url: '/api/login', // Adjust URL if necessary
@@ -12,6 +14,7 @@ export function loginAPI(loginValues: ILoginValues) {
 
 // all user
 export function logoutAPI() {
+    const request=getAxiosInstance();
     return request({
         url: "/api/authentication/logout",
         method: "GET",
@@ -20,6 +23,7 @@ export function logoutAPI() {
 
 // Update a specific user
 export function updateUserAPI(user: any) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/user/`,
         method: "PUT",
@@ -29,6 +33,7 @@ export function updateUserAPI(user: any) {
 
 // Get all meets list
 export function getMeetsAPI() {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/meet`,
         method: "GET",
@@ -37,6 +42,7 @@ export function getMeetsAPI() {
 
 // Get all meets list
 export function getMeetByIdAPI(meetId: string) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/meet/${meetId}`,
         method: "GET",
@@ -45,6 +51,7 @@ export function getMeetByIdAPI(meetId: string) {
 
 // Update a specific meet
 export function updateMeetAPI(meet: any) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/meet`,
         method: "PUT",
@@ -54,6 +61,7 @@ export function updateMeetAPI(meet: any) {
 
 // user
 export function changePasswordAPI(password: any) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/user/changePassword/`,
         method: "POST",
@@ -63,6 +71,7 @@ export function changePasswordAPI(password: any) {
 
 // user
 export function getUserByIdAPI(userId: number) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/user/${userId}`,
         method: "GET",
@@ -71,6 +80,7 @@ export function getUserByIdAPI(userId: number) {
 
 // admin
 export function getAllUsersAPI() {
+    const request=getAxiosInstance();
     return request({
         url: "/api/rainbow/user",
         method: "GET",
@@ -79,6 +89,7 @@ export function getAllUsersAPI() {
 
 // admin
 export function addUserAPI(user: any) {
+    const request=getAxiosInstance();
     return request({
         url: "/api/rainbow/user",
         method: "POST",
@@ -88,6 +99,7 @@ export function addUserAPI(user: any) {
 
 // admin
 export function deleteUserAPI(userId: number) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/user/${userId}`,
         method: "DELETE",
@@ -96,6 +108,7 @@ export function deleteUserAPI(userId: number) {
 
 // admin
 export function addMeetAPI(meet: any) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/meet`,
         method: "POST",
@@ -105,6 +118,7 @@ export function addMeetAPI(meet: any) {
 
 // admin
 export function deleteMeetAPI(meetId: number) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/meet/${meetId}`,
         method: "DELETE",
@@ -113,6 +127,7 @@ export function deleteMeetAPI(meetId: number) {
 
 // get all event details from folder
 export function getEventFiles(folderParams: any) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/event/`,
         method: "POST",
@@ -122,6 +137,7 @@ export function getEventFiles(folderParams: any) {
 
 // get all event details from folder
 export function getEventbyMeetId(meetId: any) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/eventinfo/${meetId}`,
         method: "GET",
@@ -130,6 +146,7 @@ export function getEventbyMeetId(meetId: any) {
 
 // get all event details from folder
 export function getEventbyEventId(meetId: any, eventCode: any) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/event/${meetId}/${eventCode}`,
         method: "GET",
@@ -138,6 +155,7 @@ export function getEventbyEventId(meetId: any, eventCode: any) {
 
 // get all event details from folder
 export function postPFEventbyEventId(folderParams: any) {
+    const request=getAxiosInstance();
     console.log("folderParams");
     return request({
         url: `/api/rainbow/pfevent/`,
@@ -148,6 +166,7 @@ export function postPFEventbyEventId(folderParams: any) {
 
 // update all event details
 export function updateEventAPI(eventGroup: any) {
+    const request=getAxiosInstance();
     console.log("eventGroup");
     return request({
         url: `/api/rainbow/updateEventAPI/`,
@@ -158,6 +177,7 @@ export function updateEventAPI(eventGroup: any) {
 
 // update all event details
 export function updateAthleteAPI(eventGroup: any) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/updateAthleteAPI/`,
         method: "POST",
@@ -167,6 +187,7 @@ export function updateAthleteAPI(eventGroup: any) {
 
 // get all event photos
 export function getEventPhoto(photoParams: any) {
+    const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/getEventPhotoAPI/`,
         method: "POST",

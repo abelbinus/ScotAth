@@ -299,7 +299,7 @@ const EventsList: React.FC = () => {
       if (selectedEventCode) {
         setFilteredAthletesInfo(updatedFilteredAthletesInfo);
       } else {
-        setFilteredAthletesInfo(updatedFilteredAthletesInfo);
+        setFilteredAthletesInfo(updatedAthletesInfo);
       }
       
       // Update the backend with the reset values

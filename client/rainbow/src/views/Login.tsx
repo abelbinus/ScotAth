@@ -63,7 +63,7 @@ const LoginPage = () => {
             }
         } catch (error: any) {
             const errMsg = error.response?.data?.msg || "Login Failed";
-            console.error(errMsg);
+            console.error(error);
             message.error(errMsg);
             setLoading(false);
         }
