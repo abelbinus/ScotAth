@@ -301,7 +301,6 @@ const MeetListAdmin = () => {
 
   // edit click
   const onEditClick = (meet: IMeet) => {
-    console.log(meet);
     // display existing info
     setEditingMeet(meet);
     setIsEditModalVisible(true);

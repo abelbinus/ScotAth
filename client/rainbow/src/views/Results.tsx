@@ -221,7 +221,6 @@ const AllResults: React.FC = () => {
                     const mainEventCode = parts[0]; // Assuming eventCode always has a main code before "-"
                     let round = null;
                     let heat = null;
-                    console.log(parts[1]?.length);
                     if(parts[1]?.length === 2) {
                       round = parts[1]?.[0]; // Assuming round is the first character after "-"
                       heat = parts[1]?.slice(1); // Assuming heat is the characters after the first one after "-"

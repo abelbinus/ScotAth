@@ -116,7 +116,7 @@ const EventsList: React.FC = () => {
 
   // Handle time change in TimePicker
   const handleStartTimeChange = (time: any, record: AthleteInfo) => {
-    console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
+    //console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
     const timeString = time ? time.format('hh:mm:ss:SSS A') : null; // Convert Moment object to 12-hour format string
     const updatedEvents = athletes.map(event =>
       event.athleteNum === record.athleteNum ? { ...event, startTime: timeString } : event
@@ -131,15 +131,21 @@ const EventsList: React.FC = () => {
 
   const handleSetTime = () => {
     const currentTime = moment().format('hh:mm:ss:SSS A');
-    const updatedEvents = filteredAthletesInfo.map(event => {
-      if (event.eventCode === selectedEventCode) {
-        return {
-          ...event,
-          startTime: currentTime,
-        };
-      }
-      return event;
-    });
+    const updatedFilteredAthletesInfo = filteredAthletesInfo.map((athlete: any) => ({
+      ...athlete,
+      startTime: currentTime
+    }));
+    const updatedEvents = athletes.map(event => {
+      // Find all corresponding events in the pfEvent list
+      const matchingAthleteEvents = updatedFilteredAthletesInfo.filter((filteredAthletes: { eventCode: string; athleteNum: string; }) => 
+        filteredAthletes.eventCode === event.eventCode && filteredAthletes.athleteNum === event.athleteNum
+      );
+
+      // Merge the event with all matching pfEvent objects
+      return matchingAthleteEvents.length > 0 
+        ? matchingAthleteEvents.map((matchingAthleteEvents: any) => ({ ...event, ...matchingAthleteEvents }))
+        : event;
+    }).flat();
     setAthleteinfo(updatedEvents);
     setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
   };
@@ -161,7 +167,7 @@ const EventsList: React.FC = () => {
   };
 
   const handleCommentOk = async () => {
-    console.log(eventsInfo.filter((event: { eventCode: any; }) => event.eventCode === selectedEventCode));
+    //console.log(eventsInfo.filter((event: { eventCode: any; }) => event.eventCode === selectedEventCode));
     // Find the event with the selected event code and update its Comment
     const updatedEvent = eventsInfo.find(event => event.eventCode === selectedEventCode);
   
@@ -240,9 +246,7 @@ const EventsList: React.FC = () => {
           ? matchingAthleteEvents.map((matchingAthleteEvents: any) => ({ ...event, ...matchingAthleteEvents }))
           : event;
       }).flat();
-      console.log(updatedEvents);
       setAthleteinfo(updatedEvents);
-      console.log(updatedFilteredAthletesInfo);
       setFilteredAthletesInfo(updatedFilteredAthletesInfo);
       await updateAthleteAPI(updatedFilteredAthletesInfo);
       message.success('Current events reset successfully!');

@@ -160,7 +160,6 @@ const Photofinish: React.FC = () => {
           throw new Error('pfOutput is not provided');
         }
         const filename = generateFilename(selectedEventCode);
-        console.log('filename:', filename);
         const photoParams = {
             pfFolder: pfFolder,
             filename: filename
@@ -185,7 +184,6 @@ const Photofinish: React.FC = () => {
   // Handle event selection from dropdown
   const handleEventSelect = (value: string) => {
     setSelectedEventCode(value);
-    console.log("events: " + eventsInfo.filter(event => event.eventCode === value));
     if (value === '') {
       setFilteredAthletesInfo(athletes);
     } else {

@@ -127,7 +127,6 @@ const EventsList: React.FC = () => {
       }));
       // Initialize a temporary object with the current selectedValues
       let tempSelectedValues = { ...selectedValues };
-      console.log(updatedFilteredAthletesInfo);
       // Accumulate updates in tempSelectedValues
       updatedFilteredAthletesInfo.forEach((athlete: any) => {
         tempSelectedValues[athlete.athleteNum] = '';
@@ -159,7 +158,6 @@ const EventsList: React.FC = () => {
   // Handle event selection from dropdown
   const handleEventSelect = (value: string) => {
     setSelectedEventCode(value);
-    console.log(value);
     if (value === '') {
       setFilteredAthletesInfo(athletes);
     } else {
@@ -193,7 +191,7 @@ const EventsList: React.FC = () => {
 
   // Handle time change in TimePicker
   const handlefinishTimeChange = (time: any, record: AthleteInfo) => {
-    console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
+    // console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
     const timeString = time ? time.format('hh:mm:ss:SSS A') : null; // Convert Moment object to 12-hour format string
     const updatedEvents = athletes.map(event =>
       event.athleteNum === record.athleteNum ? { ...event, finishTime: timeString } : event
@@ -223,7 +221,6 @@ const EventsList: React.FC = () => {
   };
 
   const handleCommentOk = async () => {
-    console.log(eventsInfo.filter((event: { eventCode: any; }) => event.eventCode === selectedEventCode));
     // Find the event with the selected event code and update its description
     const updatedEvent = eventsInfo.find(event => event.eventCode === selectedEventCode);
   

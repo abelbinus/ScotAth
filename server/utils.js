@@ -221,8 +221,11 @@ async function readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res) {
         let dbError = null;
         const content = await readFile(folderPath, fileName);
         // Process the content as needed, e.g., insert into the database
+        if (pfOutput === 'lif') {
         [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertLifIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db);
-
+        } else if (pfOutput === 'cl') {
+            res.json({error: `CL extension not implemented yet`, status: 'success'});
+        }
         if (failedFlagEventInfo > 0 && failedFlagEvents > 0) {
             dbError = `Database error updating event info and events.`;
         } else if (failedFlagEventInfo > 0) {

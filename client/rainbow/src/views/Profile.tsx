@@ -179,16 +179,16 @@ const ProfilePage = () => {
             <Form.Item name="userId" label="User ID" rules={[{ required: true, message: "Please input the user ID!" }]}>
               <Input disabled />
             </Form.Item>
-            <Form.Item name="userName" label="userName" rules={[{ message: "Please input the user name!" }]}>
+            <Form.Item name="userName" label="userName" rules={[{ min:3, message: "Please input the user name!" }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="firstName" label="First Name" rules={[{ message: "Please input the user name!" }]}>
+            <Form.Item name="firstName" label="First Name" rules={[{ message: "Please input your first name!" }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="middleName" label="Middle Name" rules={[{ message: "Please input the user name!" }]}>
+            <Form.Item name="middleName" label="Middle Name" rules={[{ message: "Please input your middle name!" }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="lastName" label="Last Name" rules={[{ message: "Please input the user name!" }]}>
+            <Form.Item name="lastName" label="Last Name" rules={[{ message: "Please input your last name!" }]}>
               <Input />
             </Form.Item>
             <Form.Item name="userEmail" label="Email" rules={[{ message: "Please input the email address!" }]}>

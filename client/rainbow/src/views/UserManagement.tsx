@@ -324,7 +324,7 @@ const User = () => {
             <Form.Item name="lastName" label="Last Name" rules={[{ required: true, message: "Please input your last name!" }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="userName" label="Username" rules={[{ required: true, message: "Please input the user name!" }]} initialValue="">
+            <Form.Item name="userName" label="Username" rules={[{ min:3, required: true, message: "Please input the user name!" }]} initialValue="">
               <Input />
             </Form.Item>
             <Form.Item name="userPass" label="Password"
@@ -373,7 +373,7 @@ const User = () => {
             <Form.Item name="userId" label="User ID" rules={[{ required: true, message: "Please input the user ID!" }]}>
               <Input disabled />
             </Form.Item>
-            <Form.Item name="userName" label="userName" rules={[{ message: "Please input the user name!" }]}>
+            <Form.Item name="userName" label="userName" rules={[{ min: 3, message: "Please input the user name!" }]}>
               <Input />
             </Form.Item>
             <Form.Item name="firstName" label="First Name" rules={[{ message: "Please input the user name!" }]}>
