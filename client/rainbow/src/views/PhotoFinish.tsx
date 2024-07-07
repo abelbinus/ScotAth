@@ -52,7 +52,7 @@ const Photofinish: React.FC = () => {
           meetid = sessionStorage.getItem('lastSelectedMeetId');
         }
         if (!meetid) {
-          setError('Meet ID is not provided');
+          setError('Please select a Meet');
           setLoading(false);
           return; // Exit early if meetId is null or undefined
         }
@@ -144,8 +144,11 @@ const Photofinish: React.FC = () => {
 
   const fetchPhotos = async () => {
     try {
-        if (!meetid || !selectedEventCode) {
-          throw new Error('Meet ID or event code is not provided');
+        if (!meetid) {
+          throw new Error('Please select a Meet');
+        }
+        if(!selectedEventCode) {
+          throw new Error('Please select an Event');
         }
         const response = await getMeetByIdAPI(meetid);
         const pfFolder = response.data.meet.pfFolder;
@@ -217,7 +220,7 @@ const updateAllPF = async () => {
   try {
     //setLoading(true);
     if (!meetid) {
-      setError('Meet ID is not provided');
+      setError('Please select a Meet');
       setLoading(false);
       return;
     }
@@ -400,6 +403,7 @@ const handleCancel = () => {
 
   if (loading) return <div>Loading...</div>;
   if (error && !meetid) return <div>{error}</div>;
+  if (eventsInfo.length === 0 ) return <div>No events found</div>;
 
   return (
     <div style={{ padding: '20px' }}>

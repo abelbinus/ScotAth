@@ -90,17 +90,22 @@ const ProfilePage = () => {
     }
 
     try {
-      const response = await changePasswordAPI(values.oldPassword, values.newPassword, userContext!.user!.userId); // Call the changePasswordAPI function
-      const responseMessage = response?.data?.msg;
-      if (response.data.suc) {
+      const password = {
+        oldPass: values.oldPassword,
+        newPass: values.newPassword,
+        userId: userContext!.user!.userId
+      }
+      const response = await changePasswordAPI(password); // Call the changePasswordAPI function
+      const responseMessage = response?.data?.message;
+      if (responseMessage) {
           message.success(responseMessage);
           // Close the modal
           setIsChangePasswordModalVisible(false);
       } else {
-          message.error(response.data.msg || 'Failed to change password');
+          message.error(response.data.error || 'Failed to change password');
       }
     } catch (error: any) {
-      const errMsg = error.response?.data?.msg || "Failed to change password";
+      const errMsg = error.response?.data?.error || "Failed to change password";
       console.error(errMsg);
       message.error(errMsg);
     }

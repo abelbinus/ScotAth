@@ -377,6 +377,46 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+app.post('/api/rainbow/user/changePassword', async (req, res) => {
+  const { oldPass, newPass, userId } = req.body;
+  const query = 'SELECT userPass FROM tblusers WHERE userId = ?';
+  db.get(query, [userId], async (err, row) => {
+    if (err) {
+      logger.error(err.message);
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    else if (!row) {
+      logger.error('User not found');
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+    else {
+      // Check if the old password matches
+      // const match = await bcrypt.compare(oldPass, row.userPass);
+      if (oldPass !== row.userPass) {
+        logger.error('Invalid old password');
+        res.status(401).json({ error: 'Invalid old password' });
+        return;
+      }
+      else {
+        const updateQuery = 'UPDATE tblusers SET userPass = ? WHERE userId = ?';
+        db.run(updateQuery, [newPass, userId], function(err) {
+          if (err) {
+            logger.error(err.message);
+            res.status(500).json({ error: err.message });
+            return;
+          }
+          logger.info(`Password updated for user with ID ${userId}`);
+          res.json({ message: 'Password updated successfully' });
+        });
+      }
+      // Hash the new password
+      // const hashedPassword = await bcrypt.hash(newPass, 10);
+    }
+  });
+});
+
 app.post('/api/rainbow/event', async (req, res) => {
     const { pfFolder, intFolder, eventList, meetId } = req.body;
 

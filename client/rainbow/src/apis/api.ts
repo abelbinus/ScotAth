@@ -53,10 +53,11 @@ export function updateMeetAPI(meet: any) {
 }
 
 // user
-export function changePasswordAPI(oldPass: string, newPass: string, userId: number) {
+export function changePasswordAPI(password: any) {
     return request({
-        url: `/api/rainbow/user/changePassword/${oldPass}/${newPass}/${userId}`,
-        method: "PUT",
+        url: `/api/rainbow/user/changePassword/`,
+        method: "POST",
+        data: password,
     });
 }
 

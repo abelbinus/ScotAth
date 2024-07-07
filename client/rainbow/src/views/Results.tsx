@@ -277,6 +277,7 @@ const AllResults: React.FC = () => {
 
   if (loading) return <div>Loading...</div>;
   if (error && !meetid) return <div>{error}</div>;
+  if (eventsInfo.length === 0 ) return <div>No events found</div>;
 
   return (
     <div>

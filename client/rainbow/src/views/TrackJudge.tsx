@@ -6,6 +6,7 @@ import { TimePicker } from '../components';
 import moment from 'moment';
 import { useEvents } from '../Provider/EventProvider';
 import { formatEventCode } from './Eventutils';
+import { start } from 'repl';
 
 const { Option } = Select;
 
@@ -113,6 +114,45 @@ const EventsList: React.FC = () => {
       message.success('Events status updated successfully!');
     } catch (err) {
       message.error('Error updating events status');
+    }
+  };
+
+  // Function to handle save operation
+  const handleReset = async () => {
+    try {
+      const updatedFilteredAthletesInfo = filteredAthletesInfo.map((athlete: any) => ({
+        ...athlete,
+        finishPos: null,
+        finishTime: null
+      }));
+      // Initialize a temporary object with the current selectedValues
+      let tempSelectedValues = { ...selectedValues };
+      console.log(updatedFilteredAthletesInfo);
+      // Accumulate updates in tempSelectedValues
+      updatedFilteredAthletesInfo.forEach((athlete: any) => {
+        tempSelectedValues[athlete.athleteNum] = '';
+      });
+
+      // Update selectedValues state once with the accumulated changes
+      setSelectedValues(tempSelectedValues);
+      // Update the events list with the matching pfEvent data
+      const updatedEvents = athletes.map(event => {
+        // Find all corresponding events in the pfEvent list
+        const matchingAthleteEvents = updatedFilteredAthletesInfo.filter((filteredAthletes: { eventCode: string; athleteNum: string; }) => 
+          filteredAthletes.eventCode === event.eventCode && filteredAthletes.athleteNum === event.athleteNum
+        );
+
+        // Merge the event with all matching pfEvent objects
+        return matchingAthleteEvents.length > 0 
+          ? matchingAthleteEvents.map((matchingAthleteEvents: any) => ({ ...event, ...matchingAthleteEvents }))
+          : event;
+      }).flat();
+      setAthleteinfo(updatedEvents);
+      setFilteredAthletesInfo(updatedFilteredAthletesInfo);
+      await updateAthleteAPI(updatedFilteredAthletesInfo);
+      message.success('Current events reset successfully!');
+    } catch (err) {
+      message.error('Error resetting current event');
     }
   };
 
@@ -232,6 +272,46 @@ const EventsList: React.FC = () => {
     handleEventSelect(eventsInfo[nextIndex].eventCode);
   };
 
+  const handleResetAll = async () => {
+    try {
+      const updatedAthletesInfo = athletes.map((athlete: any) => ({
+        ...athlete,
+        finishPos: null,
+        finishTime: null
+      }));
+
+      const updatedFilteredAthletesInfo = updatedAthletesInfo.filter(event => event.eventCode === selectedEventCode)
+      
+      // Initialize a temporary object with the current selectedValues
+      let tempSelectedValues = { ...selectedValues };
+
+      // Accumulate updates in tempSelectedValues
+      updatedFilteredAthletesInfo.forEach((athlete: any) => {
+        tempSelectedValues[athlete.athleteNum] = '';
+      });
+
+      //console.log(updatedFilteredAthletesInfo);
+
+      // Update selectedValues state once with the accumulated changes
+      setSelectedValues(tempSelectedValues);
+      // Update the local state with the reset values
+      setAthleteinfo(updatedAthletesInfo);
+      if (selectedEventCode) {
+        setFilteredAthletesInfo(updatedFilteredAthletesInfo);
+      } else {
+        setFilteredAthletesInfo(updatedFilteredAthletesInfo);
+      }
+      
+      // Update the backend with the reset values
+      await updateAthleteAPI(updatedFilteredAthletesInfo);
+      
+      // Success message
+      message.success('Current events reset successfully!');
+    } catch (err) {
+      message.error('Error resetting current event');
+    }
+  };
+
   useEffect(() => {
     if (selectedEventCode) {
       setEventComments(eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventComments || '');
@@ -268,9 +348,12 @@ const EventsList: React.FC = () => {
             <Button onClick={showModal} style={{ marginRight: '10px' }} type="primary">
               Filter Columns
             </Button>
-            <Button onClick={showCommentModal} type="primary">
+            <Button onClick={showCommentModal} style={{ marginRight: '10px' }} type="primary">
               Add Comments
             </Button>
+            <Button onClick={handleResetAll} type="primary">
+              Reset All
+          </Button>
           </div>
         </div>
         {error ? (
@@ -324,6 +407,7 @@ const EventsList: React.FC = () => {
           />
         )}
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '25px'}}>
+          <Button type="primary" style={{ marginRight: '10px' }} onClick={handleReset}>Reset</Button>
           <Button type="primary" onClick={handleSave}>Save</Button>
         </div>
       </div>
@@ -332,6 +416,7 @@ const EventsList: React.FC = () => {
 
   if (loading) return <div>Loading...</div>;
   if (error && !meetid) return <div>{error}</div>;
+  if (eventsInfo.length === 0 ) return <div>No events found</div>;
 
   return (
     <div style={{ padding: '20px' }}>

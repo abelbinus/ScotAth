@@ -206,6 +206,61 @@ const EventsList: React.FC = () => {
     handleEventSelect(eventsInfo[nextIndex].eventCode);
   };
 
+  // Function to handle save operation
+  const handleReset = async () => {
+    try {
+      const updatedFilteredAthletesInfo = filteredAthletesInfo.map((athlete: any) => ({
+        ...athlete,
+        startPos: null,
+        startTime: null
+      }));
+      // Update the events list with the matching pfEvent data
+      const updatedEvents = athletes.map(event => {
+        // Find all corresponding events in the pfEvent list
+        const matchingAthleteEvents = updatedFilteredAthletesInfo.filter((filteredAthletes: { eventCode: string; athleteNum: string; }) => 
+          filteredAthletes.eventCode === event.eventCode && filteredAthletes.athleteNum === event.athleteNum
+        );
+
+        // Merge the event with all matching pfEvent objects
+        return matchingAthleteEvents.length > 0 
+          ? matchingAthleteEvents.map((matchingAthleteEvents: any) => ({ ...event, ...matchingAthleteEvents }))
+          : event;
+      }).flat();
+      setAthleteinfo(updatedEvents);
+      setFilteredAthletesInfo(updatedFilteredAthletesInfo);
+      await updateAthleteAPI(updatedFilteredAthletesInfo);
+      message.success('Current events reset successfully!');
+    } catch (err) {
+      message.error('Error resetting current event');
+    }
+  };
+
+  const handleResetAll = async () => {
+    try {
+      const updatedFilteredAthletesInfo = athletes.map((athlete: any) => ({
+        ...athlete,
+        startPos: null,
+        startTime: null
+      }));
+      
+      // Update the local state with the reset values
+      setAthleteinfo(updatedFilteredAthletesInfo);
+      if (selectedEventCode) {
+        setFilteredAthletesInfo(updatedFilteredAthletesInfo.filter(event => event.eventCode === selectedEventCode));
+      } else {
+        setFilteredAthletesInfo(updatedFilteredAthletesInfo);
+      }
+      
+      // Update the backend with the reset values
+      await updateAthleteAPI(updatedFilteredAthletesInfo);
+      
+      // Success message
+      message.success('Current events reset successfully!');
+    } catch (err) {
+      message.error('Error resetting current event');
+    }
+  };
+
   useEffect(() => {
     const updateEvents = async () => {
       if(eventsInfo.length === 0 && meetid) {
@@ -258,8 +313,11 @@ const EventsList: React.FC = () => {
             <Button onClick={showModal} style={{marginRight:'10px'}} type="primary">
               Filter Columns
             </Button>
-            <Button onClick={showCommentModal} type="primary">
+            <Button onClick={showCommentModal} style={{ marginRight: '10px' }} type="primary">
               Add Comment
+            </Button>
+            <Button onClick={handleResetAll} type="primary">
+              Reset All
             </Button>
           </div>
         </div>
@@ -312,15 +370,19 @@ const EventsList: React.FC = () => {
             scroll={{ x: 'max-content' }}
           />
         )}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '25px'}}>
-          <Button type="primary" style={{ marginRight: '10px' }} onClick={handleSetTime}>Set Time</Button>
-          <Button type="primary" onClick={handleSave}>Save</Button>
-        </div>
+          <div className = 'button-div'>
+            <Button type="primary" style={{ marginRight: '10px' }} onClick={handleReset}>Reset</Button>
+            <Button type="primary" style={{ marginRight: '10px' }} onClick={handleSetTime}>Set Time</Button>
+            <Button type="primary" className = 'button-save' onClick={handleSave}>Save</Button>
+          </div>
       </div>
     );
   };
+
   if (loading) return <div>Loading...</div>;
   if (error && !meetid) return <div>{error}</div>;
+  if (eventsInfo.length === 0 ) return <div>No events found</div>;
+
   return (
     <div style={{ padding: '20px' }}>
       <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
@@ -390,6 +452,14 @@ const EventsList: React.FC = () => {
             >Start Time</Checkbox>
           </div>
         </div>
+      </Modal>
+      <Modal title="Add Comment" open={isCommentModalVisible} onOk={handleCommentOk} onCancel={handleCommentCancel}>
+        <Input.TextArea
+          rows={4}
+          value={eventComments}
+          onChange={(e) => setEventComments(e.target.value)}
+          placeholder="Enter Comment"
+        />
       </Modal>
     </div>
   );
