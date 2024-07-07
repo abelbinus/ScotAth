@@ -390,7 +390,7 @@ const User = () => {
             </Form.Item>
             <Form.Item name="userPass" label="Password"
               rules={[
-                { required: true, message: "Please input your new password!" },
+                { message: "Please input your new password!" },
                 { min: 8, message: "Password must be at least 8 characters." }
               ]}>
               <Input
