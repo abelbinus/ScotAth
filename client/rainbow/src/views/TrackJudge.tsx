@@ -14,8 +14,8 @@ const { Option } = Select;
 const EventsList: React.FC = () => {
   const {athletes, eventsInfo, setAthleteinfo, fetchEvents, setEventsInfo, setError, loading, error } = useEvents();
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
-  const [selectedValues, setSelectedValues] = useState<string[]>([]); // Track selected status values for each athlete
-  const [currentValues, setCurrentValues] = useState<string[]>([]);
+  const [selectedValues, setSelectedValues] = useState<{ [key: string]: string }>({}); // Track selected status values for each athlete
+  const [currentValues, setCurrentValues] = useState<string[]>([]); // Track current status values for each athlete
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [eventComments, setEventComments] = useState<string>(''); // State to hold event description
@@ -28,6 +28,7 @@ const EventsList: React.FC = () => {
     firstName: boolean;
     athleteNum: boolean;
     athleteClub: boolean;
+    laneOrder: boolean;
     startPos: boolean;
     startTime: boolean;
     finishPos: boolean;
@@ -41,6 +42,7 @@ const EventsList: React.FC = () => {
     firstName: true,
     athleteNum: true,
     athleteClub: true,
+    laneOrder: true,
     startPos: true,
     startTime: true,
     finishPos: true,
@@ -51,27 +53,44 @@ const EventsList: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   
   // Function to handle status change for an athlete
-  const handleStatusChange = (athlete: any) => {
-    const statusOptions = currentValues;
-    const currentStatus = selectedValues[athlete.athleteNum] || athlete.startPos || 'Select';
-    const currentIndex = statusOptions.indexOf(currentStatus);
-    const nextIndex = (currentIndex + 1) % statusOptions.length;
-    const nextStatus = statusOptions[nextIndex];
+const handleStatusChange = (athlete: any) => {
+  const statusOptions = currentValues;
+  const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
+  const currentStatus = selectedValues[uniqueValue] || 'Select';
+  const currentIndex = statusOptions.indexOf(currentStatus);
+  console.log(`Current status for athleteNum ${athlete.athleteNum} is ${currentStatus}`);
+  console.log('st: ' + athlete.finishPos);
 
-    const excludedValues = ['DNS', 'DNF', 'DQ'];
+  // Get a list of current statuses for the filtered athletes
+  const filteredUniqueValues = filteredAthletesInfo.map(
+    fa => fa.meetId + '-' + fa.eventCode + '-' + fa.athleteNum
+  );
+  const filteredStatuses = filteredUniqueValues.map(fuv => selectedValues[fuv])
+    .filter(status => !['DNS', 'DNF', 'DQ'].includes(status));
 
-    const updatedValues = { ...selectedValues, nextStatus };
-    setSelectedValues(updatedValues);
-    const updatedEvents = athletes.map(event =>
-      event.athleteNum === athlete.athleteNum ? { ...event, startPos: nextStatus } : event
-    );
-    setAthleteinfo(updatedEvents);
-    if (selectedEventCode) {
-      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
-    } else {
-      setFilteredAthletesInfo(updatedEvents);
-    }
-  };
+  // Find the next available status that is not in filteredStatuses
+  let nextIndex = (currentIndex + 1) % statusOptions.length;
+  let nextStatus = statusOptions[nextIndex];
+  while (filteredStatuses.includes(nextStatus)) {
+    nextIndex = (nextIndex + 1) % statusOptions.length;
+    nextStatus = statusOptions[nextIndex];
+  }
+
+  console.log(`Status changed for athleteNum ${athlete.athleteNum} to ${nextStatus}`);
+  const updatedValues = { ...selectedValues, [uniqueValue]: nextStatus };
+  setSelectedValues(updatedValues);
+  console.log(updatedValues);
+
+  const updatedEvents = athletes.map(event =>
+    event.athleteNum === athlete.athleteNum ? { ...event, finishPos: nextStatus } : event
+  );
+  setAthleteinfo(updatedEvents);
+  if (selectedEventCode) {
+    setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+  } else {
+    setFilteredAthletesInfo(updatedEvents);
+  }
+};
 
   useEffect(() => {
     if(eventsInfo.length === 0) {
@@ -82,11 +101,6 @@ const EventsList: React.FC = () => {
       setSelectedEventCode(initialEventCode);
       setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
     }
-    const statusOptions: any[] | ((prevState: string[]) => string[]) = [];
-    filteredAthletesInfo.forEach((athlete: any) => {
-      statusOptions.push(athlete.finishPos);
-    });
-    setSelectedValues(statusOptions);
   }, [meetid]);
 
   useEffect(() => {
@@ -107,21 +121,21 @@ const EventsList: React.FC = () => {
         setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
       }
     }
+
     const statusOptions = [];
+
     const length = filteredAthletesInfo.length;
 
     // Generate numbers 1 to length and add them to statusOptions array
     for (let i = 1; i <= length; i++) {
         statusOptions.push(i.toString());
     }
-    setCurrentValues(statusOptions);
-    const selectedOptions: any[] | ((prevState: string[]) => string[]) = [];
-    filteredAthletesInfo.forEach((athlete: any) => {
-      selectedOptions.push(athlete.finishPos);
-    });
-    console.log("selectedOptions" + selectedOptions);
-    setSelectedValues(selectedOptions);
 
+    statusOptions.push('DNS');
+    statusOptions.push('DNF');
+    statusOptions.push('DQ');
+
+    setCurrentValues(statusOptions);
   }, [eventsInfo]);
 
   // Function to handle save operation
@@ -141,6 +155,24 @@ const EventsList: React.FC = () => {
           : event;
       }).flat();
       setAthleteinfo(updatedEvents);
+      const sortedFilter = filteredAthletesInfo.sort((athlete1: any, athlete2: any) => {
+        const position1 = athlete1.finishPos;
+        const position2 = athlete2.finishPos;
+      
+        const positionOrder: { [key: string]: number } = { 'DNS': 99998, 'DNF': 99999, 'DQ': 100000 };
+      
+        const getPositionValue = (pos: any) => {
+          if (typeof pos === 'number') {
+            return pos;
+          }
+          return positionOrder[pos] || Infinity;
+        };
+      
+        return getPositionValue(position1) - getPositionValue(position2);
+      });
+      console.log('sortedFilter')
+      console.log(sortedFilter);
+      setFilteredAthletesInfo(sortedFilter);
       message.success('Events status updated successfully!');
     } catch (err) {
       message.error('Error updating events status');
@@ -156,12 +188,13 @@ const EventsList: React.FC = () => {
         finishTime: null
       }));
       // Initialize a temporary object with the current selectedValues
-      let tempSelectedValues = [ ...selectedValues ];
+      let tempSelectedValues = { ...selectedValues };
       // Accumulate updates in tempSelectedValues
       updatedFilteredAthletesInfo.forEach((athlete: any) => {
-        tempSelectedValues = [];
+        const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
+        tempSelectedValues[uniqueValue] = '';
       });
-  
+
       // Update selectedValues state once with the accumulated changes
       setSelectedValues(tempSelectedValues);
       // Update the events list with the matching pfEvent data
@@ -170,7 +203,7 @@ const EventsList: React.FC = () => {
         const matchingAthleteEvents = updatedFilteredAthletesInfo.filter((filteredAthletes: { eventCode: string; athleteNum: string; }) => 
           filteredAthletes.eventCode === event.eventCode && filteredAthletes.athleteNum === event.athleteNum
         );
-  
+
         // Merge the event with all matching pfEvent objects
         return matchingAthleteEvents.length > 0 
           ? matchingAthleteEvents.map((matchingAthleteEvents: any) => ({ ...event, ...matchingAthleteEvents }))
@@ -330,12 +363,16 @@ const EventsList: React.FC = () => {
       const updatedFilteredAthletesInfo = updatedAthletesInfo.filter(event => event.eventCode === selectedEventCode)
       
       // Initialize a temporary object with the current selectedValues
-      let tempSelectedValues = [ ...selectedValues ];
+      let tempSelectedValues = { ...selectedValues };
+
       // Accumulate updates in tempSelectedValues
-      updatedFilteredAthletesInfo.forEach((athlete: any) => {
-        tempSelectedValues = [];
+      updatedAthletesInfo.forEach((athlete: any) => {
+        const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
+        tempSelectedValues[uniqueValue] = '';
       });
-  
+
+      //console.log(updatedFilteredAthletesInfo);
+
       // Update selectedValues state once with the accumulated changes
       setSelectedValues(tempSelectedValues);
       // Update the local state with the reset values
@@ -347,7 +384,7 @@ const EventsList: React.FC = () => {
       }
       
       // Update the backend with the reset values
-      await updateAthleteAPI(updatedFilteredAthletesInfo);
+      await updateAthleteAPI(updatedAthletesInfo);
       
       // Success message
       message.success('Current events reset successfully!');
@@ -360,6 +397,7 @@ const EventsList: React.FC = () => {
     if (selectedEventCode) {
       setEventComments(eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventComments || '');
     }
+    console.log("Test");
     const statusOptions = [];
     // Assuming athletes.length is 5
     const length = filteredAthletesInfo.length;
@@ -372,7 +410,6 @@ const EventsList: React.FC = () => {
     statusOptions.push('DNS');
     statusOptions.push('DNF');
     statusOptions.push('DQ');
-    console.log(statusOptions);
     setCurrentValues(statusOptions);
   }, [selectedEventCode]);
 
@@ -424,6 +461,7 @@ const EventsList: React.FC = () => {
               { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
               { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
               { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
+              { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
               {
                 title: 'Rank',
                 dataIndex: 'finishPos',
@@ -434,7 +472,7 @@ const EventsList: React.FC = () => {
                     style={{ width: 120 }} // Adjust the width as per your requirement
                     onClick={() => handleStatusChange(record)}
                   >
-                    {selectedValues[record.athleteNum] || record.finishPos || 'Select'}
+                    {selectedValues[record.meetId + '-' + record.eventCode + '-' + record.athleteNum] || record.finishPos || 'Select'}
                   </Button>
                 ),
               },
@@ -476,7 +514,7 @@ const EventsList: React.FC = () => {
       <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
-            <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>TrackJudge Screen</Title>
+            <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Track Judge Screen</Title>
             <Text type="secondary">Rank Athletes and set Finish Times</Text>
           </Col>
           <Col span={24} style={{ marginTop: '20px' }}>
@@ -525,6 +563,12 @@ const EventsList: React.FC = () => {
               checked={columnVisibility.athleteClub}
               onChange={(e) => handleColumnVisibilityChange('athleteClub', e.target.checked)}
             >Athlete Club</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.athleteClub}
+              onChange={(e) => handleColumnVisibilityChange('laneOrder', e.target.checked)}
+            >Lane</Checkbox>
           </div>
           <div className="checkbox-row">
             <Checkbox

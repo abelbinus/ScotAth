@@ -26,6 +26,7 @@ const EventsList: React.FC = () => {
     firstName: boolean;
     athleteNum: boolean;
     athleteClub: boolean;
+    laneOrder: boolean;
     startPos: boolean;
     startTime: boolean;
     finishPos: boolean;
@@ -39,6 +40,7 @@ const EventsList: React.FC = () => {
     firstName: true,
     athleteNum: true,
     athleteClub: true,
+    laneOrder: true,
     startPos: true,
     startTime: true,
     finishPos: true,
@@ -48,7 +50,7 @@ const EventsList: React.FC = () => {
   });
   const [isModalVisible, setIsModalVisible] = useState(false);
   const statusOptions = ['Y', 'DNS', 'DNF', 'DQ'];
-  
+
   // Function to handle status change for an athlete
   const handleStatusChange = (athlete: any) => {
     const currentStatus = selectedValues[athlete.athleteNum] || athlete.startPos || 'Select';
@@ -290,7 +292,7 @@ const EventsList: React.FC = () => {
       }
       
       // Update the backend with the reset values
-      await updateAthleteAPI(updatedFilteredAthletesInfo);
+      await updateAthleteAPI(updatedAthletesInfo);
       
       // Success message
       message.success('Current events reset successfully!');
@@ -369,6 +371,7 @@ const EventsList: React.FC = () => {
               { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
               { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
               { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
+              { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
               {
                 title: 'Check In',
                 dataIndex: 'startPos',
@@ -419,7 +422,7 @@ const EventsList: React.FC = () => {
       <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
-            <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Marksmen Screen</Title>
+            <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Starter's Assistant Screen</Title>
             <Text type="secondary">Check In Athletes and set Start Times</Text>
           </Col>
           <Col span={24} style={{ marginTop: '20px' }}>
@@ -469,6 +472,12 @@ const EventsList: React.FC = () => {
               checked={columnVisibility.athleteClub}
               onChange={(e) => handleColumnVisibilityChange('athleteClub', e.target.checked)}
             >Athlete Club</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.athleteClub}
+              onChange={(e) => handleColumnVisibilityChange('laneOrder', e.target.checked)}
+            >Lane</Checkbox>
           </div>
           <div className="checkbox-row">
             <Checkbox

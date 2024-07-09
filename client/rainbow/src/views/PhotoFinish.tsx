@@ -23,6 +23,7 @@ const Photofinish: React.FC = () => {
     firstName: boolean;
     athleteNum: boolean;
     athleteClub: boolean;
+    laneOrder: boolean;
     startPos: boolean;
     startTime: boolean;
     finishPos: boolean;
@@ -36,6 +37,7 @@ const Photofinish: React.FC = () => {
     firstName: true,
     athleteNum: true,
     athleteClub: true,
+    laneOrder: true,
     startPos: true,
     startTime: true,
     finishPos: true,
@@ -367,6 +369,7 @@ const handleCancel = () => {
               { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
               { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
               { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
+              { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
               {
                 title: 'Final Positions',
                 dataIndex: 'finalPFPos',
@@ -446,6 +449,12 @@ const handleCancel = () => {
               checked={columnVisibility.athleteClub}
               onChange={(e) => handleColumnVisibilityChange('athleteClub', e.target.checked)}
             >Athlete Club</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.athleteClub}
+              onChange={(e) => handleColumnVisibilityChange('laneOrder', e.target.checked)}
+            >Lane</Checkbox>
           </div>
           <div className="checkbox-row">
             <Checkbox

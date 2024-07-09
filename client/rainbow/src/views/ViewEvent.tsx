@@ -157,7 +157,8 @@ const EventsList: React.FC = () => {
                   { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
                   { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
                   { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
-                  { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub' },
+                  { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
+                  { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
                 ]}
                 rowKey="athleteNum"
                 pagination={false}

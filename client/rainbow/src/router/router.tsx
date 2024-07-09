@@ -5,7 +5,7 @@ import LoginPage from "../views/Login";
 import ProfilePage from "../views/Profile";
 import User from "../views/UserManagement";
 import Meet from "../views/MeetManagement";
-import CheckIn from "../views/Marksmen";
+import CheckIn from "../views/Starter";
 import ViewMeet from "../views/ViewMeet";
 import TrackJudge from "../views/TrackJudge";
 import PhotoFinish from "../views/PhotoFinish";

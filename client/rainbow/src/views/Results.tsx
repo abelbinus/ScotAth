@@ -18,6 +18,7 @@ const AllResults: React.FC = () => {
     firstName: boolean;
     athleteNum: boolean;
     athleteClub: boolean;
+    laneOrder: boolean;
     startPos: boolean;
     startTime: boolean;
     finishPos: boolean;
@@ -31,6 +32,7 @@ const AllResults: React.FC = () => {
     firstName: true,
     athleteNum: true,
     athleteClub: true,
+    laneOrder: true,
     startPos: true,
     startTime: true,
     finishPos: true,
@@ -189,6 +191,7 @@ const AllResults: React.FC = () => {
       { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
       { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
       { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
+      { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
       { title: 'Check In', dataIndex: 'startPos', key: 'startPos', width: 100 },
       { title: 'Start Time', dataIndex: 'startTime', key: 'startTime', width: 150 },
       { title: 'Rank', dataIndex: 'finishPos', key: 'finishPos', width: 100 },
@@ -329,6 +332,12 @@ const AllResults: React.FC = () => {
               checked={columnVisibility.athleteClub}
               onChange={(e) => handleColumnVisibilityChange('athleteClub', e.target.checked)}
             >Athlete Club</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.athleteClub}
+              onChange={(e) => handleColumnVisibilityChange('laneOrder', e.target.checked)}
+            >Lane</Checkbox>
           </div>
           <div className="checkbox-row">
             <Checkbox

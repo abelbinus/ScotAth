@@ -60,7 +60,7 @@ const Home: React.FC = () => {
         { label: "Meet Management", icon: <UserOutlined />, key: "/meet-management", "data-testid": "menu-item-meet-management" },
         { label: "View Meets", icon: <ReadOutlined />, key: "/view-meet", "data-testid": "menu-item-view-meet" },
           { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
-          { label: "Marksmen Screen", icon: <EditOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
+          { label: "Starter's Assistant Screen", icon: <EditOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
           { label: "Track Judge Screen", icon: <EditOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
           { label: "PhotoFinish Screen", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
           { label: "Results", icon: <ReadOutlined />, key: "/results", "data-testid": "menu-item-all-results"}
@@ -69,7 +69,7 @@ const Home: React.FC = () => {
       baseItems.push(
         { label: "View Meets", icon: <ReadOutlined />, key: "/view-meet", "data-testid": "menu-item-view-meet" },
           { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
-          { label: "Marksmen Screen", icon: <EditOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
+          { label: "Starter's Assistant Screen", icon: <EditOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
           { label: "Track Judge Screen", icon: <EditOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
           { label: "PhotoFinish Screen", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
           { label: "Results", icon: <ReadOutlined />, key: "/results", "data-testid": "menu-item-results"}
