@@ -5,7 +5,6 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { UserContext } from "../App";
 import useProtectedRoute from "../router/ProtectedRoute";
 import { useVisibility } from "../Provider/VisibilityProvider";
-
 const { Header, Content, Sider } = Layout;
 const { useBreakpoint } = Grid;
 
@@ -28,7 +27,6 @@ const Home: React.FC = () => {
     // Update selectedKeys based on location pathname
     setSelectedKeys([location.pathname]);
   }, [location.pathname]);
-
   useEffect(() => {
     if (sessionStorage.getItem("lastSelectedMeetId")) {
       const currentMeetId = sessionStorage.getItem("lastSelectedMeetId") || '';
@@ -131,9 +129,9 @@ const Home: React.FC = () => {
       }}>
         <div style={{ display: "flex", alignItems: "center" }}>
            {/* Hamburger Icon */}
-           {!screens.md && (
+           {!screens.lg && (
             <Button
-              style={{ border: "none", background: "none", fontSize: "20px", color: "#fff" }}
+              style={{ border: "none", marginRight: "10px", background: "none", fontSize: "20px", color: "#fff" }}
               onClick={toggleDrawer}
             >
               <MenuOutlined />
@@ -223,7 +221,7 @@ const Home: React.FC = () => {
 
       <Layout>
         {/* Left Sider Area for Desktop */}
-        {screens.md && (
+        {screens.lg && (
           <Sider data-testid="sider" width={250} style={{ background: colorBgContainer }}>
             <Menu mode="inline" defaultSelectedKeys={["/"]} selectedKeys={selectedKeys} onClick={onMenuClick} style={{ height: "100%", borderRight: 0 }} items={getMenuItems()} />
           </Sider>

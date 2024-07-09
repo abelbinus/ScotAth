@@ -295,11 +295,11 @@ const User = () => {
 
       {/*Add button area */}
     <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
-      <Col span={8} xs={2}></Col>
-      <Col span={8} xs={14}>
+      <Col span={8} lg={8} md={6} sm={2}></Col>
+      <Col span={8} lg={8} md={10} sm={14}>
           <Title level={2} style={{ margin: 0, color: '#1677FF' }}>User Management</Title>
-        </Col>
-      <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>
+      </Col>
+      <Col span={8}  style={{ display: "flex", justifyContent: "flex-end" }}>
         <Button type="primary" onClick={onAddClick}>Add</Button>
       </Col>
     </Row>

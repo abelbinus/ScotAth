@@ -7,13 +7,15 @@ import moment from 'moment';
 import { useEvents } from '../Provider/EventProvider';
 import { formatEventCode } from './Eventutils';
 import { start } from 'repl';
+import { stat } from 'fs';
 
 const { Option } = Select;
 
 const EventsList: React.FC = () => {
   const {athletes, eventsInfo, setAthleteinfo, fetchEvents, setEventsInfo, setError, loading, error } = useEvents();
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
-  const [selectedValues, setSelectedValues] = useState<{ [key: string]: string }>({}); // Track selected status values for each athlete
+  const [selectedValues, setSelectedValues] = useState<string[]>([]); // Track selected status values for each athlete
+  const [currentValues, setCurrentValues] = useState<string[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [eventComments, setEventComments] = useState<string>(''); // State to hold event description
@@ -47,17 +49,25 @@ const EventsList: React.FC = () => {
     finalPFTime: true,
   });
   const [isModalVisible, setIsModalVisible] = useState(false);
-
+  
   // Function to handle status change for an athlete
-  const handleStatusChange = (value: string, athlete: any) => {
-    const updatedValues = { ...selectedValues, [athlete.athleteNum]: value };
+  const handleStatusChange = (athlete: any) => {
+    const statusOptions = currentValues;
+    const currentStatus = selectedValues[athlete.athleteNum] || athlete.startPos || 'Select';
+    const currentIndex = statusOptions.indexOf(currentStatus);
+    const nextIndex = (currentIndex + 1) % statusOptions.length;
+    const nextStatus = statusOptions[nextIndex];
+
+    const excludedValues = ['DNS', 'DNF', 'DQ'];
+
+    const updatedValues = { ...selectedValues, nextStatus };
     setSelectedValues(updatedValues);
     const updatedEvents = athletes.map(event =>
-      event.athleteNum === athlete.athleteNum ? { ...event, finishPos: value } : event
+      event.athleteNum === athlete.athleteNum ? { ...event, startPos: nextStatus } : event
     );
     setAthleteinfo(updatedEvents);
     if (selectedEventCode) {
-      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode)); // Update filtered events based on the selected event
+      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
     } else {
       setFilteredAthletesInfo(updatedEvents);
     }
@@ -72,6 +82,11 @@ const EventsList: React.FC = () => {
       setSelectedEventCode(initialEventCode);
       setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
     }
+    const statusOptions: any[] | ((prevState: string[]) => string[]) = [];
+    filteredAthletesInfo.forEach((athlete: any) => {
+      statusOptions.push(athlete.finishPos);
+    });
+    setSelectedValues(statusOptions);
   }, [meetid]);
 
   useEffect(() => {
@@ -92,6 +107,21 @@ const EventsList: React.FC = () => {
         setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
       }
     }
+    const statusOptions = [];
+    const length = filteredAthletesInfo.length;
+
+    // Generate numbers 1 to length and add them to statusOptions array
+    for (let i = 1; i <= length; i++) {
+        statusOptions.push(i.toString());
+    }
+    setCurrentValues(statusOptions);
+    const selectedOptions: any[] | ((prevState: string[]) => string[]) = [];
+    filteredAthletesInfo.forEach((athlete: any) => {
+      selectedOptions.push(athlete.finishPos);
+    });
+    console.log("selectedOptions" + selectedOptions);
+    setSelectedValues(selectedOptions);
+
   }, [eventsInfo]);
 
   // Function to handle save operation
@@ -126,12 +156,12 @@ const EventsList: React.FC = () => {
         finishTime: null
       }));
       // Initialize a temporary object with the current selectedValues
-      let tempSelectedValues = { ...selectedValues };
+      let tempSelectedValues = [ ...selectedValues ];
       // Accumulate updates in tempSelectedValues
       updatedFilteredAthletesInfo.forEach((athlete: any) => {
-        tempSelectedValues[athlete.athleteNum] = '';
+        tempSelectedValues = [];
       });
-
+  
       // Update selectedValues state once with the accumulated changes
       setSelectedValues(tempSelectedValues);
       // Update the events list with the matching pfEvent data
@@ -140,7 +170,7 @@ const EventsList: React.FC = () => {
         const matchingAthleteEvents = updatedFilteredAthletesInfo.filter((filteredAthletes: { eventCode: string; athleteNum: string; }) => 
           filteredAthletes.eventCode === event.eventCode && filteredAthletes.athleteNum === event.athleteNum
         );
-
+  
         // Merge the event with all matching pfEvent objects
         return matchingAthleteEvents.length > 0 
           ? matchingAthleteEvents.map((matchingAthleteEvents: any) => ({ ...event, ...matchingAthleteEvents }))
@@ -168,34 +198,46 @@ const EventsList: React.FC = () => {
     }
   };
 
-  const getUniqueAthleteOptions = (events: AthleteInfo[]): string[] => {
-    const uniqueOptions = new Set<string>();
-    const presentOptions = new Set<string>();
-    let count = 0;
-    events.forEach(event => {
-        count++;
-        if(event.finishPos !== 'DNS' && event.finishPos !== 'DNF' && event.finishPos !== 'DQ' && event.finishPos !== '' && event.finishPos !== null) {
-          presentOptions.add(event.finishPos);
-        }
-      uniqueOptions.add(count.toString());
-    });
-    uniqueOptions.add('DNS');
-    uniqueOptions.add('DNF');
-    uniqueOptions.add('DQ');
-    // Exclude specific values from selectedValuesSet
-    const excludedValues = ['DNS', 'DNF', 'DQ'];
-    const selectedValuesSet = new Set(
-      Object.entries(selectedValues)
-        .filter(([athleteNum, value]) => events.some(event => event.athleteNum === athleteNum))
-        .map(([, value]) => value)
-        .filter(value => !excludedValues.includes(value))
-    );
-  
-    // Convert the Set to an Array before filtering
-    return Array.from(uniqueOptions)
-      .filter(option => !selectedValuesSet.has(option))
-      .filter(option => !presentOptions.has(option));
-  };
+//   const getUniqueAthleteOptions = (events: AthleteInfo[]): string[] => {
+//     const uniqueOptions = new Set<string>();
+//     const presentOptions = new Set<string>();
+//     let count = 0;
+
+//     events.forEach(event => {
+//         count++;
+//         if (event.finishPos !== 'DNS' && event.finishPos !== 'DNF' && event.finishPos !== 'DQ' && event.finishPos !== '' && event.finishPos !== null) {
+//             presentOptions.add(event.finishPos);
+//         }
+//     });
+
+//     // Add options from events that are not excluded
+//     events.forEach(event => {
+//         if (event.finishPos !== 'DNS' && event.finishPos !== 'DNF' && event.finishPos !== 'DQ' && event.finishPos !== '' && event.finishPos !== null) {
+//             uniqueOptions.add(event.finishPos);
+//         }
+//     });
+
+//     uniqueOptions.add('DNS');
+//     uniqueOptions.add('DNF');
+//     uniqueOptions.add('DQ');
+
+//     // Exclude specific values from selectedValuesSet
+//     const excludedValues = ['DNS', 'DNF', 'DQ'];
+//     const selectedValuesSet = new Set(
+//         Object.entries(selectedValues)
+//             .filter(([athleteNum, value]) => events.some(event => event.athleteNum === athleteNum))
+//             .map(([, value]) => value)
+//             .filter(value => !excludedValues.includes(value))
+//     );
+
+//     // Convert the Set to an Array before filtering
+//     const optionsArray = Array.from(uniqueOptions);
+
+//     // Filter the options while maintaining their original order
+//     const filteredOptions = optionsArray.filter(option => !selectedValuesSet.has(option) && !presentOptions.has(option));
+
+//     return filteredOptions;
+// };
 
   // Handle time change in TimePicker
   const handlefinishTimeChange = (time: any, record: AthleteInfo) => {
@@ -288,15 +330,12 @@ const EventsList: React.FC = () => {
       const updatedFilteredAthletesInfo = updatedAthletesInfo.filter(event => event.eventCode === selectedEventCode)
       
       // Initialize a temporary object with the current selectedValues
-      let tempSelectedValues = { ...selectedValues };
-
+      let tempSelectedValues = [ ...selectedValues ];
       // Accumulate updates in tempSelectedValues
       updatedFilteredAthletesInfo.forEach((athlete: any) => {
-        tempSelectedValues[athlete.athleteNum] = '';
+        tempSelectedValues = [];
       });
-
-      //console.log(updatedFilteredAthletesInfo);
-
+  
       // Update selectedValues state once with the accumulated changes
       setSelectedValues(tempSelectedValues);
       // Update the local state with the reset values
@@ -321,6 +360,20 @@ const EventsList: React.FC = () => {
     if (selectedEventCode) {
       setEventComments(eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventComments || '');
     }
+    const statusOptions = [];
+    // Assuming athletes.length is 5
+    const length = filteredAthletesInfo.length;
+
+    // Generate numbers 1 to 5 and add them to statusOptions array
+    for (let i = 1; i <= length; i++) {
+        statusOptions.push(i.toString());
+    }
+
+    statusOptions.push('DNS');
+    statusOptions.push('DNF');
+    statusOptions.push('DQ');
+    console.log(statusOptions);
+    setCurrentValues(statusOptions);
   }, [selectedEventCode]);
 
 
@@ -377,17 +430,12 @@ const EventsList: React.FC = () => {
                 key: 'finishPos',
                 width: 100,
                 render: (text: string, record: any) => (
-                  <Select
-                    style={{ width: 120 }}
-                    onChange={(value) => handleStatusChange(value, record)}
-                    value={selectedValues[record.athleteNum] || record.finishPos || 'Select'}
+                  <Button
+                    style={{ width: 120 }} // Adjust the width as per your requirement
+                    onClick={() => handleStatusChange(record)}
                   >
-                    {getUniqueAthleteOptions(filteredAthletesInfo).map(optionValue => (
-                      <Option key={optionValue} value={optionValue}>
-                        {optionValue}
-                      </Option>
-                    ))}
-                  </Select>
+                    {selectedValues[record.athleteNum] || record.finishPos || 'Select'}
+                  </Button>
                 ),
               },
               {

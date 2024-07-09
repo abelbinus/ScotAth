@@ -47,13 +47,19 @@ const EventsList: React.FC = () => {
     finalPFTime: true,
   });
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const statusOptions = ['Y', 'DNS', 'DNF', 'DQ'];
   
   // Function to handle status change for an athlete
-  const handleStatusChange = (value: string, athlete: any) => {
-    const updatedValues = { ...selectedValues, [athlete.athleteNum]: value };
+  const handleStatusChange = (athlete: any) => {
+    const currentStatus = selectedValues[athlete.athleteNum] || athlete.startPos || 'Select';
+    const currentIndex = statusOptions.indexOf(currentStatus);
+    const nextIndex = (currentIndex + 1) % statusOptions.length;
+    const nextStatus = statusOptions[nextIndex];
+    
+    const updatedValues = { ...selectedValues, [athlete.athleteNum]: nextStatus };
     setSelectedValues(updatedValues);
     const updatedEvents = athletes.map(event =>
-      event.athleteNum === athlete.athleteNum ? { ...event, startPos: value } : event
+      event.athleteNum === athlete.athleteNum ? { ...event, startPos: nextStatus } : event
     );
     setAthleteinfo(updatedEvents);
     if (selectedEventCode) {
@@ -226,7 +232,6 @@ const EventsList: React.FC = () => {
       }));
       // Initialize a temporary object with the current selectedValues
       let tempSelectedValues = { ...selectedValues };
-      //console.log(updatedFilteredAthletesInfo);
       // Accumulate updates in tempSelectedValues
       updatedFilteredAthletesInfo.forEach((athlete: any) => {
         tempSelectedValues[athlete.athleteNum] = '';
@@ -269,7 +274,7 @@ const EventsList: React.FC = () => {
       let tempSelectedValues = { ...selectedValues };
 
       // Accumulate updates in tempSelectedValues
-      updatedFilteredAthletesInfo.forEach((athlete: any) => {
+      updatedAthletesInfo.forEach((athlete: any) => {
         tempSelectedValues[athlete.athleteNum] = '';
       });
 
@@ -369,18 +374,11 @@ const EventsList: React.FC = () => {
                 dataIndex: 'startPos',
                 key: 'startPos',
                 width: 100,
-                render: (text: string, record: any) => (
-                  <Select
-                    style={{ width: 120 }}
-                    onChange={(value) => handleStatusChange(value, record)}
-                    value={selectedValues[record.athleteNum] || record.startPos || 'Select'}
-                  >
-                    <Option value="Y">Y</Option>
-                    <Option value="DNS">DNS</Option>
-                    <Option value="DNF">DNF</Option>
-                    <Option value="DQ">DQ</Option>
-                  </Select>
-                ),
+                render: (text: any, record: any) => (
+                  <Button onClick={() => handleStatusChange(record)} style={{ width: '80px' }}>
+                    {selectedValues[record.athleteNum] || record.startPos || 'Select'}
+                  </Button>
+                )
               },
               {
                 title: 'Start Time',
