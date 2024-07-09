@@ -184,9 +184,17 @@ const EventsList: React.FC = () => {
     uniqueOptions.add('DQ');
     // Exclude specific values from selectedValuesSet
     const excludedValues = ['DNS', 'DNF', 'DQ'];
-    const selectedValuesSet = new Set(Object.values(selectedValues).filter(value => !excludedValues.includes(value)));
+    const selectedValuesSet = new Set(
+      Object.entries(selectedValues)
+        .filter(([athleteNum, value]) => events.some(event => event.athleteNum === athleteNum))
+        .map(([, value]) => value)
+        .filter(value => !excludedValues.includes(value))
+    );
+  
     // Convert the Set to an Array before filtering
-    return Array.from(uniqueOptions).filter(option => !selectedValuesSet.has(option)).filter(option => !presentOptions.has(option));
+    return Array.from(uniqueOptions)
+      .filter(option => !selectedValuesSet.has(option))
+      .filter(option => !presentOptions.has(option));
   };
 
   // Handle time change in TimePicker

@@ -373,8 +373,8 @@ const MeetListAdmin = () => {
 
       {/*Add button area */}
       <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
-        <Col span={8}></Col>
-        <Col span={8}>
+        <Col span={8} xs={2}></Col>
+        <Col span={8} xs={14}>
           <Title level={2} style={{ margin: 0, color: '#1677FF' }}>Meet Management</Title>
         </Col>
         <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>

@@ -16,12 +16,10 @@ const LoginPage = () => {
 
     const onFinish = async (values: ILoginValues) => {
         setLoading(true);
-            
     try {
 
             // login
             const response: any = await loginAPI(values);
-
             // Convert the response to IUser format
             const loginUser: IUser = {
                 userId: response.data.user.userId,
@@ -62,7 +60,7 @@ const LoginPage = () => {
                 navigate("/view-meet");
             }
         } catch (error: any) {
-            const errMsg = error.response?.data?.msg || "Login Failed";
+            const errMsg = error.response?.data?.error || "Login Failed";
             console.error(error);
             message.error(errMsg);
             setLoading(false);

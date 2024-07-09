@@ -27,22 +27,20 @@ const User = () => {
 
   const columns: TableColumnsType<IUser> = [
     { title: "User ID", dataIndex: "userId", key: "userId" },
-    { title: "Name", dataIndex: "userName", key: "userName" },
-    ...(screens.xs ? [] : [
-      { title: "Email", dataIndex: "userEmail", key: "userEmail" },
-      {
-        title: "Role", dataIndex: "userRole", key: "userRole",
-        render: (_: any, { userRole }: any) => (
-          <>
-            {userRole === "volunteer" ? (
-              <Tag color="blue">volunteer</Tag>
-            ) : userRole === "admin" ? (
-              <Tag color="red">admin</Tag>
-            ) : null}
-          </>
-        ),
-      },
-    ]),
+    { title: "User Name", dataIndex: "userName", key: "userName" },
+    { title: "Email", dataIndex: "userEmail", key: "userEmail" },
+    {
+      title: "Role", dataIndex: "userRole", key: "userRole",
+      render: (_: any, { userRole }: any) => (
+        <>
+          {userRole === "volunteer" ? (
+            <Tag color="blue">volunteer</Tag>
+          ) : userRole === "admin" ? (
+            <Tag color="red">admin</Tag>
+          ) : null}
+        </>
+      ),
+    },
     
     {
       title: "Action",
@@ -207,7 +205,9 @@ const User = () => {
         userName: user.userName,
         userEmail: user.userEmail,
         userRole: user.userRole,
-        usermob: user.userMob
+        usermob: user.userMob,
+        userAddress: user.userAddress,
+        userPass: user.userPass,
       };
 
       await updateUserAPI(userParams);
@@ -245,11 +245,13 @@ const User = () => {
       label: "All Users",
       key: "1",
       children: (
+        <div style={{ overflowX: 'auto', overflowY: 'auto', maxWidth: '100%' }}>
         <Table
           rowKey="userId"
           columns={columns}
           dataSource={userList}
         />
+        </div>
       ),
     },
     {
@@ -260,6 +262,7 @@ const User = () => {
           rowKey="userId"
           columns={columns}
           dataSource={volList}
+          tableLayout="fixed" // Ensure columns have fixed width
         />
       ),
     },
@@ -292,9 +295,9 @@ const User = () => {
 
       {/*Add button area */}
     <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
-      <Col span={8}></Col>
-        <Col span={8}>
-          <Title level={2} style={{ margin: 0, color: '#1677FF' }}>Meet Management</Title>
+      <Col span={8} xs={2}></Col>
+      <Col span={8} xs={14}>
+          <Title level={2} style={{ margin: 0, color: '#1677FF' }}>User Management</Title>
         </Col>
       <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>
         <Button type="primary" onClick={onAddClick}>Add</Button>
@@ -407,6 +410,12 @@ const User = () => {
                 <Radio value="admin">Admin</Radio>
                 <Radio value="volunteer">Volunteer</Radio>
               </Radio.Group>
+            </Form.Item>
+            <Form.Item name="userMob" label="Mobile Number" rules={[{ message: "Please input your mobile  number!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="userAddress" label="Address" rules={[{ message: "Please input your address!" }]}>
+            <Input.TextArea rows={4} />
             </Form.Item>
           </Form>
         </Modal>

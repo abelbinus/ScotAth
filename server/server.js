@@ -151,7 +151,6 @@ app.put('/api/rainbow/user', async (req, res) => {
     // Update user in the database
     let sql;
     let values;
-    console.log(user.userPass);
     if(user.userPass === '' || user.userPass === null || user.userPass === undefined){
         sql = `
           UPDATE tblusers
