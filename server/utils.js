@@ -84,12 +84,10 @@ async function readFile(folderPath, fileName) {
 
     try {
         const content = await fs.promises.readFile(filePath, 'utf-8');
-        
         // Remove UTF-8 BOM if present
         // if (content.charCodeAt(0) === 0xFEFF) {
         //     content = content.slice(1);
         // }
-
         logger.info(`Text file ${fileName} successfully processed.`);
         return content;
     } catch (error) {
@@ -204,27 +202,45 @@ function reformatEventCode(eventCode) {
 
 async function readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res) {
     let extension;
-    eventCode = reformatEventCode(eventCode);
     if (pfOutput === 'lif') {
+        eventCode = reformatEventCode(eventCode);
         extension = '.lif';
     } else if (pfOutput === 'cl') {
         extension = '.cl';
     } else {
         throw new Error('Invalid pfOutput value. Expected "lif" or "cl".');
     }
-    const fileName = `${eventCode}${extension}`;
+    // Attempt to read file with lowercase and uppercase extension
+    const lowerCaseFileName = `${eventCode}${extension.toLowerCase()}`;
+    const upperCaseFileName = `${eventCode}${extension.toUpperCase()}`;
+
+    let fileContent;
+    
+    try {
+        if (fs.existsSync(path.join(folderPath, lowerCaseFileName))) {
+            fileContent = await readFile(folderPath, lowerCaseFileName);
+        } else if (fs.existsSync(path.join(folderPath, upperCaseFileName))) {
+            fileContent = await readFile(folderPath, upperCaseFileName);
+        } else {
+            throw new Error(`File not found with either ${lowerCaseFileName} or ${upperCaseFileName}`);
+        }
+    } catch (error) {
+        logger.error(`Error processing file ${lowerCaseFileName} or ${upperCaseFileName}: ${error.message}`);
+        throw new Error(`Error processing file ${lowerCaseFileName} or ${upperCaseFileName}: ${error.message}`);
+    }
+
     try {
         let failedFlagEventInfo = 0;
         let failedFlagEvents = 0;
         let totalFlagEventinfo = 0; // Total number of event info rows
         let totalFlagEvents = 0; // Total number of event rows
         let dbError = null;
-        const content = await readFile(folderPath, fileName);
         // Process the content as needed, e.g., insert into the database
         if (pfOutput === 'lif') {
-        [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertLifIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db);
+            [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertLifIntoDatabase(fileContent, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db);
         } else if (pfOutput === 'cl') {
-            res.json({error: `CL extension not implemented yet`, status: 'success'});
+            console.log('Processing cl file');
+            [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertCLIntoDatabase(fileContent, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db, eventCode);
         }
         if (failedFlagEventInfo > 0 && failedFlagEvents > 0) {
             dbError = `Database error updating event info and events.`;
@@ -237,20 +253,20 @@ async function readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res) {
             res.json({
                 error: {
                     eventCode: eventCode,
-                    message: `Failed to update phtofinish results for ${fileName}.`,
+                    message: `Failed to update phtofinish results for ${lowerCaseFileName}.`,
                     dbError
                 },
                 status: 'failure'
             });
         } else {
-            res.json({message: `Updated photofinish results successfully for ${fileName}.`, status: 'success'});
+            res.json({message: `Updated photofinish results successfully for ${lowerCaseFileName}.`, status: 'success'});
         }
     } catch (error) {
         logger.error(`Error reading file: ${error.message}`);
         res.json({
             error: {
                 eventCode: eventCode,
-                message: `Failed to update photofinish for ${fileName}.`
+                message: `Failed to update photofinish for ${lowerCaseFileName}.`
             },
             status: 'failure'
         });
@@ -334,10 +350,24 @@ async function insertFLIntoDatabase(evtContents, pplContents, meetId, db) {
     return [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents];
 }
 
+// Function to detect the delimiter
+function detectDelimiter(data) {
+    const lines = data.split('\n').slice(0, 10); // Check the first 10 lines
+    let semicolonCount = 0;
+    let commaCount = 0;
+
+    for (const line of lines) {
+        semicolonCount += (line.match(/;/g) || []).length;
+        commaCount += (line.match(/,/g) || []).length;
+    }
+
+    return semicolonCount > commaCount ? ';' : ',';
+}
+
 // Function to insert content into SQLite database
 async function insertCSVIntoDatabase(content, meetId, db) {
-    const data = content;
-    const rows = data.split('\n');
+    const delimiter = detectDelimiter(content);
+    const rows = content.split('\n');
 
     let currentEvent = null;
     let failedFlagEventInfo = 0;
@@ -345,7 +375,7 @@ async function insertCSVIntoDatabase(content, meetId, db) {
     let totalFlagEventinfo = 0; // Total number of event info rows
     let totalFlagEvents = 0; // Total number of event rows
     for (const row of rows) {
-        const columns = row.split(';').map(col => col.trim());
+        const columns = row.split(delimiter).map(col => col.trim());
         if (columns[0] && columns[0].includes('Event')) { // New event header row
             currentEvent = columns;
         } 
@@ -358,6 +388,108 @@ async function insertCSVIntoDatabase(content, meetId, db) {
         }
     }
 
+    // Combine the flags into an array and return
+    return [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents];
+}
+
+async function insertCLIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db, eventCode) {
+    const data = content;
+    const lines = data.split('\n');
+    let found = 0;
+    let rank = -1;
+    let eventName = '';
+    let raceLength = '';
+    let windSpeed = '';
+    let eventDate = '';
+    let eventTime = '';
+    
+    lines.forEach(async (myLine, line_num) => {
+        let athRank = '';
+        let lane = '';
+        let athNum = '';
+        let firstName = '';
+        let lastName = '';
+        let club = '';
+        let time = '';
+        let type = '';
+        if (line_num === 0) {
+        } 
+        else {
+            if (myLine.toLowerCase().includes('race length')) {
+                found = line_num;
+                if (line_num > 2) {
+                    eventName = lines[line_num - 2].trim();
+                }
+                const columns = myLine.split(":");
+                if (columns.length > 1) {
+                    raceLength = columns[1].trim(); // Trim leading/trailing spaces
+                }
+            }
+            if (myLine.toLowerCase().includes('wind speed')) {
+                if (!myLine.toLowerCase().includes('no measurement')) {
+                    const columns = myLine.split(":");
+                    if (columns.length > 1) {
+                        windSpeed = columns[1].trim(); // Trim leading/trailing spaces
+                    }
+                }
+            }
+            if (myLine.toLowerCase().includes('start :')) {
+                const columns = myLine.split(/:(.*)/); // Split only on the first colon
+                if (columns.length > 1) {
+                    const dateTime = columns[1].trim().split(' '); // Trim leading/trailing spaces
+                    if(dateTime.length > 2) {
+                        eventDate = dateTime[0];
+                        eventTime = dateTime[2];
+                    }
+                    else if (dateTime.length > 1) {
+                        eventDate = dateTime[0];
+                        eventTime = dateTime[1];
+                    }
+                    else {
+                        eventTime = dateTime[0];
+                    }
+                }
+            }
+            if (found > 0 && line_num > found + 7) {
+                if (rank < 0) {
+                    if (myLine.includes('---')) {
+                        rank = 0;
+                    }
+                } else {
+                    const dot = myLine.indexOf('.');
+                    if (dot !== -1) {
+                        athRank = myLine.slice(0, dot);
+                        const remainingLine = myLine.slice(dot + 1);
+                        const columns = remainingLine.split(" ").filter(word => word.trim().length > 0);
+                        for (let i = 0; i < columns.length; i++) {
+                            if(i === 0) {
+                                lane = columns[i];
+                            } else if(i === 1) {
+                                athNum = columns[i];
+                            } else if(i === 2) {
+                                firstName = columns[i];
+                            } else if(i === 3) {
+                                lastName = columns[i];
+                            } else if (i === 4 && columns.length > 6) {
+                                type = columns[i];
+                            }
+                            else if (columns[i].includes('.') && !isNaN(parseFloat(columns[i].split('.')[0]))) {
+                                time = columns[i];
+                                break;
+                            }
+                            else {
+                                club = club + ' ' + (columns[i]);
+                            }
+                        }
+                    }
+                }
+            }
+            if(athRank) {
+                totalFlagEvents, failedFlagEvents = await updateDBQueryTblEvents(eventCode, athRank, athNum, time, totalFlagEventinfo, failedFlagEventInfo, meetId, db);
+            }
+        }
+      });
+    totalFlagEventinfo, failedFlagEventInfo = await updateDBQueryTblEventInfo(eventCode, eventName, eventTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db);
     // Combine the flags into an array and return
     return [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents];
 }
@@ -428,7 +560,7 @@ async function dbQueryTblEvents(eventCode, laneOrder, athleteNum, lastName, firs
             failedFlagEvents++;
             logger.error(`Error inserting row into database:`, err);
         } else {
-            logger.info(`Row inserted successfully into database for event ${eventCode}`);
+            logger.info(`Athlete ${athleteNum} inserted successfully into database for event ${eventCode}`);
         }
     });
     return [totalFlagEvents, failedFlagEvents];    
@@ -470,7 +602,7 @@ async function updateDBQueryTblEvents(eventCode, finalPFPos, athleteNum, finalPF
             logger.error(`Error inserting event info into database:`, err);
             return 1;
         } else {
-            logger.info(`Event Info inserted successfully into database from file ${eventCode}`);
+            logger.info(`Athlete ${athleteNum} inserted successfully into database from file ${eventCode}`);
         }
     });
     return [totalFlagEventinfo, failedFlagEventInfo];

@@ -1,10 +1,10 @@
 /* eslint-disable jsx-a11y/img-redundant-alt */
 import React, { useEffect, useState } from 'react';
 import { Button, Card, Checkbox, Col, Divider, Input, Modal, Row, Select, Table, Typography, message } from 'antd';
-import { getEventPhoto, getEventbyEventId, getEventbyMeetId, getMeetByIdAPI, postPFEventbyEventId, updateEventAPI } from '../apis/api';
+import { getEventPhoto, getAthletebyEventId, getEventbyMeetId, getMeetByIdAPI, postPFEventbyEventId, updateEventAPI } from '../apis/api';
 import { Axios, AxiosError } from 'axios';
 import { useEvents } from '../Provider/EventProvider';
-import { formatEventCode } from './Eventutils';
+import { formatEventCode, sortBasedonRank } from './Eventutils';
 
 const { Search } = Input;
 const { Option } = Select;
@@ -30,6 +30,7 @@ const Photofinish: React.FC = () => {
     finishTime: boolean;
     finalPFPos: boolean;
     finalPFTime: boolean;
+    pfStartTime: boolean;
   };
   
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>({
@@ -44,6 +45,7 @@ const Photofinish: React.FC = () => {
     finishTime: true,
     finalPFPos: true,
     finalPFTime: true,
+    pfStartTime: true,
   });
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -80,7 +82,7 @@ const Photofinish: React.FC = () => {
             const responsePFEvent = await postPFEventbyEventId(folderParams);
             const status = responsePFEvent.data.status;
             if (status === 'success') {
-              const responseEvent = await getEventbyEventId(meetid, selectedEventCode);
+              const responseEvent = await getAthletebyEventId(meetid, selectedEventCode);
               const pfEvent = responseEvent.data.events; // This is a list of events
 
               // Update the events list with the matching pfEvent data
@@ -95,15 +97,18 @@ const Photofinish: React.FC = () => {
                   ? matchingPFEvents.map((matchingPFEvent: any) => ({ ...event, ...matchingPFEvent }))
                   : event;
               }).flat();
-
-              setAthleteinfo(updatedEvents);
+              const sortedAthletesInfo = sortBasedonRank(updatedEvents);
+              setAthleteinfo(sortedAthletesInfo);
               // Set the initial selected event code to the first event code in the list
               if (athletes.length > 0) {
                 const initialEventCode = selectedEventCode;
                 setSelectedEventCode(initialEventCode);
-                setFilteredAthletesInfo(updatedEvents.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+                const filteredAthletes = updatedEvents.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode);
+                const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
+                setFilteredAthletesInfo(sortedAthletesInfo);
               } else {
-                setFilteredAthletesInfo(athletes); // Initialize filteredEvents with all events if no events are found
+                const sortedAthletesInfo = sortBasedonRank(athletes);
+                setFilteredAthletesInfo(sortedAthletesInfo); // Initialize filteredEvents with all events if no events are found
               }
               setLoading(false);
             }
@@ -112,7 +117,8 @@ const Photofinish: React.FC = () => {
                 message.error(`Failed to read photo finish results for ${selectedEventCode}`);
                 const initialEventCode = selectedEventCode;
                 setSelectedEventCode(initialEventCode);
-                setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+                const sortedAthletesInfo = sortBasedonRank(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+                setFilteredAthletesInfo(sortedAthletesInfo);
               }
               setLoading(false);
             }
@@ -121,7 +127,8 @@ const Photofinish: React.FC = () => {
             if (athletes.length > 0) {
               const initialEventCode = selectedEventCode;
               setSelectedEventCode(initialEventCode);
-              setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+              const sortedAthletesInfo = sortBasedonRank(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+              setFilteredAthletesInfo(sortedAthletesInfo);
             }
             setLoading(false);
           }
@@ -137,10 +144,14 @@ const Photofinish: React.FC = () => {
 
   }, [meetid, selectedEventCode]);
 
+  
+
   useEffect(() => {
     if(eventsInfo.length > 0 && selectedEventCode === '') {
       setSelectedEventCode(eventsInfo[0].eventCode);
-      setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === selectedEventCode));
+      const filteredAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === selectedEventCode);
+      const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
+      setFilteredAthletesInfo(sortedAthletesInfo);
     }
   }, [eventsInfo]);
 
@@ -187,11 +198,13 @@ const Photofinish: React.FC = () => {
   const handleEventSelect = (value: string) => {
     setSelectedEventCode(value);
     if (value === '') {
+      const sortedAthletesInfo = sortBasedonRank(athletes);
       setFilteredAthletesInfo(athletes);
     } else {
       const filteredEvents = eventsInfo.filter(event => event.eventCode === value);
       const filteredAthletes = athletes.filter(event => event.eventCode === value);
-      setFilteredAthletesInfo(filteredAthletes);
+      const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
+      setFilteredAthletesInfo(sortedAthletesInfo);
       setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
     }
   };
@@ -285,8 +298,9 @@ const updateAllPF = async () => {
     const eventInfo = responseEvents.data.eventInfo;
 
     // Order events based on eventCode
-    athleteInfo.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
     eventInfo.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
+
+    const sortedAthletesInfo = sortBasedonRank(athleteInfo);
 
     if (eventInfo === null || eventInfo.length == 0) {
         setError('No events found');
@@ -294,13 +308,13 @@ const updateAllPF = async () => {
         return; // Exit early if meetId is null or undefined
     }
 
-    if (athleteInfo === null || athleteInfo.length == 0) {
+    if (sortedAthletesInfo === null || sortedAthletesInfo.length == 0) {
         setError('No athletes found');
         setLoading(false);
         return; // Exit early if meetId is null or undefined
     }
 
-    setAthleteinfo(athleteInfo);
+    setAthleteinfo(sortedAthletesInfo);
     setEventsInfo(eventInfo);
     setLoading(false);
   } catch (error) {
@@ -322,8 +336,13 @@ const handleCancel = () => {
   setIsModalVisible(false);
 };
 
+
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(eventsInfo);
+    const renderStartTimes = () => {
+      const event = eventsInfo.find(event => event.eventCode === selectedEventCode && event.meetId == meetid);
+      return event ? event.eventPFTime : null;
+    };
 
     return (
       <div>
@@ -370,18 +389,9 @@ const handleCancel = () => {
               { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
               { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
               { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
-              {
-                title: 'Final Positions',
-                dataIndex: 'finalPFPos',
-                key: 'finalPFPos',
-                width: 100
-              },
-              {
-                title: 'Final Times',
-                dataIndex: 'finalPFTime',
-                key: 'finalPFTime',
-                width: 200
-              }
+              { title: 'Final Start Times', dataIndex: 'pfStartTime', key: 'pfStartTime', width: 100, render: (text: any) => renderStartTimes() },
+              { title: 'Final Rankings', dataIndex: 'finalPFPos', key: 'finalPFPos', width: 100 },
+              { title: 'Final Times', dataIndex: 'finalPFTime', key: 'finalPFTime', width: 200 }
             ].filter(column => columnVisibility[column.dataIndex])}
             rowKey="athleteNum"
             pagination={false}
@@ -416,6 +426,12 @@ const handleCancel = () => {
           </Col>
           <Col span={24} style={{ marginTop: '20px' }}>
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
+            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
+              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate}
+            </Title>
+            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
+              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
+            </Title>
           </Col>
           <Col span={24} style={{ marginTop: '10px' }}>
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
@@ -455,6 +471,12 @@ const handleCancel = () => {
               checked={columnVisibility.athleteClub}
               onChange={(e) => handleColumnVisibilityChange('laneOrder', e.target.checked)}
             >Lane</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.pfStartTime}
+              onChange={(e) => handleColumnVisibilityChange('pfStartTime', e.target.checked)}
+            >PF Start Time</Checkbox>
           </div>
           <div className="checkbox-row">
             <Checkbox

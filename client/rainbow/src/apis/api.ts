@@ -145,7 +145,7 @@ export function getEventbyMeetId(meetId: any) {
 }
 
 // get all event details from folder
-export function getEventbyEventId(meetId: any, eventCode: any) {
+export function getAthletebyEventId(meetId: any, eventCode: any) {
     const request=getAxiosInstance();
     return request({
         url: `/api/rainbow/event/${meetId}/${eventCode}`,

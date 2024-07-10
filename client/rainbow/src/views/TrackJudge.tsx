@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Select, Table, Button, message, Divider, Checkbox, Modal, Card, Row, Typography, Col, Input } from 'antd';
-import { updateAthleteAPI, updateEventAPI } from '../apis/api';
+import { getAthletebyEventId, updateAthleteAPI, updateEventAPI } from '../apis/api';
 
 import { TimePicker } from '../components';
 import moment from 'moment';
@@ -53,44 +53,44 @@ const EventsList: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   
   // Function to handle status change for an athlete
-const handleStatusChange = (athlete: any) => {
-  const statusOptions = currentValues;
-  const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
-  const currentStatus = selectedValues[uniqueValue] || 'Select';
-  const currentIndex = statusOptions.indexOf(currentStatus);
-  console.log(`Current status for athleteNum ${athlete.athleteNum} is ${currentStatus}`);
-  console.log('st: ' + athlete.finishPos);
+  const handleStatusChange = (athlete: any) => {
+    const statusOptions = currentValues;
+    const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
+    const currentStatus = selectedValues[uniqueValue] || 'Select';
+    const currentIndex = statusOptions.indexOf(currentStatus);
+    console.log(`Current status for athleteNum ${athlete.athleteNum} is ${currentStatus}`);
+    console.log('st: ' + athlete.finishPos);
 
-  // Get a list of current statuses for the filtered athletes
-  const filteredUniqueValues = filteredAthletesInfo.map(
-    fa => fa.meetId + '-' + fa.eventCode + '-' + fa.athleteNum
-  );
-  const filteredStatuses = filteredUniqueValues.map(fuv => selectedValues[fuv])
-    .filter(status => !['DNS', 'DNF', 'DQ'].includes(status));
+    // Get a list of current statuses for the filtered athletes
+    const filteredUniqueValues = filteredAthletesInfo.map(
+      fa => fa.meetId + '-' + fa.eventCode + '-' + fa.athleteNum
+    );
+    const filteredStatuses = filteredUniqueValues.map(fuv => selectedValues[fuv])
+      .filter(status => !['DNS', 'DNF', 'DQ'].includes(status));
 
-  // Find the next available status that is not in filteredStatuses
-  let nextIndex = (currentIndex + 1) % statusOptions.length;
-  let nextStatus = statusOptions[nextIndex];
-  while (filteredStatuses.includes(nextStatus)) {
-    nextIndex = (nextIndex + 1) % statusOptions.length;
-    nextStatus = statusOptions[nextIndex];
-  }
+    // Find the next available status that is not in filteredStatuses
+    let nextIndex = (currentIndex + 1) % statusOptions.length;
+    let nextStatus = statusOptions[nextIndex];
+    while (filteredStatuses.includes(nextStatus)) {
+      nextIndex = (nextIndex + 1) % statusOptions.length;
+      nextStatus = statusOptions[nextIndex];
+    }
 
-  console.log(`Status changed for athleteNum ${athlete.athleteNum} to ${nextStatus}`);
-  const updatedValues = { ...selectedValues, [uniqueValue]: nextStatus };
-  setSelectedValues(updatedValues);
-  console.log(updatedValues);
+    console.log(`Status changed for athleteNum ${athlete.athleteNum} to ${nextStatus}`);
+    const updatedValues = { ...selectedValues, [uniqueValue]: nextStatus };
+    setSelectedValues(updatedValues);
+    console.log(updatedValues);
 
-  const updatedEvents = athletes.map(event =>
-    event.athleteNum === athlete.athleteNum ? { ...event, finishPos: nextStatus } : event
-  );
-  setAthleteinfo(updatedEvents);
-  if (selectedEventCode) {
-    setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
-  } else {
-    setFilteredAthletesInfo(updatedEvents);
-  }
-};
+    const updatedEvents = athletes.map(event =>
+      event.athleteNum === athlete.athleteNum ? { ...event, finishPos: nextStatus } : event
+    );
+    setAthleteinfo(updatedEvents);
+    if (selectedEventCode) {
+      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+    } else {
+      setFilteredAthletesInfo(updatedEvents);
+    }
+  };
 
   useEffect(() => {
     if(eventsInfo.length === 0) {
@@ -142,43 +142,58 @@ const handleStatusChange = (athlete: any) => {
   const handleSave = async () => {
     try {
       await updateAthleteAPI(filteredAthletesInfo);
+      
       // Update the events list with the matching pfEvent data
       const updatedEvents = athletes.map(event => {
         // Find all corresponding events in the pfEvent list
         const matchingAthleteEvents = filteredAthletesInfo.filter((filteredAthletes: { eventCode: string; athleteNum: string; }) => 
           filteredAthletes.eventCode === event.eventCode && filteredAthletes.athleteNum === event.athleteNum
         );
-
+  
         // Merge the event with all matching pfEvent objects
         return matchingAthleteEvents.length > 0 
           ? matchingAthleteEvents.map((matchingAthleteEvents: any) => ({ ...event, ...matchingAthleteEvents }))
           : event;
       }).flat();
-      setAthleteinfo(updatedEvents);
-      const sortedFilter = filteredAthletesInfo.sort((athlete1: any, athlete2: any) => {
-        const position1 = athlete1.finishPos;
-        const position2 = athlete2.finishPos;
-      
-        const positionOrder: { [key: string]: number } = { 'DNS': 99998, 'DNF': 99999, 'DQ': 100000 };
-      
-        const getPositionValue = (pos: any) => {
-          if (typeof pos === 'number') {
-            return pos;
-          }
-          return positionOrder[pos] || Infinity;
-        };
-      
-        return getPositionValue(position1) - getPositionValue(position2);
+  
+      // Sort the updated events by finishPos
+      updatedEvents.sort((event1: { finishPos: any; }, event2: { finishPos: any; }) => {
+        if (event1.finishPos === null && event2.finishPos === null) {
+          return 0;
+        }
+        if (event1.finishPos === null) {
+          return -1;
+        }
+        if (event2.finishPos === null) {
+          return 1;
+        }
+        return event1.finishPos.localeCompare(event2.finishPos);
       });
-      console.log('sortedFilter')
-      console.log(sortedFilter);
-      setFilteredAthletesInfo(sortedFilter);
+  
+      setAthleteinfo(updatedEvents);
+  
+      // Sort and set filteredAthletesInfo
+      const sortedFilteredAthletesInfo = [...filteredAthletesInfo].sort((event1: { finishPos: any; }, event2: { finishPos: any; }) => {
+        if (event1.finishPos === null && event2.finishPos === null) {
+          return 0;
+        }
+        if (event1.finishPos === null) {
+          return -1;
+        }
+        if (event2.finishPos === null) {
+          return 1;
+        }
+        return event1.finishPos.localeCompare(event2.finishPos);
+      });
+  
+      setFilteredAthletesInfo(sortedFilteredAthletesInfo);
+  
       message.success('Events status updated successfully!');
     } catch (err) {
       message.error('Error updating events status');
+      console.log(err);
     }
   };
-
   // Function to handle save operation
   const handleReset = async () => {
     try {
@@ -219,58 +234,39 @@ const handleStatusChange = (athlete: any) => {
   };
 
   // Handle event selection from dropdown
-  const handleEventSelect = (value: string) => {
+  const handleEventSelect = async (value: string) => {
     setSelectedEventCode(value);
     if (value === '') {
       setFilteredAthletesInfo(athletes);
     } else {
       const filteredEvents = eventsInfo.filter(event => event.eventCode === value);
-      const filteredAthletes = athletes.filter(event => event.eventCode === value);
-      setFilteredAthletesInfo(filteredAthletes);
-      setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
-    }
-  };
-
-//   const getUniqueAthleteOptions = (events: AthleteInfo[]): string[] => {
-//     const uniqueOptions = new Set<string>();
-//     const presentOptions = new Set<string>();
-//     let count = 0;
-
-//     events.forEach(event => {
-//         count++;
-//         if (event.finishPos !== 'DNS' && event.finishPos !== 'DNF' && event.finishPos !== 'DQ' && event.finishPos !== '' && event.finishPos !== null) {
-//             presentOptions.add(event.finishPos);
-//         }
-//     });
-
-//     // Add options from events that are not excluded
-//     events.forEach(event => {
-//         if (event.finishPos !== 'DNS' && event.finishPos !== 'DNF' && event.finishPos !== 'DQ' && event.finishPos !== '' && event.finishPos !== null) {
-//             uniqueOptions.add(event.finishPos);
-//         }
-//     });
-
-//     uniqueOptions.add('DNS');
-//     uniqueOptions.add('DNF');
-//     uniqueOptions.add('DQ');
-
-//     // Exclude specific values from selectedValuesSet
-//     const excludedValues = ['DNS', 'DNF', 'DQ'];
-//     const selectedValuesSet = new Set(
-//         Object.entries(selectedValues)
-//             .filter(([athleteNum, value]) => events.some(event => event.athleteNum === athleteNum))
-//             .map(([, value]) => value)
-//             .filter(value => !excludedValues.includes(value))
-//     );
-
-//     // Convert the Set to an Array before filtering
-//     const optionsArray = Array.from(uniqueOptions);
-
-//     // Filter the options while maintaining their original order
-//     const filteredOptions = optionsArray.filter(option => !selectedValuesSet.has(option) && !presentOptions.has(option));
-
-//     return filteredOptions;
-// };
+      const response = await getAthletebyEventId(meetid, value);
+      const filteredAthletes = response.data.events;
+      // Initialize a temporary object with the current selectedValues
+      let tempSelectedValues = { ...selectedValues };
+      // Accumulate updates in tempSelectedValues
+      filteredAthletes.forEach((athlete: any) => {
+        const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
+        tempSelectedValues[uniqueValue] = athlete.finishPos || '';
+      });
+      setSelectedValues(tempSelectedValues);
+      const sortedFilteredAthletesInfo = [...filteredAthletes].sort((event1: { finishPos: any; }, event2: { finishPos: any; }) => {
+          if (event1.finishPos === null && event2.finishPos === null) {
+            return 0;
+          }
+          if (event1.finishPos === null) {
+            return -1;
+          }
+          if (event2.finishPos === null) {
+            return 1;
+          }
+          return event1.finishPos.localeCompare(event2.finishPos);
+        });
+    
+        setFilteredAthletesInfo(sortedFilteredAthletesInfo);
+        setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
+      }
+    };
 
   // Handle time change in TimePicker
   const handlefinishTimeChange = (time: any, record: AthleteInfo) => {
@@ -519,6 +515,12 @@ const handleStatusChange = (athlete: any) => {
           </Col>
           <Col span={24} style={{ marginTop: '20px' }}>
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
+            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
+              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate}
+            </Title>
+            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
+              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
+            </Title>
           </Col>
           <Col span={24} style={{ marginTop: '10px' }}>
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>

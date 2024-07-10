@@ -10,7 +10,6 @@ const app = express();
 const port = process.env.PORT || 5912;
 const cors = require('cors');
 const IP = process.env.IP || 'localhost';
-console.log('IP:', IP);
 
 const {
     findScotathClientDir,
@@ -370,7 +369,6 @@ app.delete('/api/rainbow/meet/:meetId', (req, res) => {
 
 // Login API endpoint
 app.post('/api/login', (req, res) => {
-  console.log('Login API called');
     const { userName, userPass } = req.body;
     const query = 'SELECT * FROM tblusers WHERE userName = ? AND userPass = ?';
     db.get(query, [userName, userPass], (err, row) => {
@@ -607,9 +605,4 @@ app.post('/api/rainbow/getEventPhotoAPI/', (req, res) => {
 // All other requests go to React app
 app.get('*', (req, res) => {
     res.sendFile(path.join(clientPath + '/' + 'client', 'rainbow', 'build', 'index.html'));
-});
-
-app.get('/api', (req, res) => {
-  console.log('API called');
-    res.send('API is running');
 });

@@ -23,3 +23,25 @@ export const formatEventCode = (eventCode: string) => {
 
   return eventCode; // If format is unexpected, return the original eventCode
 };
+
+export const sortBasedonRank = (athletes: any) => {
+  const sortedAthletesInfo = [...athletes].sort((athlete1, athlete2) => {
+    // Sort by eventCode first
+    const eventCodeComparison = athlete1.eventCode.localeCompare(athlete2.eventCode);
+    if (eventCodeComparison !== 0) {
+      return eventCodeComparison;
+    }
+  
+    // Sort by finalPos (assuming finalPos is a string representing finishing position)
+    if (athlete1.finalPFPos === null && athlete2.finalPFPos === null) {
+      return 0;
+    } else if (athlete1.finalPFPos === null) {
+      return 1; // athlete1 with null finalPos comes after athlete2
+    } else if (athlete2.finalPFPos === null) {
+      return -1; // athlete2 with null finalPos comes after athlete1
+    } else {
+      return athlete1.finalPFPos.localeCompare(athlete2.finalPFPos);
+    }
+  });
+  return sortedAthletesInfo;
+}

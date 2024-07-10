@@ -1,7 +1,7 @@
 interface EventInfo {
     meetId: string;
     eventCode: string;
-    eventPFDate: string;
+    eventPFTime: string;
     eventDate: string;
     eventTime: string;
     eventLength: string;

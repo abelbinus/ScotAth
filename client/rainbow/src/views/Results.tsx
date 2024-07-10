@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Select, Table, Button, Popconfirm, Divider, Checkbox, Modal, Card, Row, Col, Typography } from 'antd';
 import { useEvents } from '../Provider/EventProvider';
 import './../styles/CustomCSS.css'
-import { formatEventCode } from './Eventutils';
+import { formatEventCode, sortBasedonRank } from './Eventutils';
 
 const { Option } = Select;
 
@@ -25,6 +25,7 @@ const AllResults: React.FC = () => {
     finishTime: boolean;
     finalPFPos: boolean;
     finalPFTime: boolean;
+    pfStartTime: boolean;
   };
   
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>({
@@ -39,6 +40,7 @@ const AllResults: React.FC = () => {
     finishTime: true,
     finalPFPos: true,
     finalPFTime: true,
+    pfStartTime: true,
   });
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -49,7 +51,9 @@ const AllResults: React.FC = () => {
     const initialEventCode = eventsInfo[0].eventCode;
     if(!selectedEventCode) {
       setSelectedEventCode(initialEventCode);
-      setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+      const filteredAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode);
+      const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
+      setFilteredAthletesInfo(sortedAthletesInfo);
     }
   }, [meetid]);
 
@@ -69,7 +73,9 @@ const AllResults: React.FC = () => {
       const initialEventCode = eventsInfo[0].eventCode;
       if(!selectedEventCode) {
         setSelectedEventCode(initialEventCode);
-        setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+        const filteredAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode);
+        const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
+        setFilteredAthletesInfo(sortedAthletesInfo);
       }
     }
   }, [eventsInfo]);
@@ -150,11 +156,13 @@ const AllResults: React.FC = () => {
   const handleEventSelect = (value: string) => {
     setSelectedEventCode(value);
     if (value === '') {
-      setFilteredAthletesInfo(athletes); // Reset to show all events when no event is selected
+      const sortedAthletesInfo = sortBasedonRank(athletes);
+      setFilteredAthletesInfo(sortedAthletesInfo); // Reset to show all events when no event is selected
     } else {
-      const filtered = athletes.filter(event => event.eventCode === value);
-      setFilteredAthletesInfo(filtered);
-      setError(filtered.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
+      const filteredAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === value);
+      const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
+      setFilteredAthletesInfo(sortedAthletesInfo);
+      setError(sortedAthletesInfo.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
     }
   };
 
@@ -186,18 +194,23 @@ const AllResults: React.FC = () => {
 
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(eventsInfo);
+    const renderStartTimes = () => {
+      const event = eventsInfo.find(event => event.eventCode === selectedEventCode && event.meetId == meetid);
+      return event ? event.eventPFTime : null;
+    };
     const columns = [
       { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
       { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
       { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
       { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
       { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
+      { title: 'Final Start Times', dataIndex: 'pfStartTime', key: 'pfStartTime', width: 100, render: (text: any) => renderStartTimes() },
+      { title: 'Final PF Ranking', dataIndex: 'finalPFPos', key: 'finalPFPos', width: 150 },
+      { title: 'Final PF Time', dataIndex: 'finalPFTime', key: 'finalPFTime', width: 150 },
       { title: 'Check In', dataIndex: 'startPos', key: 'startPos', width: 100 },
       { title: 'Start Time', dataIndex: 'startTime', key: 'startTime', width: 150 },
       { title: 'Rank', dataIndex: 'finishPos', key: 'finishPos', width: 100 },
       { title: 'Finish Time', dataIndex: 'finishTime', key: 'finishTime', width: 150 },
-      { title: 'Final PF Ranking', dataIndex: 'finalPFPos', key: 'finalPFPos', width: 150 },
-      { title: 'Final PF Time', dataIndex: 'finalPFTime', key: 'finalPFTime', width: 150 }
     ].filter(column => columnVisibility[column.dataIndex]);
 
     return (
@@ -292,6 +305,12 @@ const AllResults: React.FC = () => {
             </Col>
             <Col span={24} style={{ marginTop: '20px' }}>
               <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
+              <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
+                {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate}
+              </Title>
+              <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
+                {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
+              </Title>
             </Col>
             <Col span={24} style={{ marginTop: '10px' }}>
               <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
@@ -341,6 +360,24 @@ const AllResults: React.FC = () => {
           </div>
           <div className="checkbox-row">
             <Checkbox
+              checked={columnVisibility.pfStartTime}
+              onChange={(e) => handleColumnVisibilityChange('pfStartTime', e.target.checked)}
+            >PF Start Time</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.finalPFPos}
+              onChange={(e) => handleColumnVisibilityChange('finalPFPos', e.target.checked)}
+            >Final PF Ranking</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
+              checked={columnVisibility.finalPFTime}
+              onChange={(e) => handleColumnVisibilityChange('finalPFTime', e.target.checked)}
+            >Final PF Time</Checkbox>
+          </div>
+          <div className="checkbox-row">
+            <Checkbox
               checked={columnVisibility.startPos}
               onChange={(e) => handleColumnVisibilityChange('startPos', e.target.checked)}
             >Check In</Checkbox>
@@ -362,18 +399,6 @@ const AllResults: React.FC = () => {
               checked={columnVisibility.finishTime}
               onChange={(e) => handleColumnVisibilityChange('finishTime', e.target.checked)}
             >Finish Time</Checkbox>
-          </div>
-          <div className="checkbox-row">
-            <Checkbox
-              checked={columnVisibility.finalPFPos}
-              onChange={(e) => handleColumnVisibilityChange('finalPFPos', e.target.checked)}
-            >Final PF Ranking</Checkbox>
-          </div>
-          <div className="checkbox-row">
-            <Checkbox
-              checked={columnVisibility.finalPFTime}
-              onChange={(e) => handleColumnVisibilityChange('finalPFTime', e.target.checked)}
-            >Final PF Time</Checkbox>
           </div>
         </div>
       </Modal>

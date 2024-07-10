@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Select, Table, Button, message, Divider, Modal, Checkbox, Card, Row, Col, Typography, Input } from 'antd';
-import { updateAthleteAPI, updateEventAPI } from '../apis/api';
+import { getAthletebyEventId, updateAthleteAPI, updateEventAPI } from '../apis/api';
 
 import { TimePicker } from '../components';
 import moment from 'moment';
@@ -91,36 +91,93 @@ const EventsList: React.FC = () => {
   const handleSave = async () => {
     try {
       await updateAthleteAPI(filteredAthletesInfo);
+      
       // Update the events list with the matching pfEvent data
       const updatedEvents = athletes.map(event => {
         // Find all corresponding events in the pfEvent list
         const matchingAthleteEvents = filteredAthletesInfo.filter((filteredAthletes: { eventCode: string; athleteNum: string; }) => 
           filteredAthletes.eventCode === event.eventCode && filteredAthletes.athleteNum === event.athleteNum
         );
-
-        // Merge the event with all matching athlete objects
+  
+        // Merge the event with all matching pfEvent objects
         return matchingAthleteEvents.length > 0 
           ? matchingAthleteEvents.map((matchingAthleteEvents: any) => ({ ...event, ...matchingAthleteEvents }))
           : event;
       }).flat();
+  
+      // Sort the updated events by startPos
+      updatedEvents.sort((event1: { startPos: any; }, event2: { startPos: any; }) => {
+        if (event1.startPos === null && event2.startPos === null) {
+          return 0;
+        }
+        if (event1.startPos === null) {
+          return -1;
+        }
+        if (event2.startPos === null) {
+          return 1;
+        }
+        return event2.startPos.localeCompare(event1.startPos);
+      });
+  
       setAthleteinfo(updatedEvents);
+  
+      // Sort and set filteredAthletesInfo
+      const sortedFilteredAthletesInfo = [...filteredAthletesInfo].sort((event1: { startPos: any; }, event2: { startPos: any; }) => {
+        if (event1.startPos === null && event2.startPos === null) {
+          return 0;
+        }
+        if (event1.startPos === null) {
+          return -1;
+        }
+        if (event2.startPos === null) {
+          return 1;
+        }
+        return event2.startPos.localeCompare(event1.startPos);
+      });
+  
+      setFilteredAthletesInfo(sortedFilteredAthletesInfo);
+  
       message.success('Events status updated successfully!');
     } catch (err) {
       message.error('Error updating events status');
+      console.log(err);
     }
   };
 
   // Handle event selection from dropdown
-  const handleEventSelect = (value: string) => {
+  const handleEventSelect = async (value: string) => {
     setSelectedEventCode(value);
     if (value === '') {
-      setFilteredAthletesInfo(athletes); // Reset to show all events when no event is selected
+      setFilteredAthletesInfo(athletes);
     } else {
-      const filtered = athletes.filter(event => event.eventCode === value);
-      setFilteredAthletesInfo(filtered);
-      setError(filtered.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
-    }
-  };
+      const filteredEvents = eventsInfo.filter(event => event.eventCode === value);
+      const response = await getAthletebyEventId(meetid, value);
+      const filteredAthletes = response.data.events;
+      // Initialize a temporary object with the current selectedValues
+      let tempSelectedValues = { ...selectedValues };
+      // Accumulate updates in tempSelectedValues
+      filteredAthletes.forEach((athlete: any) => {
+        const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
+        tempSelectedValues[uniqueValue] = athlete.startPos || '';
+      });
+      setSelectedValues(tempSelectedValues);
+      const sortedFilteredAthletesInfo = [...filteredAthletes].sort((event1: { startPos: any; }, event2: { startPos: any; }) => {
+          if (event1.startPos === null && event2.startPos === null) {
+            return 0;
+          }
+          if (event1.startPos === null) {
+            return -1;
+          }
+          if (event2.startPos === null) {
+            return 1;
+          }
+          return event1.startPos.localeCompare(event2.startPos);
+        });
+    
+        setFilteredAthletesInfo(sortedFilteredAthletesInfo);
+        setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
+      }
+    };
 
   // Handle time change in TimePicker
   const handleStartTimeChange = (time: any, record: AthleteInfo) => {
@@ -427,6 +484,12 @@ const EventsList: React.FC = () => {
           </Col>
           <Col span={24} style={{ marginTop: '20px' }}>
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
+            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
+              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate}
+            </Title>
+            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
+              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
+            </Title>
           </Col>
           <Col span={24} style={{ marginTop: '10px' }}>
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
