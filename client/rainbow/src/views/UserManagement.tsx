@@ -406,7 +406,7 @@ const User = () => {
               />
             </Form.Item>
             <Form.Item name="userRole" label="Role" rules={[{ message: "Please select the role!" }]}>
-              <Radio.Group disabled>
+              <Radio.Group>
                 <Radio value="admin">Admin</Radio>
                 <Radio value="volunteer">Volunteer</Radio>
               </Radio.Group>
