@@ -4,6 +4,7 @@ import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import { UserContext } from "../App";
 import { IUser } from "../modals/User";
 import { changePasswordAPI, updateUserAPI, getUserByIdAPI } from "../apis/api";
+import bcrypt from 'bcryptjs-react';
 
 interface PasswordChange {
   oldPassword: string,
@@ -79,19 +80,37 @@ const ProfilePage = () => {
   };
 
   const handlePasswordChange = async (values: PasswordChange) => {
-    // Check if the old password and the new password are the same
-    if (values.oldPassword === values.newPassword) {
-      return message.error("New password must be different from the old password");
-    }
 
+    // Check if the old password and the new password are the same
+    console.log(userContext);
+    if (userContext!.user!.userPass !== null) {
+      const value = await bcrypt.compare(values.oldPassword, userContext!.user!.userPass);
+      console.log(value);
+      if (!value) {
+        return message.error("Old password is incorrect");
+      }
+    }
     // Add validation for new password and retype new password
     if (values.newPassword !== values.retypeNewPassword) {
       return message.error("New password and retype new password do not match");
     }
+    if(values.oldPassword === values.newPassword) {
+      return message.error("New password must be different from the old password");
+    }
+    try {
+      const salt = await bcrypt.genSalt(10);
+      if (values.newPassword !== null) {
+        values.newPassword = await bcrypt.hash(values.newPassword, salt);
+      }
+    } catch (error) {
+      console.error('Error in hashing the password:', error);
+      message.error('Error in hashing the password');
+      return;
+    }
 
     try {
       const password = {
-        oldPass: values.oldPassword,
+        oldPass: userContext!.user!.userPass,
         newPass: values.newPassword,
         userId: userContext!.user!.userId
       }

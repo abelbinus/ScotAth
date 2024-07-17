@@ -10,6 +10,7 @@ const app = express();
 const port = process.env.PORT || 5912;
 const cors = require('cors');
 const IP = process.env.IP || 'localhost';
+const bcrypt = require('bcryptjs-react');
 
 const {
     findScotathClientDir,
@@ -86,13 +87,6 @@ app.get('/api/rainbow/users/:userId', (req, res) => {
 // Endpoint to add a user
 app.post('/api/rainbow/user', async (req, res) => {
     const user = req.body;
-
-    // // Hash the user's password
-    // try {
-    //     user.userPass = await bcrypt.hash(user.userPass, 10);
-    // } catch (error) {
-    //     return res.status(500).json({ error: 'Failed to hash password' });
-    // }
 
     // Insert user into database
     const sql = `INSERT INTO tblusers (userId, firstName, middleName, lastName, userName, userEmail, userRole, userPass, userMob, userAddress) 
@@ -370,8 +364,8 @@ app.delete('/api/rainbow/meet/:meetId', (req, res) => {
 // Login API endpoint
 app.post('/api/login', (req, res) => {
     const { userName, userPass } = req.body;
-    const query = 'SELECT * FROM tblusers WHERE userName = ? AND userPass = ?';
-    db.get(query, [userName, userPass], (err, row) => {
+    const query = 'SELECT * FROM tblusers WHERE userName = ?';
+    db.get(query, [userName], (err, row) => {
         if (err) {
             logger.error(err.message);
             res.status(500).json({ error: err.message });
@@ -383,7 +377,7 @@ app.post('/api/login', (req, res) => {
             return;
         }
         // Successful login
-        res.json({ message: 'Login successful', user: row });
+          res.json({ user: row });
     });
 });
 
@@ -402,27 +396,17 @@ app.post('/api/rainbow/user/changePassword', async (req, res) => {
       return;
     }
     else {
-      // Check if the old password matches
-      // const match = await bcrypt.compare(oldPass, row.userPass);
-      if (oldPass !== row.userPass) {
-        logger.error('Invalid old password');
-        res.status(401).json({ error: 'Invalid old password' });
-        return;
-      }
-      else {
-        const updateQuery = 'UPDATE tblusers SET userPass = ? WHERE userId = ?';
-        db.run(updateQuery, [newPass, userId], function(err) {
-          if (err) {
-            logger.error(err.message);
-            res.status(500).json({ error: err.message });
-            return;
-          }
-          logger.info(`Password updated for user with ID ${userId}`);
-          res.json({ message: 'Password updated successfully' });
-        });
-      }
-      // Hash the new password
-      // const hashedPassword = await bcrypt.hash(newPass, 10);
+      // Check if the old password matches;
+      const updateQuery = 'UPDATE tblusers SET userPass = ? WHERE userId = ?';
+      db.run(updateQuery, [newPass, userId], function(err) {
+        if (err) {
+          logger.error(err.message);
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        logger.info(`Password updated for user with ID ${userId}`);
+        res.json({ message: 'Password updated successfully' });
+      });
     }
   });
 });

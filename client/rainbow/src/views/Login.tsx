@@ -6,6 +6,7 @@ import { IUser } from "../modals/User";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../App.tsx";
 import { loginAPI } from "../apis/api.ts";
+import bcrypt from 'bcryptjs-react';
 
 const { Header, Content } = Layout;
 
@@ -17,9 +18,15 @@ const LoginPage = () => {
     const onFinish = async (values: ILoginValues) => {
         setLoading(true);
     try {
-
-            // login
+            // Call login API
             const response: any = await loginAPI(values);
+            if(response.data.user !== null) {
+                if(!await bcrypt.compare(values.userPass, response.data.user.userPass)) {
+                    message.error("Invalid Password");
+                    setLoading(false);
+                    return;
+                }
+            }
             // Convert the response to IUser format
             const loginUser: IUser = {
                 userId: response.data.user.userId,
@@ -29,7 +36,7 @@ const LoginPage = () => {
                 userName: response.data.user.userName,
                 userEmail: response.data.user.userEmail || '', // You need to handle this if email is not provided in the response
                 userRole: response.data.user.userRole,
-                userPass: null, // Assuming you do not store password in loginUser object
+                userPass: response.data.user.userPass, // Assuming you do not store password in loginUser object
                 userAddress: response.data.user.userAddress,
                 userMob: response.data.user.userMob
             };

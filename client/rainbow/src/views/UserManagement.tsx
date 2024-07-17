@@ -7,6 +7,8 @@ import { UserContext } from "../App";
 import { IUser } from "../modals/User";
 import { getAllUsersAPI, addUserAPI, updateUserAPI, deleteUserAPI } from "../apis/api";
 import { AxiosError } from "axios";
+import bcrypt from "bcryptjs-react";
+
 const User = () => {
   // userInfo
   const userContext = useContext(UserContext);
@@ -122,6 +124,17 @@ const User = () => {
   // add
   const handleAddFormSubmit = async (user: IUser) => {
     try {
+          // Hash the user's password
+      try {
+        const salt = await bcrypt.genSalt(10);
+        if (user.userPass !== null) {
+          user.userPass = await bcrypt.hash(user.userPass, salt);
+        }
+      } catch (error) {
+        console.error('Error in hashing the password:', error);
+        message.error('Error in hashing the password');
+        return;
+      }
       const userParams = {
         userId: user.userId,
         firstName: user.firstName,
@@ -196,6 +209,16 @@ const User = () => {
 
   // edit
   const handleEditSubmit = async (user: IUser) => {
+    try {
+      const salt = await bcrypt.genSalt(10);
+      if (user.userPass !== null) {
+        user.userPass = await bcrypt.hash(user.userPass, salt);
+      }
+    } catch (error) {
+      console.error('Error in hashing the password:', error);
+      message.error('Error in hashing the password');
+      return;
+    }
     try {
       const userParams = {
         userId: user.userId,
