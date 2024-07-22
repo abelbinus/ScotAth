@@ -1,0 +1,115 @@
+.container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+  }
+  
+  .select-container {
+    flex-grow: 1; /* Ensure the select container takes remaining space */
+    margin-right: 10px;
+  }
+
+  .button-div {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 25px;
+  }
+
+  .button-div .ant-btn {
+    flex-shrink: 0; /* Prevent buttons from resizing */
+    margin-right: 10px; /* Ensure consistent spacing */
+  }
+  .select {
+    width: 100%;
+    max-width: 300px;
+    margin-bottom: 16px;
+    margin-right: 20px;
+  }
+
+  .checkbox-container {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .checkbox-row {
+    margin-bottom: 10px; /* Adjust spacing between rows */
+  }
+  
+  .button-container .ant-btn{
+    text-align: right;
+    margin-bottom: 16px;
+  }
+
+  .button-download {
+    text-align: right;
+    margin-top: 20px;
+  }
+
+  @media (max-width: 1000px) {
+    .container {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  
+    .button-container {
+      margin-left: 0; /* Reset margin for mobile layout */
+      width: 100%; /* Ensure full width on smaller screens */
+      text-align: left; /* Align button to the left */
+    }
+
+    .button-container .ant-btn {
+        margin-bottom: 10px; /* Add spacing between buttons on mobile */
+      }
+  }
+
+  @media (max-width: 798px) {
+    .button-download {
+      margin-left: 0; /* Reset margin for mobile layout */
+      width: 100%; /* Ensure full width on smaller screens */
+      text-align: left; /* Align button to the left */ 
+    }
+    .select-container {
+      margin-bottom: 10px; /* Add spacing between buttons on mobile */
+    }
+
+    .button-download .ant-btn {
+      margin-bottom: 10px; /* Add spacing between buttons on mobile */
+    }
+  }
+
+
+  @media (max-width: 550px) {
+    .button-download .ant-btn {
+      margin-bottom: 10px; /* Ensure full width on smaller screens */
+    }
+  }
+  @media (max-width: 425px) {
+    .hide-on-xs {
+      display: none;
+    }
+
+    .button-div {
+      flex-direction: column;
+    }
+  
+    .button-div .ant-btn {
+      margin-bottom: 10px; /* Ensure spacing between buttons when stacked */
+      margin-right: 0;    /* Remove right margin for stacked buttons */
+    }
+    .button-save {
+      margin-right: 10px !important;
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .action-button {
+    width: 75%;
+    margin-bottom: 8px; /* Optional: Add spacing between buttons */
+  }
+
+  

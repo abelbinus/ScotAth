@@ -1,11 +1,14 @@
+/* eslint-disable jsx-a11y/anchor-is-valid */
 import { useState, useEffect, useContext } from "react";
-import { Divider, Input, Col, Row, Button, Space, Table, Modal, Form, message, Popconfirm, Tag, Radio, Select, Tabs, Grid} from "antd";
+import { Divider, Input, Col, Row, Button, Space, Table, Modal, Form, message, Popconfirm, Tag, Radio, Select, Tabs, Grid, Typography} from "antd";
 import type { TableColumnsType } from "antd";
 import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import { UserContext } from "../App";
-import { IUser } from "../types/User";
+import { IUser } from "../modals/User";
 import { getAllUsersAPI, addUserAPI, updateUserAPI, deleteUserAPI } from "../apis/api";
 import { AxiosError } from "axios";
+import bcrypt from "bcryptjs-react";
+
 const User = () => {
   // userInfo
   const userContext = useContext(UserContext);
@@ -22,24 +25,24 @@ const User = () => {
   const [addform] = Form.useForm();
   const [editForm] = Form.useForm();
 
+  const { Title } = Typography;
+
   const columns: TableColumnsType<IUser> = [
     { title: "User ID", dataIndex: "userId", key: "userId" },
-    { title: "Name", dataIndex: "userName", key: "userName" },
-    ...(screens.xs ? [] : [
-      { title: "Email", dataIndex: "userEmail", key: "userEmail" },
-      {
-        title: "Role", dataIndex: "userRole", key: "userRole",
-        render: (_: any, { userRole }: any) => (
-          <>
-            {userRole === "volunteer" ? (
-              <Tag color="blue">volunteer</Tag>
-            ) : userRole === "admin" ? (
-              <Tag color="red">admin</Tag>
-            ) : null}
-          </>
-        ),
-      },
-    ]),
+    { title: "User Name", dataIndex: "userName", key: "userName" },
+    { title: "Email", dataIndex: "userEmail", key: "userEmail" },
+    {
+      title: "Role", dataIndex: "userRole", key: "userRole",
+      render: (_: any, { userRole }: any) => (
+        <>
+          {userRole === "volunteer" ? (
+            <Tag color="blue">volunteer</Tag>
+          ) : userRole === "admin" ? (
+            <Tag color="red">admin</Tag>
+          ) : null}
+        </>
+      ),
+    },
     
     {
       title: "Action",
@@ -65,7 +68,6 @@ const User = () => {
     try {
       const response: any = await getAllUsersAPI();
       const userList: any[] = response.data;
-      console.log(userList);
 
       let users = userList.map((user): IUser => {
         return {
@@ -122,6 +124,17 @@ const User = () => {
   // add
   const handleAddFormSubmit = async (user: IUser) => {
     try {
+          // Hash the user's password
+      try {
+        const salt = await bcrypt.genSalt(10);
+        if (user.userPass !== null) {
+          user.userPass = await bcrypt.hash(user.userPass, salt);
+        }
+      } catch (error) {
+        console.error('Error in hashing the password:', error);
+        message.error('Error in hashing the password');
+        return;
+      }
       const userParams = {
         userId: user.userId,
         firstName: user.firstName,
@@ -134,7 +147,6 @@ const User = () => {
         userMob: user.userMob,
         userAddress: user.userAddress
       };
-      console.log(userParams);
       await addUserAPI(userParams);
       message.success("User added successfully");
 
@@ -198,6 +210,16 @@ const User = () => {
   // edit
   const handleEditSubmit = async (user: IUser) => {
     try {
+      const salt = await bcrypt.genSalt(10);
+      if (user.userPass !== null) {
+        user.userPass = await bcrypt.hash(user.userPass, salt);
+      }
+    } catch (error) {
+      console.error('Error in hashing the password:', error);
+      message.error('Error in hashing the password');
+      return;
+    }
+    try {
       const userParams = {
         userId: user.userId,
         firstName: user.firstName,
@@ -206,7 +228,9 @@ const User = () => {
         userName: user.userName,
         userEmail: user.userEmail,
         userRole: user.userRole,
-        usermob: user.userMob
+        usermob: user.userMob,
+        userAddress: user.userAddress,
+        userPass: user.userPass,
       };
 
       await updateUserAPI(userParams);
@@ -244,11 +268,13 @@ const User = () => {
       label: "All Users",
       key: "1",
       children: (
+        <div style={{ overflowX: 'auto', overflowY: 'auto', maxWidth: '100%' }}>
         <Table
           rowKey="userId"
           columns={columns}
           dataSource={userList}
         />
+        </div>
       ),
     },
     {
@@ -259,6 +285,7 @@ const User = () => {
           rowKey="userId"
           columns={columns}
           dataSource={volList}
+          tableLayout="fixed" // Ensure columns have fixed width
         />
       ),
     },
@@ -291,11 +318,11 @@ const User = () => {
 
       {/*Add button area */}
     <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
-      <Col span={8}>
-        <p style={{ fontWeight: "bold", marginBottom: 0 }}>User Management</p>
+      <Col span={8} lg={8} md={6} sm={2}></Col>
+      <Col span={8} lg={8} md={10} sm={14}>
+          <Title level={2} style={{ margin: 0, color: '#1677FF' }}>User Management</Title>
       </Col>
-      <Col span={8}></Col>
-      <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>
+      <Col span={8}  style={{ display: "flex", justifyContent: "flex-end" }}>
         <Button type="primary" onClick={onAddClick}>Add</Button>
       </Col>
     </Row>
@@ -323,7 +350,7 @@ const User = () => {
             <Form.Item name="lastName" label="Last Name" rules={[{ required: true, message: "Please input your last name!" }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="userName" label="Username" rules={[{ required: true, message: "Please input the user name!" }]} initialValue="">
+            <Form.Item name="userName" label="Username" rules={[{ min:3, required: true, message: "Please input the user name!" }]} initialValue="">
               <Input />
             </Form.Item>
             <Form.Item name="userPass" label="Password"
@@ -372,15 +399,24 @@ const User = () => {
             <Form.Item name="userId" label="User ID" rules={[{ required: true, message: "Please input the user ID!" }]}>
               <Input disabled />
             </Form.Item>
-            <Form.Item name="userName" label="Name" rules={[{ message: "Please input the user name!" }]}>
+            <Form.Item name="userName" label="userName" rules={[{ min: 3, message: "Please input the user name!" }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="email" label="Email" rules={[{ message: "Please input the email address!" }]}>
+            <Form.Item name="firstName" label="First Name" rules={[{ message: "Please input the user name!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="middleName" label="Middle Name" rules={[{ message: "Please input the user name!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="lastName" label="Last Name" rules={[{ message: "Please input the user name!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="userEmail" label="Email" rules={[{ message: "Please input the email address!" }]}>
               <Input type="email" />
             </Form.Item>
             <Form.Item name="userPass" label="Password"
               rules={[
-                { required: true, message: "Please input your new password!" },
+                { message: "Please input your new password!" },
                 { min: 8, message: "Password must be at least 8 characters." }
               ]}>
               <Input
@@ -392,11 +428,17 @@ const User = () => {
                 }
               />
             </Form.Item>
-            <Form.Item name="role" label="Role" rules={[{ message: "Please select the role!" }]}>
-              <Radio.Group disabled>
+            <Form.Item name="userRole" label="Role" rules={[{ message: "Please select the role!" }]}>
+              <Radio.Group>
                 <Radio value="admin">Admin</Radio>
                 <Radio value="volunteer">Volunteer</Radio>
               </Radio.Group>
+            </Form.Item>
+            <Form.Item name="userMob" label="Mobile Number" rules={[{ message: "Please input your mobile  number!" }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="userAddress" label="Address" rules={[{ message: "Please input your address!" }]}>
+            <Input.TextArea rows={4} />
             </Form.Item>
           </Form>
         </Modal>

@@ -1,11 +1,10 @@
-import * as React from 'react';
 import { useState, useEffect, useContext } from "react";
-import { Divider, Input, Col, Row, Space, Tag, Table, Button, Form, Modal, Select, Popconfirm, message, Tabs } from "antd";
+import { Divider, Input, Col, Row, Space, Table, Button, Form, Modal, Select, Popconfirm, message, Tabs, Typography } from "antd";
 import { ColumnsType } from "antd/es/table";
 import { UserContext } from "../App.tsx";
-import { IMeet } from "../types/Meet";
-import { getMeetsAPI, deleteMeetAPI, updateMeetAPI, addMeetAPI } from "../apis/api.ts";
-import { FolderOpenOutlined } from "@mui/icons-material";
+import { IMeet } from "../modals/Meet";
+import { getMeetsAPI, deleteMeetAPI, updateMeetAPI, addMeetAPI, getEventFiles } from "../apis/api.ts";
+import './../styles/CustomCSS.css'
 
 interface EditFormValues {
     meetId: number;
@@ -32,31 +31,12 @@ const MeetListAdmin = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editForm] = Form.useForm();
 
+  const [fileList, setFileList] = useState<string[]>([]);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const {Title} = Typography;
+
   // userInfo
   const userContext = useContext(UserContext);
- 
-
-  // Function to handle folder selection
-  // const handleFolderSelect = async () => {
-  //   try {
-  //     const dirHandle = await window.showDirectoryPicker();
-    
-  //     // Access the directory handle properties or perform operations
-  //     console.log("Selected directory:", dirHandle);
-      
-  //     // Example: List directory contents
-  //     for await (const entry of dirHandle.values()) {
-  //       console.log(entry.name, entry.kind);
-  //     }
-
-  //     // Example: Set selected folder path to state or form field
-  //     setSelectedFolder(dirHandle.name);
-  //     editForm.setFieldsValue({ pfFolder: dirHandle.name });
-  //   } catch (error) {
-  //     console.error("Error selecting directory:", error);
-  //     // Handle error as needed
-  //   }
-  // };
 
   // add
   const onAddClick = () => {
@@ -89,7 +69,7 @@ const MeetListAdmin = () => {
       addform.resetFields();
       getMeetList();
     } catch (error: any) {
-      const errMsg = error.response?.data?.msg || "Add meet failed";
+      const errMsg = error.response?.data?.error|| "Failed to add new meet";
       console.error(errMsg);
       message.error(errMsg);
     }
@@ -100,7 +80,6 @@ const MeetListAdmin = () => {
     try {
       const response: any = await getMeetsAPI();
       const meetList: IMeet[] = response.data.meet; // Assuming response.data contains the array
-      console.log(meetList);
 
       let meets = meetList.map((i): IMeet => {
         return {
@@ -121,7 +100,7 @@ const MeetListAdmin = () => {
       setMeetList(allMeets);
     } catch (error: any) {
       const errMsg = error.response?.data?.msg || "Loading list failed";
-      console.error(errMsg);
+      console.log(errMsg);
       message.error(errMsg);
     }
   };
@@ -137,43 +116,126 @@ const MeetListAdmin = () => {
     return <div>No access permission</div>;
   }
 
+  const handleUpdateClick = async (pfFolder: string, intFolder: string, eventList: string, meetId: number) => {
+    try {
+        if(pfFolder == null || pfFolder == "") {
+          const errMsg = "pfFolder path is required";
+          console.log(errMsg);
+          message.error(errMsg);
+        }
+        else if(eventList == null || eventList == "") {
+          const errMsg = "eventList type is required";
+          console.log(errMsg);
+          message.error(errMsg);
+        }
+        else if(meetId == null) {
+          const errMsg = "MeetID is required";
+          console.log(errMsg);
+          message.error(errMsg);
+        }
+        else {
+          const folderParams = {
+              pfFolder: pfFolder,
+              eventList: eventList,
+              intFolder: intFolder,
+              meetId: meetId
+          }
+          const response = await getEventFiles(folderParams);
+          if(response.data.status == 'failure') {
+            if (response.data.error) {
+                // If there's an error message, handle it
+                try{
+                  if(response.data.error.copyError) {
+                    const errMsg = response.data.error.copyError || "Failed to copy startlist from interface folder";
+                    console.error(errMsg);
+                    message.error(errMsg);
+                  }
+                } catch (error: any) {
+                }
+                try{
+                  if(response.data.error.dbError) {
+                    const errMsg = response.data.error.dbError || "Failed to update database";
+                    console.error(errMsg);
+                    message.error(errMsg);
+                  }
+                } catch (error: any) {
+                }
+                const errMsg = response.data.error.message || "Failed to update start list";
+                console.error(errMsg);
+                message.error(errMsg);
+            }
+          } else {
+              // Success case: Display success message and update state
+              try{
+                if(response.data.error.copyError) {
+                  const errMsg = response.data.error.copyError || "Failed to copy startlist from interface folder";
+                  console.error(errMsg);
+                  message.error(errMsg);
+                }
+              } catch (error: any) {
+              }
+              message.success(response.data.message || "Updated Start List Successfully");
+              setFileList(response.data.files);
+              setIsModalVisible(true);
+          }
+        }
+        } catch (error: any) {
+        const errMsg = error.response?.data?.error || "Failed to fetch files";
+        console.error(error);
+        message.error(errMsg);
+        }
+    };
+
+  const handleCancel = () => {
+    setIsModalVisible(false);
+    setFileList([]);
+  };
+
   // list columns
   const baseColumns: ColumnsType<IMeet> = [
     {
       title: "Meet ID",
       dataIndex: "meetId",
       key: "meetId",
+      width: 150,
     },
     {
       title: "Meet Name",
       dataIndex: "meetName",
       key: "meetName",
+      width: 150,
     },
     {
         title: "Description",
         dataIndex: "meetDesc",
         key: "meetDesc",
         render: text => <span>{text.length > 300 ? `${text.substring(0, 300)}...` : text}</span>,
+        width: 250,
+        
     },
     {
       title: "EventList",
       dataIndex: "eventList",
       key: "eventList",
+      width: 150,
     },
     {
       title: "PFFolder",
       dataIndex: "pfFolder",
       key: "pfFolder",
+      width: 200,
     },
     {
       title: "PFOutput",
       key: "pfOutput",
       dataIndex: "pfOutput",
+      width: 100,
     },
     {
         title: "Interface Folder",
         key: "intFolder",
         dataIndex: "intFolder",
+        width:200,
     },
     {
         title: "Edit",
@@ -184,6 +246,7 @@ const MeetListAdmin = () => {
                 {record.edit ? "Yes" : "No"}
             </span>
         ),
+        width: 100,
     }
   ]
 
@@ -194,18 +257,23 @@ const MeetListAdmin = () => {
       key: "action",
       dataIndex: "action",
       render: (_, record) => (
-        <Space size="middle">
-          <Button onClick={() => onEditClick(record)}>Edit</Button>
+        <Space size="middle" direction="vertical" className="action-buttons">
+          <Button type="primary" className="action-button" onClick={() => handleUpdateClick(record.pfFolder, record.intFolder, record.eventList, record.meetId)}>
+            Update Events
+          </Button>
+          <Button className="action-button" onClick={() => onEditClick(record)}>Edit</Button>
           <Popconfirm
             title="Are you sure to delete this meet?"
             onConfirm={() => onDeleteClick(record)}
             okText="Yes"
             cancelText="No"
           >
-            <Button danger>Delete</Button>
+            <Button danger className="action-button">Delete</Button>
           </Popconfirm>
+          
         </Space>
       ),
+      width: 180,
     },
   ];
 
@@ -214,11 +282,14 @@ const MeetListAdmin = () => {
       label: "All Meets",
       key: "2",
       children: (
-        <Table
-          rowKey={record => `${record.meetId}`}
-          columns={meetColumns}
-          dataSource={meetList}
-        />
+        <div style={{ overflowX: 'auto', overflowY: 'auto', maxWidth: '100%' }}>
+          <Table
+            rowKey={record => `${record.meetId}`}
+            columns={meetColumns}
+            dataSource={meetList}
+            tableLayout="fixed" // Ensure columns have fixed width
+          />
+        </div>
       ),
     },
   ]
@@ -230,7 +301,6 @@ const MeetListAdmin = () => {
 
   // edit click
   const onEditClick = (meet: IMeet) => {
-    console.log(meet);
     // display existing info
     setEditingMeet(meet);
     setIsEditModalVisible(true);
@@ -303,11 +373,11 @@ const MeetListAdmin = () => {
 
       {/*Add button area */}
       <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
-        <Col span={8}>
-          <p style={{ fontWeight: "bold", marginBottom: 0 }}> Meet Management</p>
+        <Col span={8} lg={8} md={6} sm={2}></Col>
+        <Col span={8} lg={8} md={10} sm={14}>
+            <Title level={2} style={{ margin: 0, color: '#1677FF' }}>Meet Management</Title>
         </Col>
-        <Col span={8}></Col>
-        <Col span={8} style={{ display: "flex", justifyContent: "flex-end" }}>
+        <Col span={8}  style={{ display: "flex", justifyContent: "flex-end" }}>
           <Button type="primary" onClick={onAddClick}>Add</Button>
         </Col>
       </Row>
@@ -429,7 +499,7 @@ const MeetListAdmin = () => {
             </Input.Group>
           </Form.Item>
           <Form.Item name="eventList" label="Event List">
-            <Select defaultValue={editingMeet?.pfOutput || 'FL'}>
+            <Select defaultValue={editingMeet?.eventList || 'FL'}>
               <Select.Option value="FL">FL</Select.Option>
               <Select.Option value="OMEGA">OMEGA</Select.Option>
               <Select.Option value="HYTEK OMEGA">HYTEK OMEGA</Select.Option>
@@ -447,13 +517,13 @@ const MeetListAdmin = () => {
   )
 }
 
-declare module 'react' {
-  interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-    // extends React's HTMLAttributes
-    directory?: string;        // remember to make these attributes optional....
-    webkitdirectory?: string;
-    window?: any;
-  }
-}
+// declare module 'react' {
+//   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
+//     // extends React's HTMLAttributes
+//     directory?: string;        // remember to make these attributes optional....
+//     webkitdirectory?: string;
+//     window?: any;
+//   }
+// }
 
 export default MeetListAdmin

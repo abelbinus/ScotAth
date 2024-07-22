@@ -1,27 +1,18 @@
-import axios from "axios";
+import axios, { AxiosInstance } from "axios";
+import axiosConfig from "../config";
 
-const request = axios.create({
-    baseURL: "http://localhost:5000",
-    timeout: 5000,
-})
+let axiosInstance: AxiosInstance;
 
-// request interceptor
-request.interceptors.request.use((config) => {
-    // auth token
-    const token = localStorage.getItem("AUTH_TOKEN");
-    if (token) {
-        config.headers["authorization"] = token;
+export const createAxiosInstance = ()=>{
+    axiosInstance = axios.create({
+        baseURL: `http://${axiosConfig.IP}:${axiosConfig.PORT}`,
+        timeout: 5000,
+    });
+}
+
+export const getAxiosInstance = ()=>{
+    if(!axiosInstance){
+        throw new Error("Axios instance not created");
     }
-    return config;
-}, (error) => {
-    return Promise.reject(error);
-})
-
-// response interceptor
-request.interceptors.response.use((response) => {
-    return response;
-}, (error) => {
-    return Promise.reject(error);
-})
-
-export { request }
+    return axiosInstance;
+}
