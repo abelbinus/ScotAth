@@ -2,15 +2,14 @@ const express = require('express');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const bodyParser = require('body-parser');
-//const bcrypt = require('bcrypt');
 const fs = require('fs');
 const logger = require('./logger'); // Import the logger
-
-const app = express();
-const port = process.env.PORT || 5912;
-const cors = require('cors');
-const IP = process.env.IP || 'localhost';
 const bcrypt = require('bcryptjs-react');
+const cors = require('cors');
+const app = express();
+
+const port = process.env.PORT || 5912;
+const IP = process.env.IP || 'localhost';
 
 const {
     findScotathClientDir,
@@ -550,9 +549,6 @@ app.post('/api/rainbow/updateEventAPI/', (req, res) => {
       });
     });
   });
-  
-
-  
 
   // Endpoint to get photos
 app.post('/api/rainbow/getEventPhotoAPI/', (req, res) => {
@@ -576,6 +572,10 @@ app.post('/api/rainbow/getEventPhotoAPI/', (req, res) => {
         }
 
         // Construct URLs or base64 data for each image
+        /**
+         * Array of base64-encoded image data.
+         * @type {Array<string>}
+         */
         const photos = matchingFiles.map(file => {
         const filePath = path.join(eventPhotoFolder, file);
         const fileData = fs.readFileSync(filePath, { encoding: 'base64' });

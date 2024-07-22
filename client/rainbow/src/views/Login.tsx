@@ -10,23 +10,38 @@ import bcrypt from 'bcryptjs-react';
 
 const { Header, Content } = Layout;
 
+/**
+ * LoginPage component handles user authentication.
+ * It provides a login form and manages user authentication state.
+ * 
+ * @component
+ */
 const LoginPage = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const { setUser } = useContext(UserContext);
 
+    /**
+     * Handles form submission for login.
+     * It sends user credentials to the backend, verifies them, and updates the user context and sessionStorage.
+     * 
+     * @async
+     * @param {ILoginValues} values - The login form values containing username and password.
+     */
     const onFinish = async (values: ILoginValues) => {
         setLoading(true);
-    try {
+        try {
             // Call login API
             const response: any = await loginAPI(values);
-            if(response.data.user !== null) {
-                if(!await bcrypt.compare(values.userPass, response.data.user.userPass)) {
+            if (response.data.user !== null) {
+                // Compare entered password with hashed password
+                if (!await bcrypt.compare(values.userPass, response.data.user.userPass)) {
                     message.error("Invalid Password");
                     setLoading(false);
                     return;
                 }
             }
+
             // Convert the response to IUser format
             const loginUser: IUser = {
                 userId: response.data.user.userId,
@@ -34,9 +49,9 @@ const LoginPage = () => {
                 middleName: response.data.user.middleName,
                 lastName: response.data.user.lastName,
                 userName: response.data.user.userName,
-                userEmail: response.data.user.userEmail || '', // You need to handle this if email is not provided in the response
+                userEmail: response.data.user.userEmail || '', // Handle case if email is not provided
                 userRole: response.data.user.userRole,
-                userPass: response.data.user.userPass, // Assuming you do not store password in loginUser object
+                userPass: response.data.user.userPass,
                 userAddress: response.data.user.userAddress,
                 userMob: response.data.user.userMob
             };
@@ -48,6 +63,7 @@ const LoginPage = () => {
                 lastName: loginUser.lastName,
                 userRole: loginUser.userRole
             };
+
             // Convert user object to JSON string
             const userJSON = JSON.stringify(user);
 

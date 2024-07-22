@@ -12,8 +12,8 @@ import PhotoFinish from "../views/PhotoFinish";
 import ViewEvent from "../views/ViewEvent";
 import Results from "../views/Results";
 
-// Declare ProtectedRoute component first
-const ProtectedRoute: React.FC = () => {
+// Declare Router component first
+const Router: React.FC = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true); // Added loading state
 
@@ -52,7 +52,7 @@ const ProtectedRoute: React.FC = () => {
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <ProtectedRoute />,
+    element: <Router />,
     children: [
       { path: "/profile", element: <ProfilePage /> },
       { path: "/admin-dashboard", element: <User /> },
