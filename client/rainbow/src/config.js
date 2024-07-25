@@ -10,8 +10,6 @@ export const loadConfig = async () => {
         console.log('loading config');
         const res = await axios.get('/env');
         Object.assign(axiosConfig, res.data);
-        console.log(axiosConfig);
-
     }catch(e){
         console.log(e);
     }
