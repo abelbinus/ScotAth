@@ -12,30 +12,59 @@ import PhotoFinish from "../views/PhotoFinish";
 import ViewEvent from "../views/ViewEvent";
 import Results from "../views/Results";
 
+// Constants
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+// Utility to check if a user is authenticated
+const isAuthenticated = (): boolean => {
+  const userJSON = sessionStorage.getItem("user");
+  return !!userJSON; // Check if user data exists in session storage
+};
+
 // Declare Router component first
 const Router: React.FC = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true); // Added loading state
 
   useEffect(() => {
+    let inactivityTimer: NodeJS.Timeout;
+
+    const resetInactivityTimer = () => {
+      clearTimeout(inactivityTimer);
+      inactivityTimer = setTimeout(() => {
+        handleLogout();
+      }, INACTIVITY_TIMEOUT);
+    };
+
+    const handleLogout = () => {
+      setAuthenticated(false);
+      sessionStorage.removeItem("user"); // Remove user data if session is invalid
+      window.location.href = "/login"; // Redirect to login
+    };
+
     const checkAuthentication = () => {
-      const userJSON = sessionStorage.getItem('user');
-      if (userJSON) {
+      if (isAuthenticated()) {
         setAuthenticated(true);
+        resetInactivityTimer();
       } else {
         setAuthenticated(false);
       }
-      setLoading(false); // Set loading to false after authentication check
+      setLoading(false);
     };
 
     // Initial check on component mount
     checkAuthentication();
 
-    // Optionally, you can use events like 'storage' to detect changes in sessionStorage
-    window.addEventListener('storage', checkAuthentication);
+    // Set up event listeners for user activity
+    window.addEventListener("mousemove", resetInactivityTimer);
+    window.addEventListener("keydown", resetInactivityTimer);
+    window.addEventListener("click", resetInactivityTimer);
 
     return () => {
-      window.removeEventListener('storage', checkAuthentication);
+      clearTimeout(inactivityTimer); // Clear the timeout when component unmounts
+      window.removeEventListener("mousemove", resetInactivityTimer);
+      window.removeEventListener("keydown", resetInactivityTimer);
+      window.removeEventListener("click", resetInactivityTimer);
     };
   }, []);
 

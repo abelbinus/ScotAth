@@ -506,24 +506,17 @@ const EventsList: React.FC = () => {
   if (eventsInfo.length === 0 ) return <div>No events found</div>;
 
   return (
-    <div style={{ padding: '20px' }}>
-      <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+    <div className='blue-background'>
+      <Card bordered={false} style={{ marginBottom: '30px', background: '#ffffff', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
             <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Track Judge Screen</Title>
-            <Text type="secondary">Rank Athletes and set Finish Times</Text>
           </Col>
-          <Col span={24} style={{ marginTop: '20px' }}>
+          <Col span={24} >
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
-              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate}
+              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate} {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
             </Title>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
-              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
-            </Title>
-          </Col>
-          <Col span={24} style={{ marginTop: '10px' }}>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
           </Col>
         </Row>
       </Card>
@@ -568,7 +561,7 @@ const EventsList: React.FC = () => {
           </div>
           <div className="checkbox-row">
             <Checkbox
-              checked={columnVisibility.athleteClub}
+              checked={columnVisibility.laneOrder}
               onChange={(e) => handleColumnVisibilityChange('laneOrder', e.target.checked)}
             >Lane</Checkbox>
           </div>

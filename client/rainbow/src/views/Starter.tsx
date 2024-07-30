@@ -475,8 +475,8 @@ const EventsList: React.FC = () => {
   if (eventsInfo.length === 0 ) return <div>No events found</div>;
 
   return (
-    <div style={{ padding: '20px' }}>
-      <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+    <div className="green-background">
+      <Card bordered={false} style={{ marginBottom: '30px', background: '#ffffff', padding: '20px', borderRadius: '12px'}}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
             <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Starter's Assistant Screen</Title>
@@ -538,7 +538,7 @@ const EventsList: React.FC = () => {
           </div>
           <div className="checkbox-row">
             <Checkbox
-              checked={columnVisibility.athleteClub}
+              checked={columnVisibility.laneOrder}
               onChange={(e) => handleColumnVisibilityChange('laneOrder', e.target.checked)}
             >Lane</Checkbox>
           </div>

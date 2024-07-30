@@ -229,7 +229,7 @@ const Home: React.FC = () => {
 
         {/* Main Content Area */}
         <Layout style={{ padding: "0 24px 24px" }}>
-          <Content style={{ padding: 24, marginTop: "20px", minHeight: 280, background: colorBgContainer, borderRadius: borderRadiusLG }}>
+          <Content style={{ marginTop: "20px", minHeight: 280, background: colorBgContainer, borderRadius: borderRadiusLG }}>
             <Outlet />
           </Content>
         </Layout>

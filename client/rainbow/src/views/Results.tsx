@@ -201,16 +201,16 @@ const AllResults: React.FC = () => {
     const columns = [
       { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
       { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
-      { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
-      { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
-      { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
-      { title: 'Final Start Times', dataIndex: 'pfStartTime', key: 'pfStartTime', width: 100, render: (text: any) => renderStartTimes() },
-      { title: 'Final PF Ranking', dataIndex: 'finalPFPos', key: 'finalPFPos', width: 150 },
-      { title: 'Final PF Time', dataIndex: 'finalPFTime', key: 'finalPFTime', width: 150 },
-      { title: 'Check In', dataIndex: 'startPos', key: 'startPos', width: 100 },
-      { title: 'Start Time', dataIndex: 'startTime', key: 'startTime', width: 150 },
-      { title: 'Rank', dataIndex: 'finishPos', key: 'finishPos', width: 100 },
-      { title: 'Finish Time', dataIndex: 'finishTime', key: 'finishTime', width: 150 },
+      { title: 'Bib', dataIndex: 'athleteNum', key: 'athleteNum', width: 75 },
+      { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 150, render: (text: string) => text.length > 20 ? `${text.substring(0, 50)}...` : text},
+      { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 50 },
+      { title: 'PFStartTime', dataIndex: 'pfStartTime', key: 'pfStartTime', width: 100, render: (text: any) => renderStartTimes() },
+      { title: 'PFRank', dataIndex: 'finalPFPos', key: 'finalPFPos', width: 75 },
+      { title: 'PFTime', dataIndex: 'finalPFTime', key: 'finalPFTime', width: 75 },
+      { title: 'CheckIn', dataIndex: 'startPos', key: 'startPos', width: 75 },
+      { title: 'StartTime', dataIndex: 'startTime', key: 'startTime', width: 150 },
+      { title: 'TJRank', dataIndex: 'finishPos', key: 'finishPos', width: 75 },
+      { title: 'TJTime', dataIndex: 'finishTime', key: 'finishTime', width: 150 },
     ].filter(column => columnVisibility[column.dataIndex]);
 
     return (
@@ -296,8 +296,8 @@ const AllResults: React.FC = () => {
 
   return (
     <div>
-      <div style={{ padding: '20px' }}>
-        <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+      <div className='red-background'>
+        <Card bordered={false} style={{ marginBottom: '30px', background: '#ffffff', padding: '20px' }}>
           <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
             <Col span={24}>
               <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Results</Title>
@@ -354,7 +354,7 @@ const AllResults: React.FC = () => {
           </div>
           <div className="checkbox-row">
             <Checkbox
-              checked={columnVisibility.athleteClub}
+              checked={columnVisibility.laneOrder}
               onChange={(e) => handleColumnVisibilityChange('laneOrder', e.target.checked)}
             >Lane</Checkbox>
           </div>

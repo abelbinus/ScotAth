@@ -194,7 +194,7 @@ const MeetListAdmin = () => {
   // list columns
   const baseColumns: ColumnsType<IMeet> = [
     {
-      title: "Meet ID",
+      title: "Meet Date",
       dataIndex: "meetId",
       key: "meetId",
       width: 150,
@@ -369,7 +369,7 @@ const MeetListAdmin = () => {
   };
 
   return (
-    <div>
+    <div style={{padding: "24px"}}>
 
       {/*Add button area */}
       <Row style={{ marginBottom: 0, paddingBottom: 0 }}>

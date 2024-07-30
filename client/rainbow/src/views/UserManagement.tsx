@@ -49,7 +49,7 @@ const User = () => {
       key: "operation",
       render: (_, record) =>
         <Space size="middle">
-          <a onClick={() => onEditClick(record)}>Edit</a>
+          <Button onClick={() => onEditClick(record)}>Edit</Button>
           <Popconfirm
             title="Delete the user"
             description="Are you sure to delete this user?"
@@ -57,7 +57,7 @@ const User = () => {
             okText="Yes"
             cancelText="No"
           >
-            <a>Delete</a>
+            <Button>Delete</Button>
           </Popconfirm>
         </Space>,
     },
@@ -312,7 +312,7 @@ const User = () => {
   };
 
   return (
-    <div>
+    <div style={{ padding: '24px' }}>
       
       
 
