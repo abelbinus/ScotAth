@@ -13,7 +13,7 @@ import ViewEvent from "../views/ViewEvent";
 import Results from "../views/Results";
 
 // Constants
-const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in milliseconds
+const INACTIVITY_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 // Utility to check if a user is authenticated
 const isAuthenticated = (): boolean => {
