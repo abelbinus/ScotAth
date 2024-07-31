@@ -33,15 +33,21 @@ const LoginPage = () => {
         try {
             // Call login API
             const response: any = await loginAPI(values);
+            // if (response.data.user !== null) {
+            //     // Compare entered password with hashed password
+            //     if (!await bcrypt.compare(values.userPass, response.data.user.userPass)) {
+            //         message.error("Invalid Password");
+            //         setLoading(false);
+            //         return;
+            //     }
+            // }
             if (response.data.user !== null) {
-                // Compare entered password with hashed password
-                if (!await bcrypt.compare(values.userPass, response.data.user.userPass)) {
+                if (values.userPass !== response.data.user.userPass) {
                     message.error("Invalid Password");
                     setLoading(false);
                     return;
                 }
             }
-
             // Convert the response to IUser format
             const loginUser: IUser = {
                 userId: response.data.user.userId,

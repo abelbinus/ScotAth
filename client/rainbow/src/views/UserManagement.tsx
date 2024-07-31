@@ -124,10 +124,10 @@ const User = () => {
     try {
           // Hash the user's password
       try {
-        const salt = await bcrypt.genSalt(10);
-        if (user.userPass !== null) {
-          user.userPass = await bcrypt.hash(user.userPass, salt);
-        }
+        // const salt = await bcrypt.genSalt(10);
+        // if (user.userPass !== null) {
+        //   user.userPass = await bcrypt.hash(user.userPass, salt);
+        // }
       } catch (error) {
         console.error('Error in hashing the password:', error);
         message.error('Error in hashing the password');
@@ -208,10 +208,10 @@ const User = () => {
   // edit
   const handleEditSubmit = async (user: IUser) => {
     try {
-      const salt = await bcrypt.genSalt(10);
-      if (user.userPass !== null) {
-        user.userPass = await bcrypt.hash(user.userPass, salt);
-      }
+      // const salt = await bcrypt.genSalt(10);
+      // if (user.userPass !== null) {
+      //   user.userPass = await bcrypt.hash(user.userPass, salt);
+      // }
     } catch (error) {
       console.error('Error in hashing the password:', error);
       message.error('Error in hashing the password');

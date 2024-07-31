@@ -84,8 +84,8 @@ const ProfilePage = () => {
     // Check if the old password and the new password are the same
     console.log(userContext);
     if (userContext!.user!.userPass !== null) {
-      const value = await bcrypt.compare(values.oldPassword, userContext!.user!.userPass);
-      console.log(value);
+      //const value = await bcrypt.compare(values.oldPassword, userContext!.user!.userPass);
+      const value = values.oldPassword === userContext!.user!.userPass;
       if (!value) {
         return message.error("Old password is incorrect");
       }
@@ -98,10 +98,10 @@ const ProfilePage = () => {
       return message.error("New password must be different from the old password");
     }
     try {
-      const salt = await bcrypt.genSalt(10);
-      if (values.newPassword !== null) {
-        values.newPassword = await bcrypt.hash(values.newPassword, salt);
-      }
+      // const salt = await bcrypt.genSalt(10);
+      // if (values.newPassword !== null) {
+      //   values.newPassword = await bcrypt.hash(values.newPassword, salt);
+      // }
     } catch (error) {
       console.error('Error in hashing the password:', error);
       message.error('Error in hashing the password');

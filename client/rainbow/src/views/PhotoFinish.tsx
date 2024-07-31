@@ -199,7 +199,7 @@ const Photofinish: React.FC = () => {
     setSelectedEventCode(value);
     if (value === '') {
       const sortedAthletesInfo = sortBasedonRank(athletes);
-      setFilteredAthletesInfo(athletes);
+      setFilteredAthletesInfo(sortedAthletesInfo);
     } else {
       const filteredEvents = eventsInfo.filter(event => event.eventCode === value);
       const filteredAthletes = athletes.filter(event => event.eventCode === value);
@@ -355,7 +355,7 @@ const handleCancel = () => {
               onChange={handleEventSelect}
               showSearch
               filterOption={(input, option) =>
-                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
+                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0
               }
             >
               {eventOptions.map(({ eventCode, eventName }) => (
@@ -420,11 +420,11 @@ const handleCancel = () => {
       <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
-            <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>PhotoFinish Screen</Title>
+            <Title level={2} style={{ margin: 0, marginBottom: '0px', color: '#1677FF' }}>PhotoFinish Screen</Title>
           </Col>
           <Col span={24} >
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
+            <Title level={4} style={{ fontWeight: 'normal', marginBottom: '0px', margin: 0, color: '#1677FF' }}>
               {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate} {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
             </Title>
           </Col>

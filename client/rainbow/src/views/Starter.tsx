@@ -116,35 +116,13 @@ const EventsList: React.FC = () => {
           : event;
       }).flat();
   
-      // Sort the updated events by startPos
-      updatedEvents.sort((event1: { laneOrder: any; }, event2: { laneOrder: any; }) => {
-        if (event1.laneOrder === null && event2.laneOrder === null) {
-          return 0;
-        }
-        if (event1.laneOrder === null) {
-          return -1;
-        }
-        if (event2.laneOrder === null) {
-          return 1;
-        }
-        return event1.laneOrder.localeCompare(event2.laneOrder);
-      });
+      const sortedUpdatedEvents = sortBasedonLane(updatedEvents);
   
-      setAthleteinfo(updatedEvents);
+      setAthleteinfo(sortedUpdatedEvents);
   
       // Sort and set filteredAthletesInfo
-      const sortedFilteredAthletesInfo = [...filteredAthletesInfo].sort((event1: { laneOrder: any; }, event2: { laneOrder: any; }) => {
-        if (event1.laneOrder === null && event2.laneOrder === null) {
-          return 0;
-        }
-        if (event1.laneOrder === null) {
-          return -1;
-        }
-        if (event2.laneOrder === null) {
-          return 1;
-        }
-        return event1.laneOrder.localeCompare(event2.laneOrder);
-      });
+      const sortedFilteredAthletesInfo = sortedUpdatedEvents.filter((event: { eventCode: any; }) => event.eventCode === selectedEventCode);
+      setFilteredAthletesInfo(sortedFilteredAthletesInfo);
   
       setFilteredAthletesInfo(sortedFilteredAthletesInfo);
   
@@ -386,7 +364,6 @@ const EventsList: React.FC = () => {
     if(!selectedEventCode) {
       setSelectedEventCode(initialEventCode);
       const sortedAthletes = sortBasedonLane(athletes);
-      console.log(sortedAthletes);
       const selectedAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode)
       setFilteredAthletesInfo(selectedAthletes);
     }
@@ -418,7 +395,7 @@ const EventsList: React.FC = () => {
               onChange={handleEventSelect}
               showSearch
               filterOption={(input, option) =>
-                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
+                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0
               }
             >
               {eventOptions.map(({ eventCode, eventName }) => (

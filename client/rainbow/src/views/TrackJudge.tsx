@@ -55,12 +55,9 @@ const EventsList: React.FC = () => {
   // Function to handle status change for an athlete
   const handleStatusChange = (athlete: any) => {
     const statusOptions = currentValues;
-    console.log("statusOption" + statusOptions);
     const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
     const currentStatus = selectedValues[uniqueValue] || 'Select';
     const currentIndex = statusOptions.indexOf(currentStatus);
-    console.log(`Current status for athleteNum ${athlete.athleteNum} is ${currentStatus}`);
-    console.log('st: ' + athlete.finishPos);
 
     // Get a list of current statuses for the filtered athletes
     const filteredUniqueValues = filteredAthletesInfo.map(
@@ -77,7 +74,6 @@ const EventsList: React.FC = () => {
       nextStatus = statusOptions[nextIndex];
     }
 
-    console.log(`Status changed for athleteNum ${athlete.athleteNum} to ${nextStatus}`);
     const updatedValues = { ...selectedValues, [uniqueValue]: nextStatus };
     setSelectedValues(updatedValues);
     const updatedAthletes = athletes.map(event =>
@@ -107,8 +103,7 @@ const EventsList: React.FC = () => {
     if(!selectedEventCode) {
       setSelectedEventCode(initialEventCode);
       const sortedAthletes = sortBasedonRes(athletes);
-      console.log(sortedAthletes);
-      const selectedAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode)
+      const selectedAthletes = sortedAthletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode)
       setFilteredAthletesInfo(selectedAthletes);
     }
 
@@ -205,7 +200,7 @@ const EventsList: React.FC = () => {
       setAthleteinfo(sortedUpdatedEvents);
   
       // Sort and set filteredAthletesInfo
-      const sortedFilteredAthletesInfo = sortBasedonRes(filteredAthletesInfo);
+      const sortedFilteredAthletesInfo = sortedUpdatedEvents.filter((event: { eventCode: any; }) => event.eventCode === selectedEventCode);
       setFilteredAthletesInfo(sortedFilteredAthletesInfo);
   
       message.success('Events status updated successfully!');
@@ -409,7 +404,6 @@ const EventsList: React.FC = () => {
     if (selectedEventCode) {
       setEventComments(eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventComments || '');
     }
-    console.log("Test");
     const statusOptions = [];
     // Assuming athletes.length is 5
     const length = filteredAthletesInfo.length;
@@ -422,11 +416,6 @@ const EventsList: React.FC = () => {
     statusOptions.push('DNS');
     statusOptions.push('DNF');
     statusOptions.push('DQ');
-    const existingRanks = filteredAthletesInfo.map((athlete) => athlete.finalPFPos).filter(status => !['DNS', 'DNF', 'DQ'].includes(status));
-    const availableStatusOptions = statusOptions.filter(
-      (option) => !existingRanks.includes(option)
-    );
-    console.log("available" + availableStatusOptions);
     setCurrentValues(statusOptions);
   }, [selectedEventCode]);
 
@@ -445,7 +434,7 @@ const EventsList: React.FC = () => {
               onChange={handleEventSelect}
               showSearch
               filterOption={(input, option) =>
-                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
+                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0
               }
             >
               {eventOptions.map(({ eventCode, eventName }) => (
@@ -531,7 +520,7 @@ const EventsList: React.FC = () => {
       <Card bordered={false} style={{ marginBottom: '30px', background: '#ffffff', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
-            <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Track Judge Screen</Title>
+            <Title level={2} style={{ margin: 0, marginBottom: '0px', color: '#1677FF' }}>Track Judge Screen</Title>
           </Col>
           <Col span={24} >
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>

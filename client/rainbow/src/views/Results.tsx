@@ -224,7 +224,7 @@ const AllResults: React.FC = () => {
               onChange={handleEventSelect}
               showSearch
               filterOption={(input, option) =>
-                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
+                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0
               }
             >
               {eventOptions.map(({ eventCode, eventName }) => (
@@ -267,20 +267,13 @@ const AllResults: React.FC = () => {
         <Card bordered={false} style={{ marginBottom: '30px', background: '#ffffff', padding: '20px' }}>
           <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
             <Col span={24}>
-              <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Results</Title>
-              <Text type="secondary">View all the Results of the Events</Text>
+              <Title level={2} style={{ margin: 0, marginBottom: '0px', color: '#1677FF' }}>Results</Title>
             </Col>
-            <Col span={24} style={{ marginTop: '20px' }}>
+            <Col span={24}>
               <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
-              <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
-                {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate}
+              <Title level={4} style={{ fontWeight: 'normal', marginBottom: '0px', margin: 0, color: '#1677FF' }}>
+                {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate} {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
               </Title>
-              <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
-                {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
-              </Title>
-            </Col>
-            <Col span={24} style={{ marginTop: '10px' }}>
-              <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
             </Col>
           </Row>
         </Card>
