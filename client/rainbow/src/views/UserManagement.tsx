@@ -12,8 +12,6 @@ import bcrypt from "bcryptjs-react";
 const User = () => {
   // userInfo
   const userContext = useContext(UserContext);
-  const { useBreakpoint } = Grid; // Ant Design hook for screen size detection
-  const screens = useBreakpoint();
 
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
