@@ -348,20 +348,19 @@ const handleCancel = () => {
       <div>
         <div className="container">
           <div className="select-container">
-            <Select
+          <Select
               placeholder="Select an event"
-              style={{ width: '100%', maxWidth: '300px', marginBottom: '16px' }} // Increase width
+              className="select"
               value={selectedEventCode}
               onChange={handleEventSelect}
-              className='select'
               showSearch
               filterOption={(input, option) =>
-                `${option?.value}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
+                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
               }
             >
-              {eventOptions.map(eventCode => (
+              {eventOptions.map(({ eventCode, eventName }) => (
                 <Option key={eventCode} value={eventCode}>
-                  {formatEventCode(eventCode)}
+                  {eventName}
                 </Option>
               ))}
             </Select>
@@ -384,14 +383,14 @@ const handleCancel = () => {
           <Table
             dataSource={filteredAthletesInfo}
             columns={[
-              { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
-              { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
-              { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
-              { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
-              { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
-              { title: 'Final Start Times', dataIndex: 'pfStartTime', key: 'pfStartTime', width: 100, render: (text: any) => renderStartTimes() },
-              { title: 'Final Rankings', dataIndex: 'finalPFPos', key: 'finalPFPos', width: 100 },
-              { title: 'Final Times', dataIndex: 'finalPFTime', key: 'finalPFTime', width: 200 }
+              { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', className: 'flexible-column' },
+              { title: 'First Name', dataIndex: 'firstName', key: 'firstName', className: 'flexible-column'},
+              { title: 'Bib', dataIndex: 'athleteNum', key: 'athleteNum', width: 75 },
+              { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', className: 'flexible-desc-column'},
+              { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 50 },
+              { title: 'PFStartTime', dataIndex: 'pfStartTime', key: 'pfStartTime', width: 100, render: (text: any) => renderStartTimes() },
+              { title: 'PFRank', dataIndex: 'finalPFPos', key: 'finalPFPos', width: 75 },
+              { title: 'PFTime', dataIndex: 'finalPFTime', key: 'finalPFTime', width: 75 }
             ].filter(column => columnVisibility[column.dataIndex])}
             rowKey="athleteNum"
             pagination={false}
@@ -422,23 +421,15 @@ const handleCancel = () => {
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
             <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>PhotoFinish Screen</Title>
-            <Text type="secondary">View Results from Photofinish</Text>
           </Col>
-          <Col span={24} style={{ marginTop: '20px' }}>
+          <Col span={24} >
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
-              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate}
+              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate} {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
             </Title>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
-              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
-            </Title>
-          </Col>
-          <Col span={24} style={{ marginTop: '10px' }}>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
           </Col>
         </Row>
       </Card>
-      <Divider style={{ marginTop: 28, marginBottom: 40 }} />
       {renderEvents()}
       <Modal title="Select Columns to Display" open={isModalVisible} footer={[]} onCancel={handleCancel}>
         <div className="checkbox-container">
@@ -497,12 +488,19 @@ const handleCancel = () => {
 };
 
 // Utility function to get unique event codes
-const getUniqueEventOptions = (events: EventInfo[]): string[] => {
-  const uniqueOptions = new Set<string>();
+const getUniqueEventOptions = (events: EventInfo[]): { eventCode: string; eventName: string }[] => {
+  const uniqueOptions = new Map<string, string>();
+  
   events.forEach(event => {
-    uniqueOptions.add(event.eventCode);
+    // Use eventCode as the key and eventName as the value in the Map
+    uniqueOptions.set(event.eventCode, event.eventName);
   });
-  return Array.from(uniqueOptions);
+  
+  // Convert the Map to an array of objects
+  return Array.from(uniqueOptions.entries()).map(([eventCode, eventName]) => ({
+    eventCode,
+    eventName
+  }));
 };
 
 export default Photofinish;

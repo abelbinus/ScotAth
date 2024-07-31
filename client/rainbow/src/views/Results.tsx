@@ -199,10 +199,10 @@ const AllResults: React.FC = () => {
       return event ? event.eventPFTime : null;
     };
     const columns = [
-      { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
-      { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
+      { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', className: 'flexible-column' },
+      { title: 'First Name', dataIndex: 'firstName', key: 'firstName', className: 'flexible-column'},
       { title: 'Bib', dataIndex: 'athleteNum', key: 'athleteNum', width: 75 },
-      { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 150, render: (text: string) => text.length > 20 ? `${text.substring(0, 50)}...` : text},
+      { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', className: 'flexible-desc-column'},
       { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 50 },
       { title: 'PFStartTime', dataIndex: 'pfStartTime', key: 'pfStartTime', width: 100, render: (text: any) => renderStartTimes() },
       { title: 'PFRank', dataIndex: 'finalPFPos', key: 'finalPFPos', width: 75 },
@@ -217,54 +217,21 @@ const AllResults: React.FC = () => {
       <div >
         <div className="container">
           <div className="select-container">
-            <Select
+          <Select
               placeholder="Select an event"
               className="select"
               value={selectedEventCode}
               onChange={handleEventSelect}
               showSearch
               filterOption={(input, option) =>
-                `${option?.value}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
+                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
               }
             >
-              {eventOptions.map(eventCode => {
-                // Split eventCode based on the hyphen "-"
-                if(eventCode.includes('-')) {
-                  const parts = eventCode.split('-');
-                  if (parts.length === 2) {
-                    // Splitting eventCode into parts
-                    const parts = eventCode.split('-');
-                    const mainEventCode = parts[0]; // Assuming eventCode always has a main code before "-"
-                    let round = null;
-                    let heat = null;
-                    if(parts[1]?.length === 2) {
-                      round = parts[1]?.[0]; // Assuming round is the first character after "-"
-                      heat = parts[1]?.slice(1); // Assuming heat is the characters after the first one after "-"
-                    } // If there is no round or heat, skip this event
-                    else if(parts[1]?.length === 3) {
-                      round = parts[1]?.[0]; // Extract the first 2 characters as round
-                      heat = parts[1].slice(1,3); // Extract the remaining 2 characters as heat
-                    }
-                    else if(parts[1]?.length === 4) {
-                      round = parts[1].slice(0,2); // Extract the first 2 characters as round
-                      heat = parts[1].slice(1,3); // Extract the remaining 2 characters as heat
-                    }
-
-                    return (
-                      <Option key={eventCode} value={eventCode}>
-                        {`Event Code: ${mainEventCode}, Round: ${round}, Heat: ${heat}`}
-                      </Option>
-                    );
-                  }
-                } 
-                else {
-                  return (
-                    <Option key={eventCode} value={eventCode}>
-                      {`${eventCode}`} {/* If format is unexpected, display the original eventCode */}
-                    </Option>
-                  );
-                }
-              })}
+              {eventOptions.map(({ eventCode, eventName }) => (
+                <Option key={eventCode} value={eventCode}>
+                  {eventName}
+                </Option>
+              ))}
             </Select>
             <Button onClick={handleNextEvent} className='button-next' type="primary">Next</Button>
           </div>
@@ -407,12 +374,19 @@ const AllResults: React.FC = () => {
 };
 
 // Utility function to get unique event codes
-const getUniqueEventOptions = (events: EventInfo[]): string[] => {
-  const uniqueOptions = new Set<string>();
+const getUniqueEventOptions = (events: EventInfo[]): { eventCode: string; eventName: string }[] => {
+  const uniqueOptions = new Map<string, string>();
+  
   events.forEach(event => {
-    uniqueOptions.add(event.eventCode);
+    // Use eventCode as the key and eventName as the value in the Map
+    uniqueOptions.set(event.eventCode, event.eventName);
   });
-  return Array.from(uniqueOptions);
+  
+  // Convert the Map to an array of objects
+  return Array.from(uniqueOptions.entries()).map(([eventCode, eventName]) => ({
+    eventCode,
+    eventName
+  }));
 };
 
 export default AllResults;

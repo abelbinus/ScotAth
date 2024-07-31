@@ -129,7 +129,7 @@ const Home: React.FC = () => {
       }}>
         <div style={{ display: "flex", alignItems: "center" }}>
            {/* Hamburger Icon */}
-           {!screens.lg && (
+           {!screens.xl && (
             <Button
               style={{ border: "none", marginRight: "10px", background: "none", fontSize: "20px", color: "#fff" }}
               onClick={toggleDrawer}
@@ -221,7 +221,7 @@ const Home: React.FC = () => {
 
       <Layout>
         {/* Left Sider Area for Desktop */}
-        {screens.lg && (
+        {screens.xl && (
           <Sider data-testid="sider" width={250} style={{ background: colorBgContainer }}>
             <Menu mode="inline" defaultSelectedKeys={["/"]} selectedKeys={selectedKeys} onClick={onMenuClick} style={{ height: "100%", borderRight: 0 }} items={getMenuItems()} />
           </Sider>

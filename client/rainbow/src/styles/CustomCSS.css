@@ -1,5 +1,23 @@
 /* CustomCSS.css */
 
+.flexible-column {
+  min-width: 50px;  /* Minimum width */
+  max-width: 200px;  /* Maximum width */
+  width: auto;       /* Auto width to allow flexibility */
+  overflow: hidden;  /* Hide overflow content */
+  text-overflow: ellipsis; /* Show ellipsis for overflow text */
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.flexible-desc-column {
+  min-width: 50px;  /* Minimum width */
+  max-width: 150px;  /* Maximum width */
+  width: auto;       /* Auto width to allow flexibility */
+  overflow: hidden;  /* Hide overflow content */
+  text-overflow: ellipsis; /* Show ellipsis for overflow text */
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
 .green-background {
   background-color: #21de3d; /* Light green background */
   padding: 24px; /* Optional padding for better spacing */
@@ -8,8 +26,8 @@
   border-radius: 10px;
 }
 
-.blue-background {
-  background-color: #f4ff00; /* Light green background */
+.orange-background {
+  background-color: #f09a0f; /* Light green background */
   padding: 24px; /* Optional padding for better spacing */
   min-height: 100vh; /* Full height for larger screens */
   box-sizing: border-box; /* Ensure padding does not affect width */

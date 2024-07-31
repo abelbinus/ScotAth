@@ -55,6 +55,7 @@ const EventsList: React.FC = () => {
   // Function to handle status change for an athlete
   const handleStatusChange = (athlete: any) => {
     const statusOptions = currentValues;
+    console.log("statusOption" + statusOptions);
     const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
     const currentStatus = selectedValues[uniqueValue] || 'Select';
     const currentIndex = statusOptions.indexOf(currentStatus);
@@ -79,29 +80,17 @@ const EventsList: React.FC = () => {
     console.log(`Status changed for athleteNum ${athlete.athleteNum} to ${nextStatus}`);
     const updatedValues = { ...selectedValues, [uniqueValue]: nextStatus };
     setSelectedValues(updatedValues);
-    console.log(updatedValues);
-
-    const updatedEvents = athletes.map(event =>
+    const updatedAthletes = athletes.map(event =>
       event.athleteNum === athlete.athleteNum ? { ...event, finishPos: nextStatus } : event
     );
-    setAthleteinfo(updatedEvents);
+    setAthleteinfo(updatedAthletes);
     if (selectedEventCode) {
-      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
-    } else {
-      setFilteredAthletesInfo(updatedEvents);
+      const updatedFilteredAthlete = filteredAthletesInfo.map(event =>
+        event.athleteNum === athlete.athleteNum ? { ...event, finishPos: nextStatus } : event
+      );
+      setFilteredAthletesInfo(updatedFilteredAthlete);
     }
   };
-
-  useEffect(() => {
-    if(eventsInfo.length === 0) {
-      return;
-    }
-    const initialEventCode = eventsInfo[0].eventCode;
-    if(!selectedEventCode) {
-      setSelectedEventCode(initialEventCode);
-      setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
-    }
-  }, [meetid]);
 
   useEffect(() => {
     const updateEvents = async () => {
@@ -111,14 +100,65 @@ const EventsList: React.FC = () => {
     }
     updateEvents();
 
+    if(eventsInfo.length === 0) {
+      return;
+    }
+    const initialEventCode = eventsInfo[0].eventCode;
+    if(!selectedEventCode) {
+      setSelectedEventCode(initialEventCode);
+      const sortedAthletes = sortBasedonRes(athletes);
+      console.log(sortedAthletes);
+      const selectedAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode)
+      setFilteredAthletesInfo(selectedAthletes);
+    }
+
   }, [meetid]);
 
+  const sortBasedonRes = (selectedAthletes: any[]) => {
+    if(selectedAthletes) {
+      // Check if finalPFPos is empty for all athletes
+      const isFinalPFPosEmptyForAll = selectedAthletes.every(athlete => athlete.finishPos === null || athlete.finishPos === '');
+      // If finalPFPos is empty for all athletes, sort by laneOrder
+      if (isFinalPFPosEmptyForAll) {
+        // Sort the updated events by finishPos
+        selectedAthletes.sort((event1: { laneOrder: any; }, event2: { laneOrder: any; }) => {
+          if (event1.laneOrder === null && event2.laneOrder === null) {
+            return 0;
+          }
+          if (event1.laneOrder === null) {
+            return -1;
+          }
+          if (event2.laneOrder === null) {
+            return 1;
+          }
+          return event1.laneOrder.localeCompare(event2.laneOrder);
+        });
+      }
+      else {
+        // Sort the updated events by finishPos
+        selectedAthletes.sort((event1: { finishPos: any; }, event2: { finishPos: any; }) => {
+          if (event1.finishPos === null && event2.finishPos === null) {
+            return 0;
+          }
+          if (event1.finishPos === null) {
+            return -1;
+          }
+          if (event2.finishPos === null) {
+            return 1;
+          }
+          return event1.finishPos.localeCompare(event2.finishPos);
+        });
+      }
+    }
+    return selectedAthletes;
+  }
   useEffect(() => {
     if(eventsInfo.length > 0 && selectedEventCode === '') {
       const initialEventCode = eventsInfo[0].eventCode;
       if(!selectedEventCode) {
         setSelectedEventCode(initialEventCode);
-        setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+        const selectedAthletes = sortBasedonRes(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+        setFilteredAthletesInfo(selectedAthletes);
       }
     }
 
@@ -135,7 +175,11 @@ const EventsList: React.FC = () => {
     statusOptions.push('DNF');
     statusOptions.push('DQ');
 
-    setCurrentValues(statusOptions);
+    const existingRanks = filteredAthletesInfo.map((athlete) => athlete.finalPFPos).filter(status => !['DNS', 'DNF', 'DQ'].includes(status));
+    const availableStatusOptions = statusOptions.filter(
+      (option) => !existingRanks.includes(option)
+    );
+    setCurrentValues(availableStatusOptions);
   }, [eventsInfo]);
 
   // Function to handle save operation
@@ -156,36 +200,12 @@ const EventsList: React.FC = () => {
           : event;
       }).flat();
   
-      // Sort the updated events by finishPos
-      updatedEvents.sort((event1: { finishPos: any; }, event2: { finishPos: any; }) => {
-        if (event1.finishPos === null && event2.finishPos === null) {
-          return 0;
-        }
-        if (event1.finishPos === null) {
-          return -1;
-        }
-        if (event2.finishPos === null) {
-          return 1;
-        }
-        return event1.finishPos.localeCompare(event2.finishPos);
-      });
+      const sortedUpdatedEvents = sortBasedonRes(updatedEvents);
   
-      setAthleteinfo(updatedEvents);
+      setAthleteinfo(sortedUpdatedEvents);
   
       // Sort and set filteredAthletesInfo
-      const sortedFilteredAthletesInfo = [...filteredAthletesInfo].sort((event1: { finishPos: any; }, event2: { finishPos: any; }) => {
-        if (event1.finishPos === null && event2.finishPos === null) {
-          return 0;
-        }
-        if (event1.finishPos === null) {
-          return -1;
-        }
-        if (event2.finishPos === null) {
-          return 1;
-        }
-        return event1.finishPos.localeCompare(event2.finishPos);
-      });
-  
+      const sortedFilteredAthletesInfo = sortBasedonRes(filteredAthletesInfo);
       setFilteredAthletesInfo(sortedFilteredAthletesInfo);
   
       message.success('Events status updated successfully!');
@@ -224,9 +244,11 @@ const EventsList: React.FC = () => {
           ? matchingAthleteEvents.map((matchingAthleteEvents: any) => ({ ...event, ...matchingAthleteEvents }))
           : event;
       }).flat();
-      setAthleteinfo(updatedEvents);
-      setFilteredAthletesInfo(updatedFilteredAthletesInfo);
-      await updateAthleteAPI(updatedFilteredAthletesInfo);
+      const sortedAthletes = sortBasedonRes(updatedEvents);
+      const sortedFilteredAthletesInfo = sortBasedonRes(updatedFilteredAthletesInfo);
+      setAthleteinfo(sortedAthletes);
+      setFilteredAthletesInfo(sortedFilteredAthletesInfo);
+      await updateAthleteAPI(sortedFilteredAthletesInfo);
       message.success('Current events reset successfully!');
     } catch (err) {
       message.error('Error resetting current event');
@@ -250,19 +272,7 @@ const EventsList: React.FC = () => {
         tempSelectedValues[uniqueValue] = athlete.finishPos || '';
       });
       setSelectedValues(tempSelectedValues);
-      const sortedFilteredAthletesInfo = [...filteredAthletes].sort((event1: { finishPos: any; }, event2: { finishPos: any; }) => {
-          if (event1.finishPos === null && event2.finishPos === null) {
-            return 0;
-          }
-          if (event1.finishPos === null) {
-            return -1;
-          }
-          if (event2.finishPos === null) {
-            return 1;
-          }
-          return event1.finishPos.localeCompare(event2.finishPos);
-        });
-    
+        const sortedFilteredAthletesInfo = sortBasedonRes(filteredAthletes);
         setFilteredAthletesInfo(sortedFilteredAthletesInfo);
         setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
       }
@@ -272,14 +282,17 @@ const EventsList: React.FC = () => {
   const handlefinishTimeChange = (time: any, record: AthleteInfo) => {
     // console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
     const timeString = time ? time.format('hh:mm:ss:SSS A') : null; // Convert Moment object to 12-hour format string
-    const updatedEvents = athletes.map(event =>
+    const updatedAthletes = athletes.map(event =>
       event.athleteNum === record.athleteNum ? { ...event, finishTime: timeString } : event
     );
-    setAthleteinfo(updatedEvents);
+    const updatedFilteredAthletes = filteredAthletesInfo.map(event =>
+      event.athleteNum === record.athleteNum ? { ...event, finishTime: timeString } : event
+    );
+    setAthleteinfo(updatedAthletes);
     if (selectedEventCode) {
-      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+      setFilteredAthletesInfo(updatedFilteredAthletes);
     } else {
-      setFilteredAthletesInfo(updatedEvents);
+      setFilteredAthletesInfo(updatedAthletes);
     }
   };
 
@@ -367,16 +380,19 @@ const EventsList: React.FC = () => {
         tempSelectedValues[uniqueValue] = '';
       });
 
+      const sortedAthletes = sortBasedonRes(updatedAthletesInfo);
+      const sortedFilteredAthletesInfo = sortBasedonRes(updatedFilteredAthletesInfo);
+
       //console.log(updatedFilteredAthletesInfo);
 
       // Update selectedValues state once with the accumulated changes
       setSelectedValues(tempSelectedValues);
       // Update the local state with the reset values
-      setAthleteinfo(updatedAthletesInfo);
+      setAthleteinfo(sortedAthletes);
       if (selectedEventCode) {
-        setFilteredAthletesInfo(updatedFilteredAthletesInfo);
+        setFilteredAthletesInfo(sortedFilteredAthletesInfo);
       } else {
-        setFilteredAthletesInfo(updatedAthletesInfo);
+        setFilteredAthletesInfo(sortedAthletes);
       }
       
       // Update the backend with the reset values
@@ -406,6 +422,11 @@ const EventsList: React.FC = () => {
     statusOptions.push('DNS');
     statusOptions.push('DNF');
     statusOptions.push('DQ');
+    const existingRanks = filteredAthletesInfo.map((athlete) => athlete.finalPFPos).filter(status => !['DNS', 'DNF', 'DQ'].includes(status));
+    const availableStatusOptions = statusOptions.filter(
+      (option) => !existingRanks.includes(option)
+    );
+    console.log("available" + availableStatusOptions);
     setCurrentValues(statusOptions);
   }, [selectedEventCode]);
 
@@ -424,12 +445,12 @@ const EventsList: React.FC = () => {
               onChange={handleEventSelect}
               showSearch
               filterOption={(input, option) =>
-                `${option?.value}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
+                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
               }
             >
-              {eventOptions.map(eventCode => (
+              {eventOptions.map(({ eventCode, eventName }) => (
                 <Option key={eventCode} value={eventCode}>
-                  {formatEventCode(eventCode)}
+                  {eventName}
                 </Option>
               ))}
             </Select>
@@ -453,11 +474,11 @@ const EventsList: React.FC = () => {
           <Table
             dataSource={filteredAthletesInfo}
             columns={[
-              { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
-              { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
-              { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
-              { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
-              { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
+              { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', className: 'flexible-column' },
+              { title: 'First Name', dataIndex: 'firstName', key: 'firstName', className: 'flexible-column'},
+              { title: 'Bib', dataIndex: 'athleteNum', key: 'athleteNum', width: 75 },
+              { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', className: 'flexible-desc-column'},
+              { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 50 },
               {
                 title: 'Rank',
                 dataIndex: 'finishPos',
@@ -506,7 +527,7 @@ const EventsList: React.FC = () => {
   if (eventsInfo.length === 0 ) return <div>No events found</div>;
 
   return (
-    <div className='blue-background'>
+    <div className='orange-background'>
       <Card bordered={false} style={{ marginBottom: '30px', background: '#ffffff', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
@@ -514,7 +535,7 @@ const EventsList: React.FC = () => {
           </Col>
           <Col span={24} >
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
+            <Title level={4} style={{ fontWeight: 'normal', marginBottom: '0px', margin: 0, color: '#1677FF' }}>
               {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate} {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
             </Title>
           </Col>
@@ -531,7 +552,6 @@ const EventsList: React.FC = () => {
             </Row>
           </Card>
         )}
-      <Divider style={{ marginTop: 28, marginBottom: 40 }} />
       {renderEvents()}
       <Modal title="Select Columns to Display" open={isModalVisible} footer={[]} onCancel={handleCancel}>
         <div className="checkbox-container">
@@ -592,12 +612,19 @@ const EventsList: React.FC = () => {
 };
 
 // Utility function to get unique event codes
-const getUniqueEventOptions = (events: EventInfo[]): string[] => {
-  const uniqueOptions = new Set<string>();
+const getUniqueEventOptions = (events: EventInfo[]): { eventCode: string; eventName: string }[] => {
+  const uniqueOptions = new Map<string, string>();
+  
   events.forEach(event => {
-    uniqueOptions.add(event.eventCode);
+    // Use eventCode as the key and eventName as the value in the Map
+    uniqueOptions.set(event.eventCode, event.eventName);
   });
-  return Array.from(uniqueOptions);
+  
+  // Convert the Map to an array of objects
+  return Array.from(uniqueOptions.entries()).map(([eventCode, eventName]) => ({
+    eventCode,
+    eventName
+  }));
 };
 
 export default EventsList;

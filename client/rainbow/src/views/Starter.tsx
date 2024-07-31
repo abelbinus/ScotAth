@@ -65,20 +65,31 @@ const EventsList: React.FC = () => {
     );
     setAthleteinfo(updatedEvents);
     if (selectedEventCode) {
-      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode)); // Update filtered events based on the selected event
+      const selectedEvent = sortBasedonLane(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+      setFilteredAthletesInfo(selectedEvent); // Update filtered events based on the selected event
     } else {
       setFilteredAthletesInfo(updatedEvents);
     }
   };
 
-  useEffect(() => {
-    if(eventsInfo.length === 0) return;
-    const initialEventCode = eventsInfo[0].eventCode;
-    if(!selectedEventCode) {
-      setSelectedEventCode(initialEventCode);
-      setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+  const sortBasedonLane = (selectedAthletes: any[]) => {
+    if(selectedAthletes) {
+        // Sort the updated events by finishPos
+        selectedAthletes.sort((event1: { laneOrder: any; }, event2: { laneOrder: any; }) => {
+          if (event1.laneOrder === null && event2.laneOrder === null) {
+            return 0;
+          }
+          if (event1.laneOrder === null) {
+            return -1;
+          }
+          if (event2.laneOrder === null) {
+            return 1;
+          }
+          return event1.laneOrder.localeCompare(event2.laneOrder);
+        });
     }
-  }, [meetid]);
+    return selectedAthletes;
+  }
 
   useEffect(() => {
     if (selectedEventCode) {
@@ -106,33 +117,33 @@ const EventsList: React.FC = () => {
       }).flat();
   
       // Sort the updated events by startPos
-      updatedEvents.sort((event1: { startPos: any; }, event2: { startPos: any; }) => {
-        if (event1.startPos === null && event2.startPos === null) {
+      updatedEvents.sort((event1: { laneOrder: any; }, event2: { laneOrder: any; }) => {
+        if (event1.laneOrder === null && event2.laneOrder === null) {
           return 0;
         }
-        if (event1.startPos === null) {
+        if (event1.laneOrder === null) {
           return -1;
         }
-        if (event2.startPos === null) {
+        if (event2.laneOrder === null) {
           return 1;
         }
-        return event2.startPos.localeCompare(event1.startPos);
+        return event1.laneOrder.localeCompare(event2.laneOrder);
       });
   
       setAthleteinfo(updatedEvents);
   
       // Sort and set filteredAthletesInfo
-      const sortedFilteredAthletesInfo = [...filteredAthletesInfo].sort((event1: { startPos: any; }, event2: { startPos: any; }) => {
-        if (event1.startPos === null && event2.startPos === null) {
+      const sortedFilteredAthletesInfo = [...filteredAthletesInfo].sort((event1: { laneOrder: any; }, event2: { laneOrder: any; }) => {
+        if (event1.laneOrder === null && event2.laneOrder === null) {
           return 0;
         }
-        if (event1.startPos === null) {
+        if (event1.laneOrder === null) {
           return -1;
         }
-        if (event2.startPos === null) {
+        if (event2.laneOrder === null) {
           return 1;
         }
-        return event2.startPos.localeCompare(event1.startPos);
+        return event1.laneOrder.localeCompare(event2.laneOrder);
       });
   
       setFilteredAthletesInfo(sortedFilteredAthletesInfo);
@@ -161,17 +172,17 @@ const EventsList: React.FC = () => {
         tempSelectedValues[uniqueValue] = athlete.startPos || '';
       });
       setSelectedValues(tempSelectedValues);
-      const sortedFilteredAthletesInfo = [...filteredAthletes].sort((event1: { startPos: any; }, event2: { startPos: any; }) => {
-          if (event1.startPos === null && event2.startPos === null) {
+      const sortedFilteredAthletesInfo = [...filteredAthletes].sort((event1: { laneOrder: any; }, event2: { laneOrder: any; }) => {
+          if (event1.laneOrder === null && event2.laneOrder === null) {
             return 0;
           }
-          if (event1.startPos === null) {
+          if (event1.laneOrder === null) {
             return -1;
           }
-          if (event2.startPos === null) {
+          if (event2.laneOrder === null) {
             return 1;
           }
-          return event1.startPos.localeCompare(event2.startPos);
+          return event1.laneOrder.localeCompare(event2.laneOrder);
         });
     
         setFilteredAthletesInfo(sortedFilteredAthletesInfo);
@@ -183,14 +194,17 @@ const EventsList: React.FC = () => {
   const handleStartTimeChange = (time: any, record: AthleteInfo) => {
     //console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
     const timeString = time ? time.format('hh:mm:ss:SSS A') : null; // Convert Moment object to 12-hour format string
-    const updatedEvents = athletes.map(event =>
+    const updatedAthletes = athletes.map(event =>
       event.athleteNum === record.athleteNum ? { ...event, startTime: timeString } : event
     );
-    setAthleteinfo(updatedEvents);
+    const updatedFilteredAthletes = filteredAthletesInfo.map(event =>
+      event.athleteNum === record.athleteNum ? { ...event, startTime: timeString } : event
+    );
+    setAthleteinfo(updatedAthletes);
     if (selectedEventCode) {
-      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+      setFilteredAthletesInfo(updatedFilteredAthletes);
     } else {
-      setFilteredAthletesInfo(updatedEvents);
+      setFilteredAthletesInfo(updatedAthletes);
     }
   };
 
@@ -327,7 +341,7 @@ const EventsList: React.FC = () => {
         startTime: null
       }));
 
-      const updatedFilteredAthletesInfo = updatedAthletesInfo.filter(event => event.eventCode === selectedEventCode)
+      const updatedFilteredAthletesInfo = updatedAthletesInfo.filter(event => event.eventCode === selectedEventCode);
       
       // Initialize a temporary object with the current selectedValues
       let tempSelectedValues = { ...selectedValues };
@@ -365,7 +379,17 @@ const EventsList: React.FC = () => {
       }
     }
     updateEvents();
-
+    if(eventsInfo.length === 0) {
+      return;
+    }
+    const initialEventCode = eventsInfo[0].eventCode;
+    if(!selectedEventCode) {
+      setSelectedEventCode(initialEventCode);
+      const sortedAthletes = sortBasedonLane(athletes);
+      console.log(sortedAthletes);
+      const selectedAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode)
+      setFilteredAthletesInfo(selectedAthletes);
+    }
   }, [meetid]);
 
   useEffect(() => {
@@ -387,19 +411,19 @@ const EventsList: React.FC = () => {
       <div>
         <div className="container">
           <div className="select-container">
-            <Select
+          <Select
               placeholder="Select an event"
               className="select"
               value={selectedEventCode}
               onChange={handleEventSelect}
               showSearch
               filterOption={(input, option) =>
-                `${option?.value}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
+                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
               }
             >
-              {eventOptions.map(eventCode => (
+              {eventOptions.map(({ eventCode, eventName }) => (
                 <Option key={eventCode} value={eventCode}>
-                  {formatEventCode(eventCode)}
+                  {eventName}
                 </Option>
               ))}
             </Select>
@@ -424,11 +448,11 @@ const EventsList: React.FC = () => {
           <Table
             dataSource={filteredAthletesInfo}
             columns={[
-              { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
-              { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
-              { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
-              { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
-              { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
+              { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', className: 'flexible-column' },
+              { title: 'First Name', dataIndex: 'firstName', key: 'firstName', className: 'flexible-column'},
+              { title: 'Bib', dataIndex: 'athleteNum', key: 'athleteNum', width: 75 },
+              { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', className: 'flexible-desc-column'},
+              { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 50 },
               {
                 title: 'Check In',
                 dataIndex: 'startPos',
@@ -479,20 +503,13 @@ const EventsList: React.FC = () => {
       <Card bordered={false} style={{ marginBottom: '30px', background: '#ffffff', padding: '20px', borderRadius: '12px'}}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
-            <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Starter's Assistant Screen</Title>
-            <Text type="secondary">Check In Athletes and set Start Times</Text>
+            <Title level={2} style={{ margin: 0, marginBottom: '0px', color: '#1677FF' }}>Starter's Assistant Screen</Title>
           </Col>
-          <Col span={24} style={{ marginTop: '20px' }}>
+          <Col span={24} >
             <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
-              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate}
+            <Title level={4} style={{ fontWeight: 'normal', marginBottom: '0px', margin: 0, color: '#1677FF' }}>
+              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate} {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
             </Title>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
-              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
-            </Title>
-          </Col>
-          <Col span={24} style={{ marginTop: '10px' }}>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
           </Col>
         </Row>
       </Card>
@@ -507,7 +524,6 @@ const EventsList: React.FC = () => {
             </Row>
           </Card>
         )}
-      <Divider style={{ marginTop: 28, marginBottom: 40 }} />
       {renderEvents()}
 
       <Modal title="Select Columns to Display" open={isModalVisible} footer={[]} onCancel={handleCancel}>
@@ -569,12 +585,19 @@ const EventsList: React.FC = () => {
 };
 
 // Utility function to get unique event codes
-const getUniqueEventOptions = (events: EventInfo[]): string[] => {
-  const uniqueOptions = new Set<string>();
+const getUniqueEventOptions = (events: EventInfo[]): { eventCode: string; eventName: string }[] => {
+  const uniqueOptions = new Map<string, string>();
+  
   events.forEach(event => {
-    uniqueOptions.add(event.eventCode);
+    // Use eventCode as the key and eventName as the value in the Map
+    uniqueOptions.set(event.eventCode, event.eventName);
   });
-  return Array.from(uniqueOptions);
+  
+  // Convert the Map to an array of objects
+  return Array.from(uniqueOptions.entries()).map(([eventCode, eventName]) => ({
+    eventCode,
+    eventName
+  }));
 };
 
 export default EventsList;

@@ -194,7 +194,7 @@ const MeetListAdmin = () => {
   // list columns
   const baseColumns: ColumnsType<IMeet> = [
     {
-      title: "Meet Date",
+      title: "Meet Date (yyyymmdd)",
       dataIndex: "meetId",
       key: "meetId",
       width: 150,
@@ -393,7 +393,7 @@ const MeetListAdmin = () => {
           onCancel={handleAddCancel}
         >
           <Form form={addform} layout="vertical" onFinish={handleAddFormSubmit}>
-            <Form.Item name="meetId" label="Meet ID" rules={[{ required: true, message: "Id is required" }]}>
+            <Form.Item name="meetId" label="Meet Date (yyyymmdd)" rules={[{ required: true, message: "Id is required" }]}>
               <Input />
             </Form.Item>
             <Form.Item name="meetName" label="Meet name" rules={[{ required: true, message: "Please input the meet name!" }]}>
@@ -457,7 +457,7 @@ const MeetListAdmin = () => {
         onCancel={handleEditCancel}
       >
         <Form form={editForm} layout="vertical" onFinish={handleEditSubmit}>
-          <Form.Item name="meetId" label="Meet ID" rules={[{ required: true, message: "Id is required" }]}>
+          <Form.Item name="meetId" label="Meet Date (yyyymmdd)" rules={[{ required: true, message: "Id is required" }]}>
             <Input disabled />
           </Form.Item>
           <Form.Item name="meetName" label="Meet name" rules={[{ required: true, message: "Please input the meet name!" }]}>
@@ -516,14 +516,5 @@ const MeetListAdmin = () => {
     </div>
   )
 }
-
-// declare module 'react' {
-//   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-//     // extends React's HTMLAttributes
-//     directory?: string;        // remember to make these attributes optional....
-//     webkitdirectory?: string;
-//     window?: any;
-//   }
-// }
 
 export default MeetListAdmin

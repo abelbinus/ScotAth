@@ -518,7 +518,7 @@ async function insertLifIntoDatabase(content, failedFlagEventInfo, failedFlagEve
             if(numColumns > 9) {
                 eventPFTime = currentEvent[10];
             }
-            totalFlagEventinfo, failedFlagEventInfo = await updateDBQueryTblEventInfo(eventCode, eventName, eventPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db);
+            totalFlagEventinfo, failedFlagEventInfo = await updateDBQueryTblEventInfo(eventCode, eventPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db);
         } else if (currentEvent && columns.length > 1) { // Athlete row
             const eventCode = makeEventNum(currentEvent[0], currentEvent[1], currentEvent[2]);
             totalFlagEvents, failedFlagEvents = await updateDBQueryTblEvents(eventCode, columns[0], columns[1], columns[6], totalFlagEvents, failedFlagEvents, meetId, db);
@@ -566,15 +566,14 @@ async function dbQueryTblEvents(eventCode, laneOrder, athleteNum, lastName, firs
     return [totalFlagEvents, failedFlagEvents];    
 }
 
-async function updateDBQueryTblEventInfo(eventCode, eventName, eventPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db) {
+async function updateDBQueryTblEventInfo(eventCode, eventPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db) {
     const query = `
       UPDATE tbleventinfo
-      SET eventName = ?,
-          eventPFTime = ?
+      SET eventPFTime = ?
       WHERE MeetID = ? AND eventCode = ?;
     `;
 
-    db.run(query, [eventName, eventPFTime, meetId, eventCode], function(err) {
+    db.run(query, [eventPFTime, meetId, eventCode], function(err) {
         totalFlagEventinfo++;
         if (err) {
             failedFlagEventInfo++;
