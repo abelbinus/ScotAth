@@ -61,9 +61,9 @@ const EventsList: React.FC = () => {
 
     // Get a list of current statuses for the filtered athletes
     const filteredUniqueValues = filteredAthletesInfo.map(
-      fa => fa.meetId + '-' + fa.eventCode + '-' + fa.athleteNum
+      filteredAthletes => filteredAthletes.meetId + '-' + filteredAthletes.eventCode + '-' + filteredAthletes.athleteNum
     );
-    const filteredStatuses = filteredUniqueValues.map(fuv => selectedValues[fuv])
+    const filteredStatuses = filteredUniqueValues.map(filteredValues => selectedValues[filteredValues])
       .filter(status => !['DNS', 'DNF', 'DQ'].includes(status));
 
     // Find the next available status that is not in filteredStatuses
@@ -87,27 +87,6 @@ const EventsList: React.FC = () => {
       setFilteredAthletesInfo(updatedFilteredAthlete);
     }
   };
-
-  useEffect(() => {
-    const updateEvents = async () => {
-      if(eventsInfo.length === 0 && meetid) {
-        await fetchEvents(meetid);
-      }
-    }
-    updateEvents();
-
-    if(eventsInfo.length === 0) {
-      return;
-    }
-    const initialEventCode = eventsInfo[0].eventCode;
-    if(!selectedEventCode) {
-      setSelectedEventCode(initialEventCode);
-      const sortedAthletes = sortBasedonRes(athletes);
-      const selectedAthletes = sortedAthletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode)
-      setFilteredAthletesInfo(selectedAthletes);
-    }
-
-  }, [meetid]);
 
   const sortBasedonRes = (selectedAthletes: any[]) => {
     if (selectedAthletes) {
@@ -151,40 +130,6 @@ const EventsList: React.FC = () => {
     // Compare padded strings
     return paddedStr1.localeCompare(paddedStr2);
   };
-  useEffect(() => {
-    if(eventsInfo.length > 0 && selectedEventCode === '') {
-      const initialEventCode = eventsInfo[0].eventCode;
-      if(!selectedEventCode) {
-        setSelectedEventCode(initialEventCode);
-        const selectedAthletes = sortBasedonRes(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
-        setFilteredAthletesInfo(selectedAthletes);
-      }
-    }    
-  }, [eventsInfo]);
-
-  useEffect(() => {
-    const setStatusOptions = () => {
-      const statusOptions = [];
-  
-      const length = filteredAthletesInfo.length;
-  
-      // Generate numbers 1 to length and add them to statusOptions array
-      for (let i = 1; i <= length; i++) {
-          statusOptions.push(i.toString());
-      }
-  
-      statusOptions.push('DNS');
-      statusOptions.push('DNF');
-      statusOptions.push('DQ');
-  
-      const existingRanks = filteredAthletesInfo.map((athlete) => athlete.finalPFPos).filter(status => !['DNS', 'DNF', 'DQ'].includes(status));
-      const availableStatusOptions = statusOptions.filter(
-        (option) => !existingRanks.includes(option)
-      );
-      setCurrentValues(availableStatusOptions);
-    }
-    setStatusOptions();
-  }, [filteredAthletesInfo.length]);  
 
   // Function to handle save operation
   const handleSave = async () => {
@@ -424,6 +369,38 @@ const EventsList: React.FC = () => {
   };
 
   useEffect(() => {
+    const updateEvents = async () => {
+      if(eventsInfo.length === 0 && meetid) {
+        await fetchEvents(meetid);
+      }
+    }
+    updateEvents();
+
+    if(eventsInfo.length === 0) {
+      return;
+    }
+    const initialEventCode = eventsInfo[0].eventCode;
+    if(!selectedEventCode) {
+      setSelectedEventCode(initialEventCode);
+      const sortedAthletes = sortBasedonRes(athletes);
+      const selectedAthletes = sortedAthletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode)
+      setFilteredAthletesInfo(selectedAthletes);
+    }
+
+  }, [meetid]);
+
+  useEffect(() => {
+    if(eventsInfo.length > 0 && selectedEventCode === '') {
+      const initialEventCode = eventsInfo[0].eventCode;
+      if(!selectedEventCode) {
+        setSelectedEventCode(initialEventCode);
+        const selectedAthletes = sortBasedonRes(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+        setFilteredAthletesInfo(selectedAthletes);
+      }
+    }    
+  }, [eventsInfo]);
+
+  useEffect(() => {
     if (selectedEventCode) {
       setEventComments(eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventComments || '');
     }
@@ -442,6 +419,22 @@ const EventsList: React.FC = () => {
     setCurrentValues(statusOptions);
   }, [selectedEventCode]);
 
+  useEffect(() => {
+    const initializeSelectedValues = () => {
+      const initialSelectedValues: { [key: string]: string } = {};
+  
+      athletes.forEach((athlete: any) => {
+        const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
+        initialSelectedValues[uniqueValue] = athlete.finishPos || 'Select'; // Use 'Select' as a fallback if no finishPos
+      });
+  
+      setSelectedValues(initialSelectedValues);
+    };
+  
+    if (athletes.length > 0) {
+      initializeSelectedValues();
+    }
+  }, [athletes]);
 
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(eventsInfo);
