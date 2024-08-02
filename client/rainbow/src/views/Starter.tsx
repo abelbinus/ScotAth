@@ -379,7 +379,8 @@ const EventsList: React.FC = () => {
     if(!selectedEventCode) {
       setSelectedEventCode(initialEventCode);
       const sortedAthletes = sortBasedonLane(athletes);
-      const selectedAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode)
+      setAthleteinfo(sortedAthletes);
+      const selectedAthletes = sortedAthletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode)
       setFilteredAthletesInfo(selectedAthletes);
     }
   }, [meetid]);

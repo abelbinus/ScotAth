@@ -55,6 +55,8 @@ const EventsList: React.FC = () => {
   // Function to handle status change for an athlete
   const handleStatusChange = (athlete: any) => {
     const statusOptions = currentValues;
+    // console.log('Status Options:', currentValues);
+    // console.log('athlete:', athlete);
     const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
     const currentStatus = selectedValues[uniqueValue] || 'Select';
     const currentIndex = statusOptions.indexOf(currentStatus);
@@ -63,6 +65,7 @@ const EventsList: React.FC = () => {
     const filteredUniqueValues = filteredAthletesInfo.map(
       filteredAthletes => filteredAthletes.meetId + '-' + filteredAthletes.eventCode + '-' + filteredAthletes.athleteNum
     );
+
     const filteredStatuses = filteredUniqueValues.map(filteredValues => selectedValues[filteredValues])
       .filter(status => !['DNS', 'DNF', 'DQ'].includes(status));
 
@@ -73,12 +76,12 @@ const EventsList: React.FC = () => {
       nextIndex = (nextIndex + 1) % statusOptions.length;
       nextStatus = statusOptions[nextIndex];
     }
-
     const updatedValues = { ...selectedValues, [uniqueValue]: nextStatus };
     setSelectedValues(updatedValues);
     const updatedAthletes = athletes.map(event =>
       event.athleteNum === athlete.athleteNum ? { ...event, finishPos: nextStatus } : event
     );
+    
     setAthleteinfo(updatedAthletes);
     if (selectedEventCode) {
       const updatedFilteredAthlete = filteredAthletesInfo.map(event =>
@@ -383,6 +386,7 @@ const EventsList: React.FC = () => {
     if(!selectedEventCode) {
       setSelectedEventCode(initialEventCode);
       const sortedAthletes = sortBasedonRes(athletes);
+      setAthleteinfo(sortedAthletes);
       const selectedAthletes = sortedAthletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode)
       setFilteredAthletesInfo(selectedAthletes);
     }
@@ -405,9 +409,17 @@ const EventsList: React.FC = () => {
       setEventComments(eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventComments || '');
     }
     const statusOptions = [];
+    let tempSelectedValues = { ...selectedValues };
+
+      // Accumulate updates in tempSelectedValues
+      filteredAthletesInfo.forEach((athlete: any) => {
+        const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
+        tempSelectedValues[uniqueValue] = athlete.finishPos || '';
+      });
+
+    setSelectedValues(tempSelectedValues);
     // Assuming athletes.length is 5
     const length = filteredAthletesInfo.length;
-
     // Generate numbers 1 to 5 and add them to statusOptions array
     for (let i = 1; i <= length; i++) {
         statusOptions.push(i.toString());
@@ -417,24 +429,7 @@ const EventsList: React.FC = () => {
     statusOptions.push('DNF');
     statusOptions.push('DQ');
     setCurrentValues(statusOptions);
-  }, [selectedEventCode]);
-
-  useEffect(() => {
-    const initializeSelectedValues = () => {
-      const initialSelectedValues: { [key: string]: string } = {};
-  
-      athletes.forEach((athlete: any) => {
-        const uniqueValue = athlete.meetId + '-' + athlete.eventCode + '-' + athlete.athleteNum;
-        initialSelectedValues[uniqueValue] = athlete.finishPos || 'Select'; // Use 'Select' as a fallback if no finishPos
-      });
-  
-      setSelectedValues(initialSelectedValues);
-    };
-  
-    if (athletes.length > 0) {
-      initializeSelectedValues();
-    }
-  }, [athletes]);
+  }, [filteredAthletesInfo]);
 
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(eventsInfo);
