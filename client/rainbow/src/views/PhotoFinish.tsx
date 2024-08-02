@@ -205,7 +205,7 @@ const Photofinish: React.FC = () => {
       const filteredAthletes = athletes.filter(event => event.eventCode === value);
       const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
       setFilteredAthletesInfo(sortedAthletesInfo);
-      setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
+      //setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
     }
   };
   const handleNextEvent = () => {
@@ -324,6 +324,20 @@ const updateAllPF = async () => {
   }
 };
 
+const handlePrevEvent = () => {
+  if (!selectedEventCode || eventsInfo.length === 0) return;
+
+  // Find the index of the current selected event code
+  const currentIndex = eventsInfo.findIndex(event => event.eventCode === selectedEventCode);
+
+  // Calculate the index of the previous event code
+  const prevIndex = currentIndex === -1 ? eventsInfo.length - 1 : (currentIndex - 1 + eventsInfo.length) % eventsInfo.length;
+
+  // Update the selected event code with the previous event code
+  setSelectedEventCode(eventsInfo[prevIndex].eventCode);
+  handleEventSelect(eventsInfo[prevIndex].eventCode);
+};
+
 const handleColumnVisibilityChange = (column: string, isChecked: boolean) => {
   setColumnVisibility(prev => ({ ...prev, [column]: isChecked }));
 };
@@ -348,6 +362,7 @@ const handleCancel = () => {
       <div>
         <div className="container">
           <div className="select-container">
+          <Button onClick={handlePrevEvent} style={{ marginRight: '20px', marginBottom: '10px' }} className='button-next' type="primary">Prev</Button>
           <Select
               placeholder="Select an event"
               className="select"

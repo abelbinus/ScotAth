@@ -286,6 +286,10 @@ async function insertFLIntoDatabase(evtContents, pplContents, meetId, db) {
     let totalFlagEvents = 0; // Total number of event rows
     let pplExists = false;
     for (const row of pplLines) {
+        // Trim the row and check if it is empty
+        if (row.trim() === '') {
+            continue;
+        }
         const columns = row.split(',');
         if (columns.length > 3 && columns[0]) {
             ppl_firstName[columns[0]] = columns[2].trim();
@@ -296,6 +300,11 @@ async function insertFLIntoDatabase(evtContents, pplContents, meetId, db) {
     pplExists = true;
 
     for (const row of evtLines) {
+
+        // Trim the row and check if it starts with a semicolon or is empty
+        if (row.trim().startsWith(';') || row.trim() === '') {
+            continue;
+        }
         const columns = row.split(',').map(col => col.trim());
         let numColumns = columns.length;
 
@@ -404,6 +413,10 @@ async function insertCLIntoDatabase(content, failedFlagEventInfo, failedFlagEven
     let eventTime = '';
     
     lines.forEach(async (myLine, line_num) => {
+        // Trim the row and check if it is empty
+        if (myLine.trim() === '') {
+            return; // Use return to exit the current iteration
+        }
         let athRank = '';
         let lane = '';
         let athNum = '';

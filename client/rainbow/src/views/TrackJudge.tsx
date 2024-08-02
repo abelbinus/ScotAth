@@ -110,43 +110,47 @@ const EventsList: React.FC = () => {
   }, [meetid]);
 
   const sortBasedonRes = (selectedAthletes: any[]) => {
-    if(selectedAthletes) {
-      // Check if finalPFPos is empty for all athletes
-      const isFinalPFPosEmptyForAll = selectedAthletes.every(athlete => athlete.finishPos === null || athlete.finishPos === '');
-      // If finalPFPos is empty for all athletes, sort by laneOrder
+    if (selectedAthletes) {
+      // Check if finishPos is empty for all athletes
+      const isFinalPFPosEmptyForAll = selectedAthletes.every(
+        athlete => athlete.finishPos === null || athlete.finishPos === ''
+      );
+  
       if (isFinalPFPosEmptyForAll) {
-        // Sort the updated events by finishPos
-        selectedAthletes.sort((event1: { laneOrder: any; }, event2: { laneOrder: any; }) => {
-          if (event1.laneOrder === null && event2.laneOrder === null) {
-            return 0;
-          }
-          if (event1.laneOrder === null) {
-            return -1;
-          }
-          if (event2.laneOrder === null) {
-            return 1;
-          }
-          return event1.laneOrder.localeCompare(event2.laneOrder);
+        // If finishPos is empty for all athletes, sort by laneOrder
+        selectedAthletes.sort((event1: { laneOrder: any }, event2: { laneOrder: any }) => {
+          return compareWithPadding(event1.laneOrder, event2.laneOrder);
         });
-      }
-      else {
-        // Sort the updated events by finishPos
-        selectedAthletes.sort((event1: { finishPos: any; }, event2: { finishPos: any; }) => {
-          if (event1.finishPos === null && event2.finishPos === null) {
-            return 0;
-          }
-          if (event1.finishPos === null) {
-            return -1;
-          }
-          if (event2.finishPos === null) {
-            return 1;
-          }
-          return event1.finishPos.localeCompare(event2.finishPos);
+      } else {
+        // Otherwise, sort by finishPos
+        selectedAthletes.sort((event1: { finishPos: any }, event2: { finishPos: any }) => {
+          return compareWithPadding(event1.finishPos, event2.finishPos);
         });
       }
     }
     return selectedAthletes;
-  }
+  };
+  
+  // Function to pad strings with zeroes and compare
+  const compareWithPadding = (val1: string | null, val2: string | null): number => {
+    if (val1 === null && val2 === null) return 0;
+    if (val1 === null) return -1;
+    if (val2 === null) return 1;
+  
+    // Convert values to strings
+    const str1 = val1.toString();
+    const str2 = val2.toString();
+  
+    // Determine the maximum length
+    const maxLength = Math.max(str1.length, str2.length);
+  
+    // Pad strings with leading zeroes
+    const paddedStr1 = str1.padStart(maxLength, '0');
+    const paddedStr2 = str2.padStart(maxLength, '0');
+  
+    // Compare padded strings
+    return paddedStr1.localeCompare(paddedStr2);
+  };
   useEffect(() => {
     if(eventsInfo.length > 0 && selectedEventCode === '') {
       const initialEventCode = eventsInfo[0].eventCode;
@@ -155,27 +159,32 @@ const EventsList: React.FC = () => {
         const selectedAthletes = sortBasedonRes(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
         setFilteredAthletesInfo(selectedAthletes);
       }
-    }
-
-    const statusOptions = [];
-
-    const length = filteredAthletesInfo.length;
-
-    // Generate numbers 1 to length and add them to statusOptions array
-    for (let i = 1; i <= length; i++) {
-        statusOptions.push(i.toString());
-    }
-
-    statusOptions.push('DNS');
-    statusOptions.push('DNF');
-    statusOptions.push('DQ');
-
-    const existingRanks = filteredAthletesInfo.map((athlete) => athlete.finalPFPos).filter(status => !['DNS', 'DNF', 'DQ'].includes(status));
-    const availableStatusOptions = statusOptions.filter(
-      (option) => !existingRanks.includes(option)
-    );
-    setCurrentValues(availableStatusOptions);
+    }    
   }, [eventsInfo]);
+
+  useEffect(() => {
+    const setStatusOptions = () => {
+      const statusOptions = [];
+  
+      const length = filteredAthletesInfo.length;
+  
+      // Generate numbers 1 to length and add them to statusOptions array
+      for (let i = 1; i <= length; i++) {
+          statusOptions.push(i.toString());
+      }
+  
+      statusOptions.push('DNS');
+      statusOptions.push('DNF');
+      statusOptions.push('DQ');
+  
+      const existingRanks = filteredAthletesInfo.map((athlete) => athlete.finalPFPos).filter(status => !['DNS', 'DNF', 'DQ'].includes(status));
+      const availableStatusOptions = statusOptions.filter(
+        (option) => !existingRanks.includes(option)
+      );
+      setCurrentValues(availableStatusOptions);
+    }
+    setStatusOptions();
+  }, [filteredAthletesInfo.length]);  
 
   // Function to handle save operation
   const handleSave = async () => {
@@ -269,14 +278,14 @@ const EventsList: React.FC = () => {
       setSelectedValues(tempSelectedValues);
         const sortedFilteredAthletesInfo = sortBasedonRes(filteredAthletes);
         setFilteredAthletesInfo(sortedFilteredAthletesInfo);
-        setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
+        //setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
       }
     };
 
   // Handle time change in TimePicker
   const handlefinishTimeChange = (time: any, record: AthleteInfo) => {
     // console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
-    const timeString = time ? time.format('hh:mm:ss:SSS A') : null; // Convert Moment object to 12-hour format string
+    const timeString = time ? time.format('HH:mm') : null; // Convert Moment object to 12-hour format string
     const updatedAthletes = athletes.map(event =>
       event.athleteNum === record.athleteNum ? { ...event, finishTime: timeString } : event
     );
@@ -400,6 +409,20 @@ const EventsList: React.FC = () => {
     }
   };
 
+  const handlePrevEvent = () => {
+      if (!selectedEventCode || eventsInfo.length === 0) return;
+    
+      // Find the index of the current selected event code
+      const currentIndex = eventsInfo.findIndex(event => event.eventCode === selectedEventCode);
+    
+      // Calculate the index of the previous event code
+      const prevIndex = currentIndex === -1 ? eventsInfo.length - 1 : (currentIndex - 1 + eventsInfo.length) % eventsInfo.length;
+    
+      // Update the selected event code with the previous event code
+      setSelectedEventCode(eventsInfo[prevIndex].eventCode);
+      handleEventSelect(eventsInfo[prevIndex].eventCode);
+  };
+
   useEffect(() => {
     if (selectedEventCode) {
       setEventComments(eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventComments || '');
@@ -427,6 +450,7 @@ const EventsList: React.FC = () => {
       <div>
         <div className="container">
           <div className="select-container">
+            <Button onClick={handlePrevEvent} style={{ marginRight: '20px', marginBottom: '10px' }} className='button-next' type="primary">Prev</Button>
             <Select
               placeholder="Select an event"
               className="select"
@@ -443,7 +467,7 @@ const EventsList: React.FC = () => {
                 </Option>
               ))}
             </Select>
-            <Button onClick={handleNextEvent} className='button-next' type="primary">Next</Button>
+            <Button onClick={handleNextEvent} style={{ marginRight: '20px', marginBottom: '10px' }} className='button-next' type="primary">Next</Button>
           </div>
           <div className="button-container">
             <Button onClick={showModal} style={{ marginRight: '10px' }} type="primary">
@@ -490,10 +514,9 @@ const EventsList: React.FC = () => {
                 render: (text: string, record: any) => (
 
                   <TimePicker
-                    value={record.finishTime ? moment(record.finishTime, 'hh:mm:ss:SSS A') : null} // Provide default moment object in 12-hour format
+                    value={record.finishTime ? moment(record.finishTime, 'HH:mm') : null} // Provide default moment object in 12-hour format
                     onChange={(time) => handlefinishTimeChange(time, record)}
-                    format="hh:mm:ss:SSS A"
-                    use12Hours
+                    format="HH:mm"
                   />
                 ),
               }
@@ -503,9 +526,11 @@ const EventsList: React.FC = () => {
             scroll={{ x: 'max-content' }}
           />
         )}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '25px'}}>
-          <Button type="primary" style={{ marginRight: '10px' }} onClick={handleReset}>Reset</Button>
-          <Button type="primary" onClick={handleSave}>Save</Button>
+        <div className = 'button-div'>
+            <Button onClick={handlePrevEvent} className='button-bottom' type="primary">Prev</Button>
+            <Button type="primary" className='button-bottom' onClick={handleReset}>Reset</Button>
+            <Button type="primary" className='button-bottom' onClick={handleSave}>Save</Button>
+            <Button onClick={handleNextEvent} className='button-bottom' type="primary">Next</Button>
         </div>
       </div>
     );

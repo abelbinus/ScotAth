@@ -73,23 +73,35 @@ const EventsList: React.FC = () => {
   };
 
   const sortBasedonLane = (selectedAthletes: any[]) => {
-    if(selectedAthletes) {
-        // Sort the updated events by finishPos
-        selectedAthletes.sort((event1: { laneOrder: any; }, event2: { laneOrder: any; }) => {
-          if (event1.laneOrder === null && event2.laneOrder === null) {
-            return 0;
-          }
-          if (event1.laneOrder === null) {
-            return -1;
-          }
-          if (event2.laneOrder === null) {
-            return 1;
-          }
-          return event1.laneOrder.localeCompare(event2.laneOrder);
-        });
+    if (selectedAthletes) {
+      // Sort the updated events by laneOrder using compareWithPadding
+      selectedAthletes.sort((event1: { laneOrder: any }, event2: { laneOrder: any }) => {
+        return compareWithPadding(event1.laneOrder, event2.laneOrder);
+      });
     }
     return selectedAthletes;
-  }
+  };
+
+  // Function to pad strings with zeroes and compare
+  const compareWithPadding = (val1: string | null, val2: string | null): number => {
+    if (val1 === null && val2 === null) return 0;
+    if (val1 === null) return -1;
+    if (val2 === null) return 1;
+  
+    // Convert values to strings
+    const str1 = val1.toString();
+    const str2 = val2.toString();
+  
+    // Determine the maximum length
+    const maxLength = Math.max(str1.length, str2.length);
+  
+    // Pad strings with leading zeroes
+    const paddedStr1 = str1.padStart(maxLength, '0');
+    const paddedStr2 = str2.padStart(maxLength, '0');
+  
+    // Compare padded strings
+    return paddedStr1.localeCompare(paddedStr2);
+  };
 
   useEffect(() => {
     if (selectedEventCode) {
@@ -150,28 +162,17 @@ const EventsList: React.FC = () => {
         tempSelectedValues[uniqueValue] = athlete.startPos || '';
       });
       setSelectedValues(tempSelectedValues);
-      const sortedFilteredAthletesInfo = [...filteredAthletes].sort((event1: { laneOrder: any; }, event2: { laneOrder: any; }) => {
-          if (event1.laneOrder === null && event2.laneOrder === null) {
-            return 0;
-          }
-          if (event1.laneOrder === null) {
-            return -1;
-          }
-          if (event2.laneOrder === null) {
-            return 1;
-          }
-          return event1.laneOrder.localeCompare(event2.laneOrder);
-        });
-    
+      // Use the sortBasedOnLaneOrder function to sort the athletes
+      const sortedFilteredAthletesInfo = sortBasedonLane([...filteredAthletes]);    
         setFilteredAthletesInfo(sortedFilteredAthletesInfo);
-        setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
+        //setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
       }
     };
 
   // Handle time change in TimePicker
   const handleStartTimeChange = (time: any, record: AthleteInfo) => {
     //console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
-    const timeString = time ? time.format('hh:mm:ss:SSS A') : null; // Convert Moment object to 12-hour format string
+    const timeString = time ? time.format('HH:mm') : null; // Convert Moment object to 12-hour format string
     const updatedAthletes = athletes.map(event =>
       event.athleteNum === record.athleteNum ? { ...event, startTime: timeString } : event
     );
@@ -187,7 +188,7 @@ const EventsList: React.FC = () => {
   };
 
   const handleSetTime = () => {
-    const currentTime = moment().format('hh:mm:ss:SSS A');
+    const currentTime = moment().format('HH:mm');
     const updatedFilteredAthletesInfo = filteredAthletesInfo.map((athlete: any) => ({
       ...athlete,
       startTime: currentTime
@@ -271,6 +272,20 @@ const EventsList: React.FC = () => {
     // Update the selected event code with the next event code
     setSelectedEventCode(eventsInfo[nextIndex].eventCode);
     handleEventSelect(eventsInfo[nextIndex].eventCode);
+  };
+
+  const handlePrevEvent = () => {
+      if (!selectedEventCode || eventsInfo.length === 0) return;
+    
+      // Find the index of the current selected event code
+      const currentIndex = eventsInfo.findIndex(event => event.eventCode === selectedEventCode);
+    
+      // Calculate the index of the previous event code
+      const prevIndex = currentIndex === -1 ? eventsInfo.length - 1 : (currentIndex - 1 + eventsInfo.length) % eventsInfo.length;
+    
+      // Update the selected event code with the previous event code
+      setSelectedEventCode(eventsInfo[prevIndex].eventCode);
+      handleEventSelect(eventsInfo[prevIndex].eventCode);
   };
 
   // Function to handle save operation
@@ -388,6 +403,7 @@ const EventsList: React.FC = () => {
       <div>
         <div className="container">
           <div className="select-container">
+          <Button onClick={handlePrevEvent} style={{ marginRight: '20px', marginBottom: '10px' }} className='button-next' type="primary">Prev</Button>
           <Select
               placeholder="Select an event"
               className="select"
@@ -404,7 +420,7 @@ const EventsList: React.FC = () => {
                 </Option>
               ))}
             </Select>
-            <Button onClick={handleNextEvent} className='button-next' type="primary">Next</Button>
+            <Button onClick={handleNextEvent} style = {{marginBottom: '10px' }}className='button-next' type="primary">Next</Button>
           </div>
 
           <div className="button-container">
@@ -449,10 +465,9 @@ const EventsList: React.FC = () => {
                 render: (text: string, record: any) => (
 
                   <TimePicker
-                    value={record.startTime ? moment(record.startTime, 'hh:mm:ss:SSS A') : null} // Provide default moment object in 12-hour format
+                    value={record.startTime ? moment(record.startTime, 'HH:mm') : null} // Provide default moment object in 24-hour format
                     onChange={(time) => handleStartTimeChange(time, record)}
-                    format="hh:mm:ss:SSS A"
-                    use12Hours
+                    format="HH:mm" // Use 24-hour format
                   />
                 ),
               }
@@ -463,9 +478,11 @@ const EventsList: React.FC = () => {
           />
         )}
           <div className = 'button-div'>
-            <Button type="primary" style={{ marginRight: '10px' }} onClick={handleReset}>Reset</Button>
-            <Button type="primary" style={{ marginRight: '10px' }} onClick={handleSetTime}>Set Time</Button>
-            <Button type="primary" className = 'button-save' onClick={handleSave}>Save</Button>
+            <Button onClick={handlePrevEvent} className='button-bottom' type="primary">Prev</Button>
+            <Button type="primary" className='button-bottom' onClick={handleReset}>Reset</Button>
+            <Button type="primary" className='button-bottom' onClick={handleSetTime}>Set Time</Button>
+            <Button type="primary" className='button-bottom' onClick={handleSave}>Save</Button>
+            <Button onClick={handleNextEvent} className='button-bottom' type="primary">Next</Button>
           </div>
       </div>
     );

@@ -84,7 +84,7 @@
 
   .button-div .ant-btn {
     flex-shrink: 0; /* Prevent buttons from resizing */
-    margin-right: 10px; /* Ensure consistent spacing */
+    margin-left: 10px; /* Ensure consistent spacing */
   }
   .select {
     width: 100%;
@@ -112,21 +112,14 @@
     margin-top: 20px;
   }
 
-  @media (max-width: 1000px) {
+  @media (max-width: 940px){
     .container {
       flex-direction: column;
       align-items: stretch;
     }
-  
-    .button-container {
-      margin-left: 0; /* Reset margin for mobile layout */
-      width: 100%; /* Ensure full width on smaller screens */
-      text-align: left; /* Align button to the left */
+    .select-container {
+      align-items: stretch;
     }
-
-    .button-container .ant-btn {
-        margin-bottom: 10px; /* Add spacing between buttons on mobile */
-      }
   }
 
   @media (max-width: 798px) {
@@ -134,9 +127,6 @@
       margin-left: 0; /* Reset margin for mobile layout */
       width: 100%; /* Ensure full width on smaller screens */
       text-align: left; /* Align button to the left */ 
-    }
-    .select-container {
-      margin-bottom: 10px; /* Add spacing between buttons on mobile */
     }
 
     .button-download .ant-btn {
@@ -149,14 +139,13 @@
     .button-download .ant-btn {
       margin-bottom: 10px; /* Ensure full width on smaller screens */
     }
-  }
-  @media (max-width: 425px) {
     .hide-on-xs {
       display: none;
     }
 
-    .button-div {
-      flex-direction: column;
+    .button-bottom {
+      max-width: fit-content;
+      margin-left: 10px;
     }
   
     .button-div .ant-btn {
@@ -165,6 +154,12 @@
     }
     .button-save {
       margin-right: 10px !important;
+    }
+  }
+
+  @media (max-width: 475px) {
+    .button-div {
+      flex-wrap: wrap;
     }
   }
 

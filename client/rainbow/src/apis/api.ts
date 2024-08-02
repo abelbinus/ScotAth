@@ -156,7 +156,7 @@ export function getAthletebyEventId(meetId: any, eventCode: any) {
 // get all event details from folder
 export function postPFEventbyEventId(folderParams: any) {
     const request=getAxiosInstance();
-    console.log("folderParams");
+    //console.log("folderParams");
     return request({
         url: `/api/rainbow/pfevent/`,
         method: "POST",
@@ -167,7 +167,7 @@ export function postPFEventbyEventId(folderParams: any) {
 // update all event details
 export function updateEventAPI(eventGroup: any) {
     const request=getAxiosInstance();
-    console.log("eventGroup");
+    //console.log("eventGroup");
     return request({
         url: `/api/rainbow/updateEventAPI/`,
         method: "POST",

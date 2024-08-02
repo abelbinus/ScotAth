@@ -82,7 +82,6 @@ const ProfilePage = () => {
   const handlePasswordChange = async (values: PasswordChange) => {
 
     // Check if the old password and the new password are the same
-    console.log(userContext);
     if (userContext!.user!.userPass !== null) {
       //const value = await bcrypt.compare(values.oldPassword, userContext!.user!.userPass);
       const value = values.oldPassword === userContext!.user!.userPass;
