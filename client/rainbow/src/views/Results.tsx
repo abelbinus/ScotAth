@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Select, Table, Button, Popconfirm, Divider, Checkbox, Modal, Card, Row, Col, Typography } from 'antd';
+import { Select, Table, Button, Popconfirm, Divider, Checkbox, Modal, Card, Row, Col, Typography, Switch } from 'antd';
 import { useEvents } from '../Provider/EventProvider';
 import './../styles/CustomCSS.css'
 import { formatEventCode, sortBasedonRank } from './Eventutils';
@@ -11,6 +11,7 @@ const AllResults: React.FC = () => {
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const { Title, Text } = Typography;
+  const [isColorMode, setIsColorMode] = useState(false); // State for color mode
   
   type ColumnVisibility = {
     [key: string]: boolean;
@@ -252,7 +253,13 @@ const AllResults: React.FC = () => {
           </div>
 
           <div className="button-container">
-            <Button onClick={showModal} className = 'button-singleDownload' type="primary">
+          <Switch
+              checkedChildren="Color"
+              unCheckedChildren="Default"
+              checked={isColorMode}
+              onChange={() => setIsColorMode(!isColorMode)}
+            />
+            <Button onClick={showModal} style={{marginLeft: '20px'}} type="primary">
               Filter Columns
             </Button>
           </div>
@@ -278,8 +285,8 @@ const AllResults: React.FC = () => {
 
   return (
     <div>
-      <div className='red-background'>
-        <Card bordered={false} style={{ marginBottom: '30px', background: '#ffffff', padding: '20px' }}>
+      <div className={isColorMode ? 'red-background' : 'default-background'}>
+        <Card bordered={false} style={{ marginBottom: '30px', background: isColorMode ? '#ffffff' : '#f0f2f5', padding: '20px' }}>
           <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
             <Col span={24}>
               <Title level={2} style={{ margin: 0, marginBottom: '0px', color: '#1677FF' }}>Results</Title>

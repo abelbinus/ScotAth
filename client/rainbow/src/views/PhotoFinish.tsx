@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/img-redundant-alt */
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Checkbox, Col, Divider, Input, Modal, Row, Select, Table, Typography, message } from 'antd';
+import { Button, Card, Checkbox, Col, Divider, Input, Modal, Row, Select, Switch, Table, Typography, message } from 'antd';
 import { getEventPhoto, getAthletebyEventId, getEventbyMeetId, getMeetByIdAPI, postPFEventbyEventId, updateEventAPI } from '../apis/api';
 import { Axios, AxiosError } from 'axios';
 import { useEvents } from '../Provider/EventProvider';
@@ -15,6 +15,7 @@ const Photofinish: React.FC = () => {
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   let meetid = sessionStorage.getItem('lastSelectedMeetId');
   const [photos, setPhotos] = useState<string[]>([]);
+  const [isColorMode, setIsColorMode] = useState(false); // State for color mode
   const { Title, Text } = Typography;
 
   type ColumnVisibility = {
@@ -382,12 +383,16 @@ const handleCancel = () => {
             <Button onClick={handleNextEvent} className='button-next' type="primary">Next</Button>
           </div>
           <div className="button-container">
-            <Button onClick={showModal} style = {{marginRight: '10px'}} className = 'button-singleDownload' type="primary">
+          <Switch
+              checkedChildren="Color"
+              unCheckedChildren="Default"
+              checked={isColorMode}
+              onChange={() => setIsColorMode(!isColorMode)}
+            />
+            <Button onClick={showModal} style={{marginLeft: '20px'}} type="primary">
               Filter Columns
             </Button>
-          </div>
-          <div className="button-container">
-            <Button onClick={updateAllPF} className = 'button-singleDownload' type="primary">
+            <Button onClick={updateAllPF} style={{marginLeft: '10px'}} type="primary">
               Update All PF Events
             </Button>
           </div>
@@ -431,8 +436,8 @@ const handleCancel = () => {
   if (eventsInfo.length === 0 ) return <div>No events found</div>;
 
   return (
-    <div className='pink-background'>
-      <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+    <div className={isColorMode ? 'pink-background' : 'default-background'}>
+      <Card bordered={false} style={{ marginBottom: '30px', background: isColorMode ? '#ffffff' : '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
             <Title level={2} style={{ margin: 0, marginBottom: '0px', color: '#1677FF' }}>PhotoFinish Screen</Title>

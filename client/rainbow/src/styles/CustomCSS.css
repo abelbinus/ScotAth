@@ -42,6 +42,13 @@
   border-radius: 10px;
 }
 
+.default-background {
+  padding: 24px; /* Optional padding for better spacing */
+  min-height: 100vh; /* Full height for larger screens */
+  box-sizing: border-box; /* Ensure padding does not affect width */
+  border-radius: 10px;
+}
+
 .pink-background {
   background-color: #e732dd; /* Light green background */
   padding: 24px; /* Optional padding for better spacing */

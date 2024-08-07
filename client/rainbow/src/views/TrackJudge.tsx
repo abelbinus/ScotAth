@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Select, Table, Button, message, Divider, Checkbox, Modal, Card, Row, Typography, Col, Input } from 'antd';
+import { Select, Table, Button, message, Divider, Checkbox, Modal, Card, Row, Typography, Col, Input, Switch } from 'antd';
 import { getAthletebyEventId, updateAthleteAPI, updateEventAPI } from '../apis/api';
 
 import { TimePicker } from '../components';
@@ -21,6 +21,7 @@ const EventsList: React.FC = () => {
   const [eventComments, setEventComments] = useState<string>(''); // State to hold event description
   const { Title, Text, Paragraph } = Typography;
   const meetid = sessionStorage.getItem('lastSelectedMeetId');
+  const [isColorMode, setIsColorMode] = useState(false); // State for color mode
 
   type ColumnVisibility = {
     [key: string]: boolean;
@@ -458,13 +459,19 @@ const EventsList: React.FC = () => {
             <Button onClick={handleNextEvent} style={{ marginRight: '20px', marginBottom: '10px' }} className='button-next' type="primary">Next</Button>
           </div>
           <div className="button-container">
-            <Button onClick={showModal} style={{ marginRight: '10px' }} type="primary">
+            <Switch
+              checkedChildren="Color"
+              unCheckedChildren="Default"
+              checked={isColorMode}
+              onChange={() => setIsColorMode(!isColorMode)}
+            />
+            <Button onClick={showModal} style={{ marginLeft: '20px' }} type="primary">
               Filter Columns
             </Button>
-            <Button onClick={showCommentModal} style={{ marginRight: '10px' }} type="primary">
+            <Button onClick={showCommentModal} style={{ marginLeft: '10px' }} type="primary">
               Add Comments
             </Button>
-            <Button onClick={handleResetAll} type="primary">
+            <Button onClick={handleResetAll} style={{ marginLeft: '10px' }} type="primary">
               Reset All
           </Button>
           </div>
@@ -529,8 +536,8 @@ const EventsList: React.FC = () => {
   if (eventsInfo.length === 0 ) return <div>No events found</div>;
 
   return (
-    <div className='orange-background'>
-      <Card bordered={false} style={{ marginBottom: '30px', background: '#ffffff', padding: '20px' }}>
+    <div className={isColorMode ? 'orange-background' : 'default-background'}>
+      <Card bordered={false} style={{ marginBottom: '30px', background: isColorMode ? '#ffffff' : '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
             <Title level={2} style={{ margin: 0, marginBottom: '0px', color: '#1677FF' }}>Track Judge Screen</Title>

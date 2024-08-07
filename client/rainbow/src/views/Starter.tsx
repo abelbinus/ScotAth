@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Select, Table, Button, message, Divider, Modal, Checkbox, Card, Row, Col, Typography, Input } from 'antd';
+import { Select, Table, Button, message, Divider, Modal, Checkbox, Card, Row, Col, Typography, Input, Switch } from 'antd';
 import { getAthletebyEventId, updateAthleteAPI, updateEventAPI } from '../apis/api';
 
 import { TimePicker } from '../components';
@@ -20,6 +20,7 @@ const EventsList: React.FC = () => {
   const { Title, Text, Paragraph } = Typography;
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [eventComments, setEventComments] = useState<string>(''); // State to hold event Comment
+  const [isColorMode, setIsColorMode] = useState(false); // State for color mode
   type ColumnVisibility = {
     [key: string]: boolean;
     lastName: boolean;
@@ -425,13 +426,19 @@ const EventsList: React.FC = () => {
           </div>
 
           <div className="button-container">
-            <Button onClick={showModal} style={{marginRight:'10px'}} type="primary">
+            <Switch
+              checkedChildren="Color"
+              unCheckedChildren="Default"
+              checked={isColorMode}
+              onChange={() => setIsColorMode(!isColorMode)}
+            />
+            <Button onClick={showModal} style={{marginLeft: '20px'}} type="primary">
               Filter Columns
             </Button>
-            <Button onClick={showCommentModal} style={{ marginRight: '10px' }} type="primary">
+            <Button onClick={showCommentModal} style={{marginLeft: '10px'}} type="primary">
               Add Comment
             </Button>
-            <Button onClick={handleResetAll} type="primary">
+            <Button onClick={handleResetAll} style={{marginLeft: '10px'}} type="primary">
               Reset All
             </Button>
           </div>
@@ -494,8 +501,8 @@ const EventsList: React.FC = () => {
   if (eventsInfo.length === 0 ) return <div>No events found</div>;
 
   return (
-    <div className="green-background">
-      <Card bordered={false} style={{ marginBottom: '30px', background: '#ffffff', padding: '20px', borderRadius: '12px'}}>
+  <div className={isColorMode ? 'green-background' : 'default-background'}>
+      <Card bordered={false} style={{ marginBottom: '30px', background: isColorMode ? '#ffffff' : '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
             <Title level={2} style={{ margin: 0, marginBottom: '0px', color: '#1677FF' }}>Starter's Assistant Screen</Title>
