@@ -10,6 +10,12 @@ import { useVisibility } from "../Provider/VisibilityProvider";
 const { Title } = Typography;
 const { Panel } = Collapse;
 
+/**
+ * ViewMeet component displays a list of meets fetched from an API.
+ * Users can select a meet to view its associated events.
+ * 
+ * @component
+ */
 const ViewMeet: React.FC = () => {
   const [meets, setMeets] = useState<IMeet[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -18,7 +24,10 @@ const ViewMeet: React.FC = () => {
   const navigate = useNavigate();
   const { setShowLabels } = useVisibility();
 
-  // Fetch meet list from API
+  /**
+   * Fetches the list of meets from the API and sets the state.
+   * Displays an error message if the API call fails.
+   */
   const fetchMeets = async () => {
     setLoading(true);
     try {
@@ -43,16 +52,32 @@ const ViewMeet: React.FC = () => {
     }
   };
 
+  /**
+   * Fetches the meet list when the component mounts or when the user context changes.
+   */
   useEffect(() => {
     fetchMeets();
   }, [userContext]); // Reload meets if user context changes
 
+  /**
+   * Handles the selection of a meet by storing the selected meet ID in session storage
+   * and navigating to the "View Events" page.
+   * 
+   * @param {string} meetid - The ID of the selected meet.
+   */
   const handleMeetSelection = (meetid: string) => {
     sessionStorage.setItem("lastSelectedMeetId", meetid);
     setShowLabels(true);  // Show labels when "View Events" is clicked
     navigate('/view-event', { state: { meetid } });
   };
 
+  /**
+   * Renders the header for each panel in the Collapse component.
+   * 
+   * @param {string} meetName - The name of the meet.
+   * @param {string} meetId - The ID of the meet.
+   * @returns {JSX.Element} The rendered panel header.
+   */
   const renderPanelHeader = (meetName: string, meetId: string) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
       <span>{meetName}</span>
@@ -61,7 +86,7 @@ const ViewMeet: React.FC = () => {
   );
   
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: '24px' }}>
       <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>

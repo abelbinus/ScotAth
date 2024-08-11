@@ -11,8 +11,9 @@ import bcrypt from 'bcryptjs-react';
 const { Header, Content } = Layout;
 
 /**
- * LoginPage component handles user authentication.
- * It provides a login form and manages user authentication state.
+ * The LoginPage component handles user authentication.
+ * It renders a login form and manages user login, including API calls.
+ * It updates the user context and session storage upon successful authentication.
  * 
  * @component
  */
@@ -22,11 +23,13 @@ const LoginPage = () => {
     const { setUser } = useContext(UserContext);
 
     /**
-     * Handles form submission for login.
-     * It sends user credentials to the backend, verifies them, and updates the user context and sessionStorage.
+     * Handles the form submission for user login.
+     * Sends user credentials to the backend API, verifies the response, and updates the user context 
+     * and session storage upon successful login. If the login is successful, the user is redirected 
+     * based on their role.
      * 
      * @async
-     * @param {ILoginValues} values - The login form values containing username and password.
+     * @param {ILoginValues} values - The login form values containing the username and password.
      */
     const onFinish = async (values: ILoginValues) => {
         setLoading(true);
@@ -41,7 +44,13 @@ const LoginPage = () => {
                     return;
                 }
             }
-
+            // if (response.data.user !== null) {
+            //     if (values.userPass !== response.data.user.userPass) {
+            //         message.error("Invalid Password");
+            //         setLoading(false);
+            //         return;
+            //     }
+            // }
             // Convert the response to IUser format
             const loginUser: IUser = {
                 userId: response.data.user.userId,

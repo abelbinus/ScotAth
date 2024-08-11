@@ -9,12 +9,15 @@ import { getAllUsersAPI, addUserAPI, updateUserAPI, deleteUserAPI } from "../api
 import { AxiosError } from "axios";
 import bcrypt from "bcryptjs-react";
 
-const User = () => {
-  // userInfo
+/**
+ * UserManagement component for managing users (admin and volunteers) in the application.
+ * Allows adding, editing, and deleting users.
+ */
+const UserManagement = () => {
+  // User information from context
   const userContext = useContext(UserContext);
-  const { useBreakpoint } = Grid; // Ant Design hook for screen size detection
-  const screens = useBreakpoint();
 
+  // State variables for modal visibility, user lists, and form handling
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [, setEditingUser] = useState<IUser | null>(null);
@@ -27,6 +30,7 @@ const User = () => {
 
   const { Title } = Typography;
 
+  // Table columns for user list
   const columns: TableColumnsType<IUser> = [
     { title: "User ID", dataIndex: "userId", key: "userId" },
     { title: "User Name", dataIndex: "userName", key: "userName" },
@@ -43,13 +47,12 @@ const User = () => {
         </>
       ),
     },
-    
     {
       title: "Action",
       key: "operation",
       render: (_, record) =>
         <Space size="middle">
-          <a onClick={() => onEditClick(record)}>Edit</a>
+          <Button onClick={() => onEditClick(record)}>Edit</Button>
           <Popconfirm
             title="Delete the user"
             description="Are you sure to delete this user?"
@@ -57,13 +60,15 @@ const User = () => {
             okText="Yes"
             cancelText="No"
           >
-            <a>Delete</a>
+            <Button>Delete</Button>
           </Popconfirm>
         </Space>,
     },
   ];
 
-  // get
+  /**
+   * Fetches the list of users from the API and updates the state.
+   */
   const getUserList = async () => {
     try {
       const response: any = await getAllUsersAPI();
@@ -98,33 +103,44 @@ const User = () => {
     }
   };
 
+  // Fetch user list on component mount
   useEffect(() => {
     getUserList();
   }, [])
 
-  // admin
+  // Check if the current user has admin privileges
   if (userContext?.user?.userRole !== "admin") {
-    // return <Navigate to="/" replace />;
     return <div>No access permission</div>;
   }
+
+  /**
+   * Toggles password visibility in the input fields.
+   */
   const handlePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);
   };
 
-  // add
+  /**
+   * Opens the modal for adding a new user.
+   */
   const onAddClick = () => {
     setIsAddModalVisible(true);
   };
 
-  // add
+  /**
+   * Closes the add user modal.
+   */
   const handleAddCancel = () => {
     setIsAddModalVisible(false);
   };
 
-  // add
+  /**
+   * Handles form submission for adding a new user.
+   * @param {IUser} user - The user data from the form.
+   */
   const handleAddFormSubmit = async (user: IUser) => {
     try {
-          // Hash the user's password
+      // Hash the user's password
       try {
         const salt = await bcrypt.genSalt(10);
         if (user.userPass !== null) {
@@ -153,7 +169,7 @@ const User = () => {
       setIsAddModalVisible(false);
       addform.resetFields();
 
-      // re-get User list
+      // Re-fetch the user list
       getUserList();
     } catch (error: any) {
       if (error instanceof AxiosError) {
@@ -181,7 +197,10 @@ const User = () => {
     }
   };
 
-  // edit
+  /**
+   * Opens the modal for editing an existing user.
+   * @param {IUser} user - The user data to edit.
+   */
   const onEditClick = (user: IUser) => {
     setEditingUser(user)
     setIsEditModalVisible(true);
@@ -201,13 +220,18 @@ const User = () => {
     });
   };
 
-  // edit
+  /**
+   * Closes the edit user modal.
+   */
   const handleEditCancel = () => {
     setIsEditModalVisible(false);
     setEditingUser(null);
   };
 
-  // edit
+  /**
+   * Handles form submission for editing an existing user.
+   * @param {IUser} user - The updated user data from the form.
+   */
   const handleEditSubmit = async (user: IUser) => {
     try {
       const salt = await bcrypt.genSalt(10);
@@ -239,7 +263,7 @@ const User = () => {
       setIsEditModalVisible(false);
       setEditingUser(null);
 
-      // re-get user list
+      // Re-fetch the user list
       getUserList();
     } catch (error: any) {
       const errMsg = error.response?.data?.msg || "Update user failed";
@@ -248,13 +272,16 @@ const User = () => {
     }
   };
 
-  // delete
+  /**
+   * Handles user deletion.
+   * @param {IUser} user - The user to delete.
+   */
   const onDeleteClick = async (user: IUser) => {
     try {
       await deleteUserAPI(user.userId);
       message.success("User deleted successfully");
 
-      // re-get user list
+      // Re-fetch the user list
       getUserList();
     } catch (error: any) {
       const errMsg = error.response?.data?.msg || "Delete user failed";
@@ -312,11 +339,9 @@ const User = () => {
   };
 
   return (
-    <div>
+    <div style={{ padding: '24px' }}>
       
-      
-
-      {/*Add button area */}
+      {/* Add button area */}
     <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
       <Col span={8} lg={8} md={6} sm={2}></Col>
       <Col span={8} lg={8} md={10} sm={14}>
@@ -328,12 +353,12 @@ const User = () => {
     </Row>
     <Divider style={{ marginTop: 20, marginBottom: 10 }} />
 
-      {/*Table area */}
+      {/* Table area */}
       <Tabs defaultActiveKey="1" items={tabItems} />
 
-      {/*Modals */}
+      {/* Modals */}
       <Space>
-        {/*Add a user dialog box*/}
+        {/* Add a user dialog box */}
         <Modal
           title="Add User"
           open={isAddModalVisible}
@@ -388,7 +413,7 @@ const User = () => {
           </Form>
         </Modal>
 
-        {/*Edit a user dialog box*/}
+        {/* Edit a user dialog box */}
         <Modal
           title="Edit User"
           open={isEditModalVisible}
@@ -447,4 +472,4 @@ const User = () => {
   )
 }
 
-export default User
+export default UserManagement;

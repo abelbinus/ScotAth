@@ -1,16 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { Select, Table, Button, Popconfirm, Divider, Checkbox, Modal, Card, Row, Col, Typography } from 'antd';
+import { Select, Table, Button, Checkbox, Modal, Card, Row, Col, Typography, Switch } from 'antd';
 import { useEvents } from '../Provider/EventProvider';
-import './../styles/CustomCSS.css'
+import './../styles/CustomCSS.css';
 import { formatEventCode, sortBasedonRank } from './Eventutils';
 
 const { Option } = Select;
 
-const AllResults: React.FC = () => {
-  const {athletes, eventsInfo, setError, fetchEvents, loading, error } = useEvents();
+/**
+ * The AllResults component is responsible for displaying a list of results
+ * for various events in a sports meet. Users can filter results based on the selected event,
+ * toggle column visibility, and download results in CSV format.
+ * 
+ * @component
+ * @returns {JSX.Element} The rendered AllResults component.
+ */
+const AllResults = (): JSX.Element => {
+  const { athletes, eventsInfo, fetchEvents, loading, error } = useEvents();
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
-  const { Title, Text } = Typography;
+  const { Title} = Typography;
+  const [isColorMode, setIsColorMode] = useState(false); // State for color mode
   
   type ColumnVisibility = {
     [key: string]: boolean;
@@ -46,10 +55,13 @@ const AllResults: React.FC = () => {
 
   const meetid = sessionStorage.getItem('lastSelectedMeetId');
 
+  /**
+   * Effect hook to set the initial event code and filtered athlete information when the component mounts or when meetid changes.
+   */
   useEffect(() => {
-    if(eventsInfo.length === 0) return;
+    if (eventsInfo.length === 0) return;
     const initialEventCode = eventsInfo[0].eventCode;
-    if(!selectedEventCode) {
+    if (!selectedEventCode) {
       setSelectedEventCode(initialEventCode);
       const filteredAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode);
       const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
@@ -57,21 +69,25 @@ const AllResults: React.FC = () => {
     }
   }, [meetid]);
 
-
+  /**
+   * Effect hook to fetch events data when the meetid changes.
+   */
   useEffect(() => {
     const updateEvents = async () => {
-      if(eventsInfo.length === 0 && meetid) {
+      if (eventsInfo.length === 0 && meetid) {
         await fetchEvents(meetid);
       }
     }
     updateEvents();
-
   }, [meetid]);
 
+  /**
+   * Effect hook to update filtered athlete information when eventsInfo changes.
+   */
   useEffect(() => {
-    if(eventsInfo.length > 0 && selectedEventCode === '') {
+    if (eventsInfo.length > 0 && selectedEventCode === '') {
       const initialEventCode = eventsInfo[0].eventCode;
-      if(!selectedEventCode) {
+      if (!selectedEventCode) {
         setSelectedEventCode(initialEventCode);
         const filteredAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode);
         const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
@@ -80,6 +96,9 @@ const AllResults: React.FC = () => {
     }
   }, [eventsInfo]);
 
+  /**
+   * Downloads the results of all events as a CSV file.
+   */
   const downloadCSV = () => {
     // Prepare the headers for the CSV
     const athleteHeaders = Object.keys(athletes[0] || {}).join(',');
@@ -106,6 +125,9 @@ const AllResults: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  /**
+   * Downloads the results of a single event as a CSV file.
+   */
   const downloadSingleCSV = () => {
     // Filter eventInfo and athletes based on selectedEventCode
     const selectedEvent = eventsInfo.find(event => event.eventCode === selectedEventCode);
@@ -152,7 +174,11 @@ const AllResults: React.FC = () => {
     URL.revokeObjectURL(url);
   };
   
-  // Handle event selection from dropdown
+  /**
+   * Handles the event selection from the dropdown menu.
+   * 
+   * @param {string} value - The selected event code.
+   */
   const handleEventSelect = (value: string) => {
     setSelectedEventCode(value);
     if (value === '') {
@@ -162,22 +188,36 @@ const AllResults: React.FC = () => {
       const filteredAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === value);
       const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
       setFilteredAthletesInfo(sortedAthletesInfo);
-      setError(sortedAthletesInfo.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
     }
   };
 
+  /**
+   * Handles the column visibility toggle.
+   * 
+   * @param {string} column - The column name.
+   * @param {boolean} isChecked - Whether the column is visible or not.
+   */
   const handleColumnVisibilityChange = (column: string, isChecked: boolean) => {
     setColumnVisibility(prev => ({ ...prev, [column]: isChecked }));
   };
 
+  /**
+   * Shows the modal for column visibility selection.
+   */
   const showModal = () => {
     setIsModalVisible(true);
   };
 
+  /**
+   * Closes the column visibility selection modal.
+   */
   const handleCancel = () => {
     setIsModalVisible(false);
   };
 
+  /**
+   * Handles navigation to the next event.
+   */
   const handleNextEvent = () => {
     if (!selectedEventCode || eventsInfo.length === 0) return;
   
@@ -192,6 +232,28 @@ const AllResults: React.FC = () => {
     handleEventSelect(eventsInfo[nextIndex].eventCode);
   };
 
+  /**
+   * Handles navigation to the previous event.
+   */
+  const handlePrevEvent = () => {
+    if (!selectedEventCode || eventsInfo.length === 0) return;
+  
+    // Find the index of the current selected event code
+    const currentIndex = eventsInfo.findIndex(event => event.eventCode === selectedEventCode);
+  
+    // Calculate the index of the previous event code
+    const prevIndex = currentIndex === -1 ? eventsInfo.length - 1 : (currentIndex - 1 + eventsInfo.length) % eventsInfo.length;
+  
+    // Update the selected event code with the previous event code
+    setSelectedEventCode(eventsInfo[prevIndex].eventCode);
+    handleEventSelect(eventsInfo[prevIndex].eventCode);
+  };
+
+  /**
+   * Renders the event results table and controls.
+   * 
+   * @returns {JSX.Element} The rendered table and controls.
+   */
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(eventsInfo);
     const renderStartTimes = () => {
@@ -199,24 +261,25 @@ const AllResults: React.FC = () => {
       return event ? event.eventPFTime : null;
     };
     const columns = [
-      { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
-      { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
-      { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
-      { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
-      { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
-      { title: 'Final Start Times', dataIndex: 'pfStartTime', key: 'pfStartTime', width: 100, render: (text: any) => renderStartTimes() },
-      { title: 'Final PF Ranking', dataIndex: 'finalPFPos', key: 'finalPFPos', width: 150 },
-      { title: 'Final PF Time', dataIndex: 'finalPFTime', key: 'finalPFTime', width: 150 },
-      { title: 'Check In', dataIndex: 'startPos', key: 'startPos', width: 100 },
-      { title: 'Start Time', dataIndex: 'startTime', key: 'startTime', width: 150 },
-      { title: 'Rank', dataIndex: 'finishPos', key: 'finishPos', width: 100 },
-      { title: 'Finish Time', dataIndex: 'finishTime', key: 'finishTime', width: 150 },
+      { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', className: 'flexible-column' },
+      { title: 'First Name', dataIndex: 'firstName', key: 'firstName', className: 'flexible-column'},
+      { title: 'Bib', dataIndex: 'athleteNum', key: 'athleteNum', width: 75 },
+      { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', className: 'flexible-desc-column'},
+      { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 50 },
+      { title: 'PFStartTime', dataIndex: 'pfStartTime', key: 'pfStartTime', width: 100, render: (text: any) => renderStartTimes() },
+      { title: 'PFRank', dataIndex: 'finalPFPos', key: 'finalPFPos', width: 75 },
+      { title: 'PFTime', dataIndex: 'finalPFTime', key: 'finalPFTime', width: 75 },
+      { title: 'CheckIn', dataIndex: 'startPos', key: 'startPos', width: 75 },
+      { title: 'StartTime', dataIndex: 'startTime', key: 'startTime', width: 150 },
+      { title: 'TJRank', dataIndex: 'finishPos', key: 'finishPos', width: 75 },
+      { title: 'TJTime', dataIndex: 'finishTime', key: 'finishTime', width: 150 },
     ].filter(column => columnVisibility[column.dataIndex]);
 
     return (
       <div >
         <div className="container">
           <div className="select-container">
+            <Button onClick={handlePrevEvent} style={{ marginRight: '20px', marginBottom: '10px' }} className='button-next' type="primary">Prev</Button>
             <Select
               placeholder="Select an event"
               className="select"
@@ -224,53 +287,26 @@ const AllResults: React.FC = () => {
               onChange={handleEventSelect}
               showSearch
               filterOption={(input, option) =>
-                `${option?.value}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
+                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0
               }
             >
-              {eventOptions.map(eventCode => {
-                // Split eventCode based on the hyphen "-"
-                if(eventCode.includes('-')) {
-                  const parts = eventCode.split('-');
-                  if (parts.length === 2) {
-                    // Splitting eventCode into parts
-                    const parts = eventCode.split('-');
-                    const mainEventCode = parts[0]; // Assuming eventCode always has a main code before "-"
-                    let round = null;
-                    let heat = null;
-                    if(parts[1]?.length === 2) {
-                      round = parts[1]?.[0]; // Assuming round is the first character after "-"
-                      heat = parts[1]?.slice(1); // Assuming heat is the characters after the first one after "-"
-                    } // If there is no round or heat, skip this event
-                    else if(parts[1]?.length === 3) {
-                      round = parts[1]?.[0]; // Extract the first 2 characters as round
-                      heat = parts[1].slice(1,3); // Extract the remaining 2 characters as heat
-                    }
-                    else if(parts[1]?.length === 4) {
-                      round = parts[1].slice(0,2); // Extract the first 2 characters as round
-                      heat = parts[1].slice(1,3); // Extract the remaining 2 characters as heat
-                    }
-
-                    return (
-                      <Option key={eventCode} value={eventCode}>
-                        {`Event Code: ${mainEventCode}, Round: ${round}, Heat: ${heat}`}
-                      </Option>
-                    );
-                  }
-                } 
-                else {
-                  return (
-                    <Option key={eventCode} value={eventCode}>
-                      {`${eventCode}`} {/* If format is unexpected, display the original eventCode */}
-                    </Option>
-                  );
-                }
-              })}
+              {eventOptions.map(({ eventCode, eventName }) => (
+                <Option key={eventCode} value={eventCode}>
+                  {eventName}
+                </Option>
+              ))}
             </Select>
             <Button onClick={handleNextEvent} className='button-next' type="primary">Next</Button>
           </div>
 
           <div className="button-container">
-            <Button onClick={showModal} className = 'button-singleDownload' type="primary">
+            <Switch
+              checkedChildren="Color"
+              unCheckedChildren="Default"
+              checked={isColorMode}
+              onChange={() => setIsColorMode(!isColorMode)}
+            />
+            <Button onClick={showModal} style={{marginLeft: '20px'}} type="primary">
               Filter Columns
             </Button>
           </div>
@@ -296,24 +332,17 @@ const AllResults: React.FC = () => {
 
   return (
     <div>
-      <div style={{ padding: '20px' }}>
-        <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+      <div className={isColorMode ? 'red-background' : 'default-background'}>
+        <Card bordered={false} style={{ marginBottom: '30px', background: isColorMode ? '#ffffff' : '#f0f2f5', padding: '20px' }}>
           <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
             <Col span={24}>
-              <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Results</Title>
-              <Text type="secondary">View all the Results of the Events</Text>
+              <Title level={2} style={{ margin: 0, marginBottom: '0px', color: '#1677FF' }}>Results</Title>
             </Col>
-            <Col span={24} style={{ marginTop: '20px' }}>
+            <Col span={24}>
               <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
-              <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
-                {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate}
+              <Title level={4} style={{ fontWeight: 'normal', marginBottom: '0px', margin: 0, color: '#1677FF' }}>
+                {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate} {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
               </Title>
-              <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
-                {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
-              </Title>
-            </Col>
-            <Col span={24} style={{ marginTop: '10px' }}>
-              <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
             </Col>
           </Row>
         </Card>
@@ -354,7 +383,7 @@ const AllResults: React.FC = () => {
           </div>
           <div className="checkbox-row">
             <Checkbox
-              checked={columnVisibility.athleteClub}
+              checked={columnVisibility.laneOrder}
               onChange={(e) => handleColumnVisibilityChange('laneOrder', e.target.checked)}
             >Lane</Checkbox>
           </div>
@@ -406,13 +435,25 @@ const AllResults: React.FC = () => {
   );
 };
 
-// Utility function to get unique event codes
-const getUniqueEventOptions = (events: EventInfo[]): string[] => {
-  const uniqueOptions = new Set<string>();
+/**
+ * Utility function to get unique event codes and names from a list of events.
+ * 
+ * @param {EventInfo[]} events - List of events to extract unique codes and names from.
+ * @returns {Array} Array of objects containing unique event codes and names.
+ */
+const getUniqueEventOptions = (events: EventInfo[]): { eventCode: string; eventName: string }[] => {
+  const uniqueOptions = new Map<string, string>();
+  
   events.forEach(event => {
-    uniqueOptions.add(event.eventCode);
+    // Use eventCode as the key and eventName as the value in the Map
+    uniqueOptions.set(event.eventCode, event.eventName);
   });
-  return Array.from(uniqueOptions);
+  
+  // Convert the Map to an array of objects
+  return Array.from(uniqueOptions.entries()).map(([eventCode, eventName]) => ({
+    eventCode,
+    eventName
+  }));
 };
 
 export default AllResults;

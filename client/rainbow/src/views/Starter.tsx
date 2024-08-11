@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Select, Table, Button, message, Divider, Modal, Checkbox, Card, Row, Col, Typography, Input } from 'antd';
+import { Select, Table, Button, message, Modal, Checkbox, Card, Row, Col, Typography, Input, Switch } from 'antd';
 import { getAthletebyEventId, updateAthleteAPI, updateEventAPI } from '../apis/api';
 
 import { TimePicker } from '../components';
@@ -7,19 +7,27 @@ import moment from 'moment';
 import { useEvents } from '../Provider/EventProvider';
 import './../styles/CustomCSS.css'
 import { formatEventCode } from './Eventutils';
-import { start } from 'repl';
 
 const { Option } = Select;
 
-const EventsList: React.FC = () => {
+/**
+ * The Starter component provides an interface for managing the start of athletic events.
+ * It allows users to select events, manage athlete check-in statuses, set start times, and add comments to events.
+ *
+ * @component
+ * @returns {JSX.Element} The rendered Starter component.
+ */
+const Starter: React.FC = () => {
   const {athletes, eventsInfo, setAthleteinfo, setEventsInfo, fetchEvents, setError, loading, error } = useEvents();
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
   const [selectedValues, setSelectedValues] = useState<{ [key: string]: string }>({}); // Track selected status values for each athlete
   const meetid = sessionStorage.getItem('lastSelectedMeetId');
-  const { Title, Text, Paragraph } = Typography;
+  const { Title, Paragraph } = Typography;
   const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
   const [eventComments, setEventComments] = useState<string>(''); // State to hold event Comment
+  const [isColorMode, setIsColorMode] = useState(false); // State for color mode
+
   type ColumnVisibility = {
     [key: string]: boolean;
     lastName: boolean;
@@ -51,7 +59,12 @@ const EventsList: React.FC = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const statusOptions = ['Y', 'DNS', 'DNF', 'DQ'];
 
-  // Function to handle status change for an athlete
+  /**
+   * Handles the status change for an athlete.
+   * Cycles through available status options and updates the athlete's status accordingly.
+   *
+   * @param {Object} athlete - The athlete object whose status is being changed.
+   */
   const handleStatusChange = (athlete: any) => {
     const currentStatus = selectedValues[athlete.athleteNum] || athlete.startPos || 'Select';
     const currentIndex = statusOptions.indexOf(currentStatus);
@@ -65,20 +78,56 @@ const EventsList: React.FC = () => {
     );
     setAthleteinfo(updatedEvents);
     if (selectedEventCode) {
-      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode)); // Update filtered events based on the selected event
+      const selectedEvent = sortBasedonLane(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+      setFilteredAthletesInfo(selectedEvent); // Update filtered events based on the selected event
     } else {
       setFilteredAthletesInfo(updatedEvents);
     }
   };
 
-  useEffect(() => {
-    if(eventsInfo.length === 0) return;
-    const initialEventCode = eventsInfo[0].eventCode;
-    if(!selectedEventCode) {
-      setSelectedEventCode(initialEventCode);
-      setFilteredAthletesInfo(athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode));
+  /**
+   * Sorts athletes based on their lane order.
+   *
+   * @param {Array} selectedAthletes - The array of athletes to sort.
+   * @returns {Array} The sorted array of athletes.
+   */
+  const sortBasedonLane = (selectedAthletes: any[]) => {
+    if (selectedAthletes) {
+      // Sort the updated events by laneOrder using compareWithPadding
+      selectedAthletes.sort((event1: { laneOrder: any }, event2: { laneOrder: any }) => {
+        return compareWithPadding(event1.laneOrder, event2.laneOrder);
+      });
     }
-  }, [meetid]);
+    return selectedAthletes;
+  };
+
+  /**
+   * Compares two strings by padding them with leading zeroes.
+   * This ensures that numeric values are compared correctly as strings.
+   *
+   * @param {string | null} val1 - The first string to compare.
+   * @param {string | null} val2 - The second string to compare.
+   * @returns {number} The comparison result: -1, 0, or 1.
+   */
+  const compareWithPadding = (val1: string | null, val2: string | null): number => {
+    if (val1 === null && val2 === null) return 0;
+    if (val1 === null) return -1;
+    if (val2 === null) return 1;
+  
+    // Convert values to strings
+    const str1 = val1.toString();
+    const str2 = val2.toString();
+  
+    // Determine the maximum length
+    const maxLength = Math.max(str1.length, str2.length);
+  
+    // Pad strings with leading zeroes
+    const paddedStr1 = str1.padStart(maxLength, '0');
+    const paddedStr2 = str2.padStart(maxLength, '0');
+  
+    // Compare padded strings
+    return paddedStr1.localeCompare(paddedStr2);
+  };
 
   useEffect(() => {
     if (selectedEventCode) {
@@ -86,8 +135,10 @@ const EventsList: React.FC = () => {
     }
   }, [selectedEventCode]);
 
-
-  // Function to handle save operation
+  /**
+   * Handles the save operation for athlete statuses and start times.
+   * Sends the updated athlete data to the server and updates the state.
+   */
   const handleSave = async () => {
     try {
       await updateAthleteAPI(filteredAthletesInfo);
@@ -105,35 +156,13 @@ const EventsList: React.FC = () => {
           : event;
       }).flat();
   
-      // Sort the updated events by startPos
-      updatedEvents.sort((event1: { startPos: any; }, event2: { startPos: any; }) => {
-        if (event1.startPos === null && event2.startPos === null) {
-          return 0;
-        }
-        if (event1.startPos === null) {
-          return -1;
-        }
-        if (event2.startPos === null) {
-          return 1;
-        }
-        return event2.startPos.localeCompare(event1.startPos);
-      });
+      const sortedUpdatedEvents = sortBasedonLane(updatedEvents);
   
-      setAthleteinfo(updatedEvents);
+      setAthleteinfo(sortedUpdatedEvents);
   
       // Sort and set filteredAthletesInfo
-      const sortedFilteredAthletesInfo = [...filteredAthletesInfo].sort((event1: { startPos: any; }, event2: { startPos: any; }) => {
-        if (event1.startPos === null && event2.startPos === null) {
-          return 0;
-        }
-        if (event1.startPos === null) {
-          return -1;
-        }
-        if (event2.startPos === null) {
-          return 1;
-        }
-        return event2.startPos.localeCompare(event1.startPos);
-      });
+      const sortedFilteredAthletesInfo = sortedUpdatedEvents.filter((event: { eventCode: any; }) => event.eventCode === selectedEventCode);
+      setFilteredAthletesInfo(sortedFilteredAthletesInfo);
   
       setFilteredAthletesInfo(sortedFilteredAthletesInfo);
   
@@ -144,7 +173,12 @@ const EventsList: React.FC = () => {
     }
   };
 
-  // Handle event selection from dropdown
+  /**
+   * Handles event selection from the dropdown menu.
+   * Fetches athlete data for the selected event and updates the state.
+   *
+   * @param {string} value - The selected event code.
+   */
   const handleEventSelect = async (value: string) => {
     setSelectedEventCode(value);
     if (value === '') {
@@ -161,41 +195,42 @@ const EventsList: React.FC = () => {
         tempSelectedValues[uniqueValue] = athlete.startPos || '';
       });
       setSelectedValues(tempSelectedValues);
-      const sortedFilteredAthletesInfo = [...filteredAthletes].sort((event1: { startPos: any; }, event2: { startPos: any; }) => {
-          if (event1.startPos === null && event2.startPos === null) {
-            return 0;
-          }
-          if (event1.startPos === null) {
-            return -1;
-          }
-          if (event2.startPos === null) {
-            return 1;
-          }
-          return event1.startPos.localeCompare(event2.startPos);
-        });
-    
+      // Use the sortBasedOnLaneOrder function to sort the athletes
+      const sortedFilteredAthletesInfo = sortBasedonLane([...filteredAthletes]);    
         setFilteredAthletesInfo(sortedFilteredAthletesInfo);
-        setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
+        //setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
       }
     };
 
-  // Handle time change in TimePicker
+  /**
+   * Handles the change in start time for an athlete.
+   * Updates the athlete's start time in the state.
+   *
+   * @param {any} time - The new start time.
+   * @param {AthleteInfo} record - The athlete record being updated.
+   */
   const handleStartTimeChange = (time: any, record: AthleteInfo) => {
     //console.log(`Time changed for athleteNum ${record.athleteNum} to ${time}`);
-    const timeString = time ? time.format('hh:mm:ss:SSS A') : null; // Convert Moment object to 12-hour format string
-    const updatedEvents = athletes.map(event =>
+    const timeString = time ? time.format('HH:mm') : null; // Convert Moment object to 12-hour format string
+    const updatedAthletes = athletes.map(event =>
       event.athleteNum === record.athleteNum ? { ...event, startTime: timeString } : event
     );
-    setAthleteinfo(updatedEvents);
+    const updatedFilteredAthletes = filteredAthletesInfo.map(event =>
+      event.athleteNum === record.athleteNum ? { ...event, startTime: timeString } : event
+    );
+    setAthleteinfo(updatedAthletes);
     if (selectedEventCode) {
-      setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
+      setFilteredAthletesInfo(updatedFilteredAthletes);
     } else {
-      setFilteredAthletesInfo(updatedEvents);
+      setFilteredAthletesInfo(updatedAthletes);
     }
   };
 
+  /**
+   * Sets the current time for all athletes in the selected event.
+   */
   const handleSetTime = () => {
-    const currentTime = moment().format('hh:mm:ss:SSS A');
+    const currentTime = moment().format('HH:mm');
     const updatedFilteredAthletesInfo = filteredAthletesInfo.map((athlete: any) => ({
       ...athlete,
       startTime: currentTime
@@ -215,22 +250,41 @@ const EventsList: React.FC = () => {
     setFilteredAthletesInfo(updatedEvents.filter(event => event.eventCode === selectedEventCode));
   };
 
+  /**
+   * Handles changes in column visibility for the table.
+   *
+   * @param {string} column - The column to toggle visibility for.
+   * @param {boolean} isChecked - Whether the column should be visible.
+   */
   const handleColumnVisibilityChange = (column: string, isChecked: boolean) => {
     setColumnVisibility(prev => ({ ...prev, [column]: isChecked }));
   };
 
+  /**
+   * Shows the column visibility modal.
+   */
   const showModal = () => {
     setIsModalVisible(true);
   };
 
+  /**
+   * Closes the column visibility modal.
+   */
   const handleCancel = () => {
     setIsModalVisible(false);
   };
 
+  /**
+   * Shows the comment modal.
+   */
   const showCommentModal = () => {
     setIsCommentModalVisible(true);
   };
 
+  /**
+   * Handles the submission of a comment for the selected event.
+   * Updates the event's comment in the state and backend.
+   */
   const handleCommentOk = async () => {
     //console.log(eventsInfo.filter((event: { eventCode: any; }) => event.eventCode === selectedEventCode));
     // Find the event with the selected event code and update its Comment
@@ -263,10 +317,17 @@ const EventsList: React.FC = () => {
     setIsCommentModalVisible(false);
   };
 
+  /**
+   * Closes the comment modal without saving changes.
+   */
   const handleCommentCancel = () => {
     setIsCommentModalVisible(false);
   };
 
+  /**
+   * Handles the selection of the next event in the list.
+   * Updates the state to reflect the new selected event.
+   */
   const handleNextEvent = () => {
     if (!selectedEventCode || eventsInfo.length === 0) return;
   
@@ -281,7 +342,28 @@ const EventsList: React.FC = () => {
     handleEventSelect(eventsInfo[nextIndex].eventCode);
   };
 
-  // Function to handle save operation
+  /**
+   * Handles the selection of the previous event in the list.
+   * Updates the state to reflect the new selected event.
+   */
+  const handlePrevEvent = () => {
+      if (!selectedEventCode || eventsInfo.length === 0) return;
+    
+      // Find the index of the current selected event code
+      const currentIndex = eventsInfo.findIndex(event => event.eventCode === selectedEventCode);
+    
+      // Calculate the index of the previous event code
+      const prevIndex = currentIndex === -1 ? eventsInfo.length - 1 : (currentIndex - 1 + eventsInfo.length) % eventsInfo.length;
+    
+      // Update the selected event code with the previous event code
+      setSelectedEventCode(eventsInfo[prevIndex].eventCode);
+      handleEventSelect(eventsInfo[prevIndex].eventCode);
+  };
+
+  /**
+   * Resets the statuses and start times for the athletes in the current event.
+   * Sends the reset data to the server and updates the state.
+   */
   const handleReset = async () => {
     try {
       const updatedFilteredAthletesInfo = filteredAthletesInfo.map((athlete: any) => ({
@@ -319,6 +401,10 @@ const EventsList: React.FC = () => {
     }
   };
 
+  /**
+   * Resets the statuses and start times for all athletes in all events.
+   * Sends the reset data to the server and updates the state.
+   */
   const handleResetAll = async () => {
     try {
       const updatedAthletesInfo = athletes.map((athlete: any) => ({
@@ -327,7 +413,7 @@ const EventsList: React.FC = () => {
         startTime: null
       }));
 
-      const updatedFilteredAthletesInfo = updatedAthletesInfo.filter(event => event.eventCode === selectedEventCode)
+      const updatedFilteredAthletesInfo = updatedAthletesInfo.filter(event => event.eventCode === selectedEventCode);
       
       // Initialize a temporary object with the current selectedValues
       let tempSelectedValues = { ...selectedValues };
@@ -365,7 +451,17 @@ const EventsList: React.FC = () => {
       }
     }
     updateEvents();
-
+    if(eventsInfo.length === 0) {
+      return;
+    }
+    const initialEventCode = eventsInfo[0].eventCode;
+    if(!selectedEventCode) {
+      setSelectedEventCode(initialEventCode);
+      const sortedAthletes = sortBasedonLane(athletes);
+      setAthleteinfo(sortedAthletes);
+      const selectedAthletes = sortedAthletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode)
+      setFilteredAthletesInfo(selectedAthletes);
+    }
   }, [meetid]);
 
   useEffect(() => {
@@ -378,8 +474,13 @@ const EventsList: React.FC = () => {
     }
   }, [eventsInfo]);
 
-
-  const renderEvents = () => {
+  /**
+   * Renders the event selection dropdown and table of athletes.
+   * Provides options to filter columns, add comments, reset, and save changes.
+   *
+   * @returns {JSX.Element} The rendered event selection and athlete table.
+   */
+  const renderEvents = (): JSX.Element => {
 
     const eventOptions = getUniqueEventOptions(eventsInfo);
 
@@ -387,33 +488,40 @@ const EventsList: React.FC = () => {
       <div>
         <div className="container">
           <div className="select-container">
-            <Select
+          <Button onClick={handlePrevEvent} style={{ marginRight: '20px', marginBottom: '10px' }} className='button-next' type="primary">Prev</Button>
+          <Select
               placeholder="Select an event"
               className="select"
               value={selectedEventCode}
               onChange={handleEventSelect}
               showSearch
               filterOption={(input, option) =>
-                `${option?.value}`.toLowerCase().indexOf(input.toLowerCase()) >= 0 ?? false
+                `${option?.children}`.toLowerCase().indexOf(input.toLowerCase()) >= 0
               }
             >
-              {eventOptions.map(eventCode => (
+              {eventOptions.map(({ eventCode, eventName }) => (
                 <Option key={eventCode} value={eventCode}>
-                  {formatEventCode(eventCode)}
+                  {eventName}
                 </Option>
               ))}
             </Select>
-            <Button onClick={handleNextEvent} className='button-next' type="primary">Next</Button>
+            <Button onClick={handleNextEvent} style = {{marginBottom: '10px' }}className='button-next' type="primary">Next</Button>
           </div>
 
           <div className="button-container">
-            <Button onClick={showModal} style={{marginRight:'10px'}} type="primary">
+            <Switch
+              checkedChildren="Color"
+              unCheckedChildren="Default"
+              checked={isColorMode}
+              onChange={() => setIsColorMode(!isColorMode)}
+            />
+            <Button onClick={showModal} style={{marginLeft: '20px'}} type="primary">
               Filter Columns
             </Button>
-            <Button onClick={showCommentModal} style={{ marginRight: '10px' }} type="primary">
+            <Button onClick={showCommentModal} style={{marginLeft: '10px'}} type="primary">
               Add Comment
             </Button>
-            <Button onClick={handleResetAll} type="primary">
+            <Button onClick={handleResetAll} style={{marginLeft: '10px'}} type="primary">
               Reset All
             </Button>
           </div>
@@ -424,11 +532,11 @@ const EventsList: React.FC = () => {
           <Table
             dataSource={filteredAthletesInfo}
             columns={[
-              { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', width: 200 },
-              { title: 'First Name', dataIndex: 'firstName', key: 'firstName', width: 200 },
-              { title: 'Athlete Number', dataIndex: 'athleteNum', key: 'athleteNum', width: 175 },
-              { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', width: 300 },
-              { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 100 },
+              { title: 'Last Name', dataIndex: 'lastName', key: 'lastName', className: 'flexible-column' },
+              { title: 'First Name', dataIndex: 'firstName', key: 'firstName', className: 'flexible-column'},
+              { title: 'Bib', dataIndex: 'athleteNum', key: 'athleteNum', width: 75 },
+              { title: 'Athlete Club', dataIndex: 'athleteClub', key: 'athleteClub', className: 'flexible-desc-column'},
+              { title: 'Lane', dataIndex: 'laneOrder', key: 'laneOrder', width: 50 },
               {
                 title: 'Check In',
                 dataIndex: 'startPos',
@@ -448,10 +556,9 @@ const EventsList: React.FC = () => {
                 render: (text: string, record: any) => (
 
                   <TimePicker
-                    value={record.startTime ? moment(record.startTime, 'hh:mm:ss:SSS A') : null} // Provide default moment object in 12-hour format
+                    value={record.startTime ? moment(record.startTime, 'HH:mm') : null} // Provide default moment object in 24-hour format
                     onChange={(time) => handleStartTimeChange(time, record)}
-                    format="hh:mm:ss:SSS A"
-                    use12Hours
+                    format="HH:mm" // Use 24-hour format
                   />
                 ),
               }
@@ -462,9 +569,11 @@ const EventsList: React.FC = () => {
           />
         )}
           <div className = 'button-div'>
-            <Button type="primary" style={{ marginRight: '10px' }} onClick={handleReset}>Reset</Button>
-            <Button type="primary" style={{ marginRight: '10px' }} onClick={handleSetTime}>Set Time</Button>
-            <Button type="primary" className = 'button-save' onClick={handleSave}>Save</Button>
+            <Button onClick={handlePrevEvent} className='button-bottom' type="primary">Prev</Button>
+            <Button type="primary" className='button-bottom' onClick={handleReset}>Reset</Button>
+            <Button type="primary" className='button-bottom' onClick={handleSetTime}>Set Time</Button>
+            <Button type="primary" className='button-bottom' onClick={handleSave}>Save</Button>
+            <Button onClick={handleNextEvent} className='button-bottom' type="primary">Next</Button>
           </div>
       </div>
     );
@@ -475,24 +584,17 @@ const EventsList: React.FC = () => {
   if (eventsInfo.length === 0 ) return <div>No events found</div>;
 
   return (
-    <div style={{ padding: '20px' }}>
-      <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
+  <div className={isColorMode ? 'green-background' : 'default-background'}>
+      <Card bordered={false} style={{ marginBottom: '30px', background: isColorMode ? '#ffffff' : '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>
-            <Title level={2} style={{ margin: 0, marginBottom: '10px', color: '#1677FF' }}>Starter's Assistant Screen</Title>
-            <Text type="secondary">Check In Athletes and set Start Times</Text>
+            <Title level={2} style={{ margin: 0, marginBottom: '0px', color: '#1677FF' }}>Starter's Assistant Screen</Title>
           </Col>
-          <Col span={24} style={{ marginTop: '20px' }}>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
-              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate}
+          <Col span={24} >
+            <Title level={4} style={{ fontWeight: 'normal', margin: '0px', color: '#1677FF' }}>{formatEventCode(selectedEventCode)}</Title>
+            <Title level={4} style={{ fontWeight: 'normal', marginBottom: '0px', margin: 0, color: '#1677FF' }}>
+              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventDate} {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
             </Title>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>
-              {eventsInfo.find(event => event.eventCode === selectedEventCode)?.eventTime}
-            </Title>
-          </Col>
-          <Col span={24} style={{ marginTop: '10px' }}>
-            <Title level={4} style={{ fontWeight: 'normal', margin: 0, color: '#1677FF' }}>Meet ID: {meetid}</Title>
           </Col>
         </Row>
       </Card>
@@ -507,7 +609,6 @@ const EventsList: React.FC = () => {
             </Row>
           </Card>
         )}
-      <Divider style={{ marginTop: 28, marginBottom: 40 }} />
       {renderEvents()}
 
       <Modal title="Select Columns to Display" open={isModalVisible} footer={[]} onCancel={handleCancel}>
@@ -538,7 +639,7 @@ const EventsList: React.FC = () => {
           </div>
           <div className="checkbox-row">
             <Checkbox
-              checked={columnVisibility.athleteClub}
+              checked={columnVisibility.laneOrder}
               onChange={(e) => handleColumnVisibilityChange('laneOrder', e.target.checked)}
             >Lane</Checkbox>
           </div>
@@ -568,13 +669,25 @@ const EventsList: React.FC = () => {
   );
 };
 
-// Utility function to get unique event codes
-const getUniqueEventOptions = (events: EventInfo[]): string[] => {
-  const uniqueOptions = new Set<string>();
+/**
+ * Utility function to get unique event codes.
+ * 
+ * @param {EventInfo[]} events - Array of event information objects.
+ * @returns {{ eventCode: string; eventName: string }[]} Array of unique event codes and their names.
+ */
+const getUniqueEventOptions = (events: EventInfo[]): { eventCode: string; eventName: string }[] => {
+  const uniqueOptions = new Map<string, string>();
+  
   events.forEach(event => {
-    uniqueOptions.add(event.eventCode);
+    // Use eventCode as the key and eventName as the value in the Map
+    uniqueOptions.set(event.eventCode, event.eventName);
   });
-  return Array.from(uniqueOptions);
+  
+  // Convert the Map to an array of objects
+  return Array.from(uniqueOptions.entries()).map(([eventCode, eventName]) => ({
+    eventCode,
+    eventName
+  }));
 };
 
-export default EventsList;
+export default Starter;

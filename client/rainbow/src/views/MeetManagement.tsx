@@ -6,6 +6,9 @@ import { IMeet } from "../modals/Meet";
 import { getMeetsAPI, deleteMeetAPI, updateMeetAPI, addMeetAPI, getEventFiles } from "../apis/api.ts";
 import './../styles/CustomCSS.css'
 
+/**
+ * Interface representing the values of the edit form.
+ */
 interface EditFormValues {
     meetId: number;
     meetName: string;
@@ -17,38 +20,55 @@ interface EditFormValues {
     edit: boolean;
 }
 
+/**
+ * The MeetListAdmin component is responsible for managing athletic meets.
+ * It allows administrators to view, add, edit, update, and delete meets through a user-friendly interface.
+ * 
+ * @component
+ */
 const MeetListAdmin = () => {
-  //const folderInput= React.useRef(null);
+  // State variables to manage meet list, editing state, selected folder, and modal visibility
   const [meetList, setMeetList] = useState<IMeet[]>([]);
   const [editingMeet, setEditingMeet] = useState<IMeet | null>(null);
   const [selectedFolder, setSelectedFolder] = useState('');
   
-  //add Meet
+  // State for managing add meet modal visibility and form
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [addform] = Form.useForm();
   
-  // edit Meet
+  // State for managing edit meet modal visibility and form
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editForm] = Form.useForm();
 
+  // State for managing file list and modal visibility for file updates
   const [fileList, setFileList] = useState<string[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const {Title} = Typography;
+  const { Title } = Typography;
 
-  // userInfo
+  // User information from context
   const userContext = useContext(UserContext);
 
-  // add
+  /**
+   * Opens the modal for adding a new meet.
+   */
   const onAddClick = () => {
     setIsAddModalVisible(true);
   };
 
-  // add
+  /**
+   * Closes the modal for adding a new meet.
+   */
   const handleAddCancel = () => {
     setIsAddModalVisible(false);
   };
 
-  // add
+  /**
+   * Handles form submission for adding a new meet.
+   * Sends the new meet data to the API and refreshes the meet list.
+   * 
+   * @async
+   * @param {IMeet} meet - The meet data to be added.
+   */
   const handleAddFormSubmit = async (meet: IMeet) => {
     try {
       const meetParams = {
@@ -69,13 +89,17 @@ const MeetListAdmin = () => {
       addform.resetFields();
       getMeetList();
     } catch (error: any) {
-      const errMsg = error.response?.data?.error|| "Failed to add new meet";
+      const errMsg = error.response?.data?.error || "Failed to add new meet";
       console.error(errMsg);
       message.error(errMsg);
     }
   };
 
-  // get meet list
+  /**
+   * Fetches the list of meets from the API and updates the state.
+   * 
+   * @async
+   */
   const getMeetList = async () => {
     try {
       const response: any = await getMeetsAPI();
@@ -91,7 +115,7 @@ const MeetListAdmin = () => {
           eventList: i.eventList,
           intFolder: i.intFolder,
           edit: i.edit ?? false,
-        }
+        };
       });
 
       setMeetList(meets);
@@ -105,96 +129,94 @@ const MeetListAdmin = () => {
     }
   };
 
-   // useEffect
-   useEffect(() => {
+  // Fetch the meet list when the component is mounted
+  useEffect(() => {
     getMeetList();
-  }, [userContext])
-  
-  // admin
-  if (userContext?.user?.userRole !== "admin") {
-    // return <Navigate to="/" replace />;
-    return <div>No access permission</div>;
-  }
+  }, [userContext]);
 
+  /**
+   * Handles the update of event files based on the provided folder paths and meet ID.
+   * 
+   * @async
+   * @param {string} pfFolder - Path to the photo finish folder.
+   * @param {string} intFolder - Path to the interface folder.
+   * @param {string} eventList - Type of event list.
+   * @param {number} meetId - The ID of the meet to be updated.
+   */
   const handleUpdateClick = async (pfFolder: string, intFolder: string, eventList: string, meetId: number) => {
     try {
-        if(pfFolder == null || pfFolder == "") {
+        if (pfFolder == null || pfFolder == "") {
           const errMsg = "pfFolder path is required";
           console.log(errMsg);
           message.error(errMsg);
-        }
-        else if(eventList == null || eventList == "") {
+        } else if (eventList == null || eventList == "") {
           const errMsg = "eventList type is required";
           console.log(errMsg);
           message.error(errMsg);
-        }
-        else if(meetId == null) {
+        } else if (meetId == null) {
           const errMsg = "MeetID is required";
           console.log(errMsg);
           message.error(errMsg);
-        }
-        else {
+        } else {
           const folderParams = {
               pfFolder: pfFolder,
               eventList: eventList,
               intFolder: intFolder,
               meetId: meetId
-          }
+          };
           const response = await getEventFiles(folderParams);
-          if(response.data.status == 'failure') {
+          if (response.data.status === 'failure') {
             if (response.data.error) {
-                // If there's an error message, handle it
-                try{
-                  if(response.data.error.copyError) {
+                try {
+                  if (response.data.error.copyError) {
                     const errMsg = response.data.error.copyError || "Failed to copy startlist from interface folder";
                     console.error(errMsg);
                     message.error(errMsg);
                   }
-                } catch (error: any) {
-                }
-                try{
-                  if(response.data.error.dbError) {
+                } catch (error: any) {}
+                try {
+                  if (response.data.error.dbError) {
                     const errMsg = response.data.error.dbError || "Failed to update database";
                     console.error(errMsg);
                     message.error(errMsg);
                   }
-                } catch (error: any) {
-                }
+                } catch (error: any) {}
                 const errMsg = response.data.error.message || "Failed to update start list";
                 console.error(errMsg);
                 message.error(errMsg);
             }
           } else {
-              // Success case: Display success message and update state
-              try{
-                if(response.data.error.copyError) {
+              try {
+                if (response.data.error.copyError) {
                   const errMsg = response.data.error.copyError || "Failed to copy startlist from interface folder";
                   console.error(errMsg);
                   message.error(errMsg);
                 }
-              } catch (error: any) {
-              }
+              } catch (error: any) {}
               message.success(response.data.message || "Updated Start List Successfully");
               setFileList(response.data.files);
               setIsModalVisible(true);
           }
         }
-        } catch (error: any) {
+      } catch (error: any) {
         const errMsg = error.response?.data?.error || "Failed to fetch files";
         console.error(error);
         message.error(errMsg);
-        }
-    };
+      }
+  };
 
+  /**
+   * Closes the modal for displaying file updates.
+   */
   const handleCancel = () => {
     setIsModalVisible(false);
     setFileList([]);
   };
 
-  // list columns
+  // Column definitions for the meet table
   const baseColumns: ColumnsType<IMeet> = [
     {
-      title: "Meet ID",
+      title: "Meet Date (yyyymmdd)",
       dataIndex: "meetId",
       key: "meetId",
       width: 150,
@@ -235,7 +257,7 @@ const MeetListAdmin = () => {
         title: "Interface Folder",
         key: "intFolder",
         dataIndex: "intFolder",
-        width:200,
+        width: 200,
     },
     {
         title: "Edit",
@@ -248,8 +270,9 @@ const MeetListAdmin = () => {
         ),
         width: 100,
     }
-  ]
+  ];
 
+  // Column definitions with additional action buttons for admin use
   const meetColumns: ColumnsType<IMeet> = [
     ...baseColumns,
     {
@@ -270,13 +293,13 @@ const MeetListAdmin = () => {
           >
             <Button danger className="action-button">Delete</Button>
           </Popconfirm>
-          
         </Space>
       ),
       width: 180,
     },
   ];
 
+  // Tab items for displaying the meet table
   const tabItems = [
     {
       label: "All Meets",
@@ -292,16 +315,25 @@ const MeetListAdmin = () => {
         </div>
       ),
     },
-  ]
+  ];
 
+  /**
+   * Handles the tab change event.
+   * 
+   * @param {any} key - The key of the selected tab.
+   */
   const onTabChange = (key: any) => {
-    // console.log(key);
+    // Handle tab change if needed
   };
 
-
-  // edit click
+  /**
+   * Handles the click event for editing a meet.
+   * Opens the modal for editing and populates the form with the selected meet's details.
+   * 
+   * @param {IMeet} meet - The meet data to be edited.
+   */
   const onEditClick = (meet: IMeet) => {
-    // display existing info
+    // Display existing info in the form
     setEditingMeet(meet);
     setIsEditModalVisible(true);
 
@@ -318,7 +350,13 @@ const MeetListAdmin = () => {
     setSelectedFolder(meet.pfFolder);
   };
 
-  // edit submit
+  /**
+   * Handles form submission for editing a meet.
+   * Sends the updated meet data to the API and refreshes the meet list.
+   * 
+   * @async
+   * @param {EditFormValues} meet - The updated meet data.
+   */
   const handleEditSubmit = async (meet: EditFormValues) => {
     try {
       const meetParams = {
@@ -338,7 +376,7 @@ const MeetListAdmin = () => {
       setIsEditModalVisible(false);
       setEditingMeet(null);
 
-      // re-get meet list
+      // Re-fetch the meet list
       getMeetList();
     } catch (error: any) {
       const errMsg = error.response?.data?.msg || "Update meet failed";
@@ -347,19 +385,27 @@ const MeetListAdmin = () => {
     }
   };
 
-  // edit cancel
+  /**
+   * Closes the modal for editing a meet.
+   */
   const handleEditCancel = () => {
     setIsEditModalVisible(false);
     setEditingMeet(null);
   };
 
-  // delete click
+  /**
+   * Handles the click event for deleting a meet.
+   * Sends the delete request to the API and refreshes the meet list.
+   * 
+   * @async
+   * @param {IMeet} meet - The meet data to be deleted.
+   */
   const onDeleteClick = async (meet: IMeet) => {
     try {
       await deleteMeetAPI(meet.meetId);
       message.success("Meet deleted successfully");
 
-      // re-get meet list
+      // Re-fetch the meet list
       getMeetList();
     } catch (error: any) {
       const errMsg = error.response?.data?.msg || "Delete meet failed";
@@ -369,9 +415,9 @@ const MeetListAdmin = () => {
   };
 
   return (
-    <div>
+    <div style={{padding: "24px"}}>
 
-      {/*Add button area */}
+      {/* Add button area */}
       <Row style={{ marginBottom: 0, paddingBottom: 0 }}>
         <Col span={8} lg={8} md={6} sm={2}></Col>
         <Col span={8} lg={8} md={10} sm={14}>
@@ -383,9 +429,10 @@ const MeetListAdmin = () => {
       </Row>
       <Divider style={{ marginTop: 20, marginBottom: 10 }} />
 
-      {/*Table area*/}
+      {/* Table area */}
       <Tabs defaultActiveKey="1" onChange={onTabChange} items={tabItems} />
-      {/*Add a user dialog box*/}
+
+      {/* Add a meet dialog box */}
       <Modal
           title="Add Meet"
           open={isAddModalVisible}
@@ -393,7 +440,7 @@ const MeetListAdmin = () => {
           onCancel={handleAddCancel}
         >
           <Form form={addform} layout="vertical" onFinish={handleAddFormSubmit}>
-            <Form.Item name="meetId" label="Meet ID" rules={[{ required: true, message: "Id is required" }]}>
+            <Form.Item name="meetId" label="Meet Date (yyyymmdd)" rules={[{ required: true, message: "Id is required" }]}>
               <Input />
             </Form.Item>
             <Form.Item name="meetName" label="Meet name" rules={[{ required: true, message: "Please input the meet name!" }]}>
@@ -449,7 +496,8 @@ const MeetListAdmin = () => {
             </Form.Item>
           </Form>
         </Modal>
-      {/*Edit a meet dialog box*/}
+
+      {/* Edit a meet dialog box */}
       <Modal
         title="Edit Meet"
         open={isEditModalVisible}
@@ -457,7 +505,7 @@ const MeetListAdmin = () => {
         onCancel={handleEditCancel}
       >
         <Form form={editForm} layout="vertical" onFinish={handleEditSubmit}>
-          <Form.Item name="meetId" label="Meet ID" rules={[{ required: true, message: "Id is required" }]}>
+          <Form.Item name="meetId" label="Meet Date (yyyymmdd)" rules={[{ required: true, message: "Id is required" }]}>
             <Input disabled />
           </Form.Item>
           <Form.Item name="meetName" label="Meet name" rules={[{ required: true, message: "Please input the meet name!" }]}>
@@ -514,16 +562,7 @@ const MeetListAdmin = () => {
         </Form>
       </Modal>
     </div>
-  )
-}
+  );
+};
 
-// declare module 'react' {
-//   interface HTMLAttributes<T> extends AriaAttributes, DOMAttributes<T> {
-//     // extends React's HTMLAttributes
-//     directory?: string;        // remember to make these attributes optional....
-//     webkitdirectory?: string;
-//     window?: any;
-//   }
-// }
-
-export default MeetListAdmin
+export default MeetListAdmin;

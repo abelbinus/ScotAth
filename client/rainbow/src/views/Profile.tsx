@@ -16,17 +16,20 @@ const ProfilePage = () => {
   const userContext = useContext(UserContext);
   const { setUser } = useContext(UserContext);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  // edit info
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [, setEditingUser] = useState<IUser | null>(null);
   const [editForm] = Form.useForm();
-  // password
   const [changePasswordForm] = Form.useForm();
   const [isPasswordVisibleOld, setIsPasswordVisibleOld] = useState(false);
   const [isPasswordVisibleNew, setIsPasswordVisibleNew] = useState(false);
   const [isPasswordVisibleRetype, setIsPasswordVisibleRetype] = useState(false);
   const [isChangePasswordModalVisible, setIsChangePasswordModalVisible] = useState(false);
 
+  /**
+   * @function onEditClick
+   * @description Handles the action to open the edit modal with user data.
+   * @param {IUser} user - The user object to edit.
+   */
   const onEditClick = (user: IUser) => {
     setEditingUser(user)
     setIsEditModalVisible(true);
@@ -45,13 +48,20 @@ const ProfilePage = () => {
     });
   };
 
-  // edit
+  /**
+   * @function handleEditCancel
+   * @description Handles cancel action for the edit modal.
+   */
   const handleEditCancel = () => {
     setIsEditModalVisible(false);
     setEditingUser(null);
   };
 
-  // edit
+  /**
+   * @function handleEditSubmit
+   * @description Handles the submit action for updating user data.
+   * @param {IUser} user - The user object with updated data.
+   */
   const handleEditSubmit = async (user: IUser) => {
     try {
       const userParams = {
@@ -63,7 +73,6 @@ const ProfilePage = () => {
         userEmail: user.userEmail,
         userRole: user.userRole,
         usermob: user.userMob
-
       };
 
       await updateUserAPI(userParams);
@@ -79,18 +88,21 @@ const ProfilePage = () => {
     }
   };
 
+  /**
+   * @function handlePasswordChange
+   * @description Handles the action for changing user password.
+   * @param {PasswordChange} values - The form values containing the old password, new password, and retype new password.
+   */
   const handlePasswordChange = async (values: PasswordChange) => {
-
-    // Check if the old password and the new password are the same
-    console.log(userContext);
     if (userContext!.user!.userPass !== null) {
+      console.log(userContext.user?.userPass);
+      //const value = values.oldPassword === userContext!.user!.userPass;
       const value = await bcrypt.compare(values.oldPassword, userContext!.user!.userPass);
-      console.log(value);
       if (!value) {
         return message.error("Old password is incorrect");
       }
     }
-    // Add validation for new password and retype new password
+
     if (values.newPassword !== values.retypeNewPassword) {
       return message.error("New password and retype new password do not match");
     }
@@ -114,11 +126,10 @@ const ProfilePage = () => {
         newPass: values.newPassword,
         userId: userContext!.user!.userId
       }
-      const response = await changePasswordAPI(password); // Call the changePasswordAPI function
+      const response = await changePasswordAPI(password); 
       const responseMessage = response?.data?.message;
       if (responseMessage) {
           message.success(responseMessage);
-          // Close the modal
           setIsChangePasswordModalVisible(false);
       } else {
           message.error(response.data.error || 'Failed to change password');
@@ -130,15 +141,20 @@ const ProfilePage = () => {
     }
   };
 
-  // change password
+  /**
+   * @function handleChangePasswordModalCancel
+   * @description Handles cancel action for the change password modal.
+   */
   const handleChangePasswordModalCancel = () => {
     setIsChangePasswordModalVisible(false);
   };
 
-  // change password 
+  /**
+   * @function onChangePasswordClick
+   * @description Opens the change password modal and clears the form fields.
+   */
   const onChangePasswordClick = () => {
     setIsChangePasswordModalVisible(true);
-    // Clear password fields
     changePasswordForm.setFieldsValue({
       oldPassword: null,
       newPassword: null,
@@ -146,16 +162,34 @@ const ProfilePage = () => {
     });
   };
 
+  /**
+   * @function handlePasswordVisibility
+   * @description Toggles the visibility of the password field.
+   */
   const handlePasswordVisibility = () => {
     setIsPasswordVisible(!isPasswordVisible);
   };
 
+  /**
+   * @function handlePasswordVisibilityOld
+   * @description Toggles the visibility of the old password field.
+   */
   const handlePasswordVisibilityOld = () => {
     setIsPasswordVisibleOld(!isPasswordVisibleOld);
   };
+
+  /**
+   * @function handlePasswordVisibilityNew
+   * @description Toggles the visibility of the new password field.
+   */
   const handlePasswordVisibilityNew = () => {
     setIsPasswordVisibleNew(!isPasswordVisibleNew);
   };
+
+  /**
+   * @function handlePasswordVisibilityRetype
+   * @description Toggles the visibility of the retype new password field.
+   */
   const handlePasswordVisibilityRetype = () => {
     setIsPasswordVisibleRetype(!isPasswordVisibleRetype);
   };
@@ -174,7 +208,6 @@ const ProfilePage = () => {
               {userContext?.user?.lastName && ' ' + userContext?.user?.lastName}
             </Descriptions.Item>
           )}
-          
           <Descriptions.Item label="Email" >{userContext?.user?.userEmail}</Descriptions.Item>
           <Descriptions.Item label="Role" >{userContext?.user?.userRole}</Descriptions.Item>
           <Descriptions.Item label="Mobile" >{userContext?.user?.userMob}</Descriptions.Item>
@@ -265,7 +298,6 @@ const ProfilePage = () => {
       </Modal>
     </div>
   );
-  
 };
 
 export default ProfilePage;
