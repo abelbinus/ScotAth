@@ -150,19 +150,6 @@ app.post('/api/rainbow/user', async (req, res) => {
  */
 app.put('/api/rainbow/user', async (req, res) => {
     const user = req.body;
-  
-    // Check if the password needs to be hashed
-    let hashedPassword = user.userPass;
-    if (user.userPass) {
-      try {
-        const salt = await bcrypt.genSalt(10);
-        hashedPassword = await bcrypt.hash(user.userPass, salt);
-      } catch (err) {
-        console.error('Error hashing password:', err);
-        return res.status(500).json({ error: 'Failed to hash password' });
-      }
-    }
-
     // Update user in the database
     let sql;
     let values;
