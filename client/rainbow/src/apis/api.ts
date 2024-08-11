@@ -1,67 +1,92 @@
-
 import { getAxiosInstance } from ".";
 import { ILoginValues } from "../modals/LoginValues";
 
-// Login API endpoint
+/**
+ * Makes an API call to the login endpoint.
+ * @param {ILoginValues} loginValues - The login credentials.
+ * @returns {Promise} The API response.
+ */
 export function loginAPI(loginValues: ILoginValues) {
-    const request=getAxiosInstance();
-  return request({
-    method: 'POST',
-    url: '/api/login', // Adjust URL if necessary
-    data: loginValues,
-  });
+    const request = getAxiosInstance();
+    return request({
+        method: 'POST',
+        url: '/api/login', // Adjust URL if necessary
+        data: loginValues,
+    });
 }
 
-// all user
+/**
+ * Makes an API call to the logout endpoint.
+ * @returns {Promise} The API response.
+ */
 export function logoutAPI() {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: "/api/authentication/logout",
         method: "GET",
     });
 }
 
-// Update a specific user
+/**
+ * Updates a specific user.
+ * @param {any} user - The user data to update.
+ * @returns {Promise} The API response.
+ */
 export function updateUserAPI(user: any) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/user/`,
         method: "PUT",
         data: user,
-    })
+    });
 }
 
-// Get all meets list
+/**
+ * Retrieves the list of all meets.
+ * @returns {Promise} The API response.
+ */
 export function getMeetsAPI() {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/meet`,
         method: "GET",
     });
 }
 
-// Get all meets list
+/**
+ * Retrieves a specific meet by its ID.
+ * @param {string} meetId - The ID of the meet.
+ * @returns {Promise} The API response.
+ */
 export function getMeetByIdAPI(meetId: string) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/meet/${meetId}`,
         method: "GET",
     });
 }
 
-// Update a specific meet
+/**
+ * Updates a specific meet.
+ * @param {any} meet - The meet data to update.
+ * @returns {Promise} The API response.
+ */
 export function updateMeetAPI(meet: any) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/meet`,
         method: "PUT",
         data: meet,
-    })
+    });
 }
 
-// user
+/**
+ * Changes the user's password.
+ * @param {any} password - The new password data.
+ * @returns {Promise} The API response.
+ */
 export function changePasswordAPI(password: any) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/user/changePassword/`,
         method: "POST",
@@ -69,27 +94,38 @@ export function changePasswordAPI(password: any) {
     });
 }
 
-// user
+/**
+ * Retrieves a specific user by their ID.
+ * @param {number} userId - The ID of the user.
+ * @returns {Promise} The API response.
+ */
 export function getUserByIdAPI(userId: number) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/user/${userId}`,
         method: "GET",
     });
 }
 
-// admin
+/**
+ * Retrieves the list of all users.
+ * @returns {Promise} The API response.
+ */
 export function getAllUsersAPI() {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: "/api/rainbow/user",
         method: "GET",
     });
 }
 
-// admin
+/**
+ * Adds a new user.
+ * @param {any} user - The user data to add.
+ * @returns {Promise} The API response.
+ */
 export function addUserAPI(user: any) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: "/api/rainbow/user",
         method: "POST",
@@ -97,100 +133,139 @@ export function addUserAPI(user: any) {
     });
 }
 
-// admin
+/**
+ * Deletes a specific user by their ID.
+ * @param {number} userId - The ID of the user.
+ * @returns {Promise} The API response.
+ */
 export function deleteUserAPI(userId: number) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/user/${userId}`,
         method: "DELETE",
     });
 }
 
-// admin
+/**
+ * Adds a new meet.
+ * @param {any} meet - The meet data to add.
+ * @returns {Promise} The API response.
+ */
 export function addMeetAPI(meet: any) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/meet`,
         method: "POST",
         data: meet,
-    })
+    });
 }
 
-// admin
+/**
+ * Deletes a specific meet by its ID.
+ * @param {number} meetId - The ID of the meet.
+ * @returns {Promise} The API response.
+ */
 export function deleteMeetAPI(meetId: number) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/meet/${meetId}`,
         method: "DELETE",
-    })
+    });
 }
 
-// get all event details from folder
+/**
+ * Retrieves event details from a folder.
+ * @param {any} folderParams - The folder parameters.
+ * @returns {Promise} The API response.
+ */
 export function getEventFiles(folderParams: any) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/event/`,
         method: "POST",
         data: folderParams,
-    })
+    });
 }
 
-// get all event details from folder
+/**
+ * Retrieves event details by meet ID.
+ * @param {any} meetId - The ID of the meet.
+ * @returns {Promise} The API response.
+ */
 export function getEventbyMeetId(meetId: any) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/eventinfo/${meetId}`,
         method: "GET",
-    })
+    });
 }
 
-// get all event details from folder
+/**
+ * Retrieves athlete details by meet ID and event code.
+ * @param {any} meetId - The ID of the meet.
+ * @param {any} eventCode - The event code.
+ * @returns {Promise} The API response.
+ */
 export function getAthletebyEventId(meetId: any, eventCode: any) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/event/${meetId}/${eventCode}`,
         method: "GET",
-    })
+    });
 }
 
-// get all event details from folder
+/**
+ * Posts photofinish event details by event ID.
+ * @param {any} folderParams - The folder parameters.
+ * @returns {Promise} The API response.
+ */
 export function postPFEventbyEventId(folderParams: any) {
-    const request=getAxiosInstance();
-    //console.log("folderParams");
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/pfevent/`,
         method: "POST",
         data: folderParams,
-    })
+    });
 }
 
-// update all event details
+/**
+ * Updates event details.
+ * @param {any} eventGroup - The event data to update.
+ * @returns {Promise} The API response.
+ */
 export function updateEventAPI(eventGroup: any) {
-    const request=getAxiosInstance();
-    //console.log("eventGroup");
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/updateEventAPI/`,
         method: "POST",
         data: eventGroup,
-    })
+    });
 }
 
-// update all event details
+/**
+ * Updates athlete details.
+ * @param {any} eventGroup - The athlete data to update.
+ * @returns {Promise} The API response.
+ */
 export function updateAthleteAPI(eventGroup: any) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/updateAthleteAPI/`,
         method: "POST",
         data: eventGroup,
-    })
+    });
 }
 
-// get all event photos
+/**
+ * Retrieves event photos.
+ * @param {any} photoParams - The photo parameters.
+ * @returns {Promise} The API response.
+ */
 export function getEventPhoto(photoParams: any) {
-    const request=getAxiosInstance();
+    const request = getAxiosInstance();
     return request({
         url: `/api/rainbow/getEventPhotoAPI/`,
         method: "POST",
         data: photoParams,
-    })
+    });
 }

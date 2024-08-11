@@ -1,16 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { Select, Table, Button, Popconfirm, Divider, Checkbox, Modal, Card, Row, Col, Typography, Switch } from 'antd';
+import { Select, Table, Button, Checkbox, Modal, Card, Row, Col, Typography, Switch } from 'antd';
 import { useEvents } from '../Provider/EventProvider';
-import './../styles/CustomCSS.css'
+import './../styles/CustomCSS.css';
 import { formatEventCode, sortBasedonRank } from './Eventutils';
 
 const { Option } = Select;
 
-const AllResults: React.FC = () => {
-  const {athletes, eventsInfo, setError, fetchEvents, loading, error } = useEvents();
+/**
+ * The AllResults component is responsible for displaying a list of results
+ * for various events in a sports meet. Users can filter results based on the selected event,
+ * toggle column visibility, and download results in CSV format.
+ * 
+ * @component
+ * @returns {JSX.Element} The rendered AllResults component.
+ */
+const AllResults = (): JSX.Element => {
+  const { athletes, eventsInfo, fetchEvents, loading, error } = useEvents();
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
-  const { Title, Text } = Typography;
+  const { Title} = Typography;
   const [isColorMode, setIsColorMode] = useState(false); // State for color mode
   
   type ColumnVisibility = {
@@ -47,10 +55,13 @@ const AllResults: React.FC = () => {
 
   const meetid = sessionStorage.getItem('lastSelectedMeetId');
 
+  /**
+   * Effect hook to set the initial event code and filtered athlete information when the component mounts or when meetid changes.
+   */
   useEffect(() => {
-    if(eventsInfo.length === 0) return;
+    if (eventsInfo.length === 0) return;
     const initialEventCode = eventsInfo[0].eventCode;
-    if(!selectedEventCode) {
+    if (!selectedEventCode) {
       setSelectedEventCode(initialEventCode);
       const filteredAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode);
       const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
@@ -58,21 +69,25 @@ const AllResults: React.FC = () => {
     }
   }, [meetid]);
 
-
+  /**
+   * Effect hook to fetch events data when the meetid changes.
+   */
   useEffect(() => {
     const updateEvents = async () => {
-      if(eventsInfo.length === 0 && meetid) {
+      if (eventsInfo.length === 0 && meetid) {
         await fetchEvents(meetid);
       }
     }
     updateEvents();
-
   }, [meetid]);
 
+  /**
+   * Effect hook to update filtered athlete information when eventsInfo changes.
+   */
   useEffect(() => {
-    if(eventsInfo.length > 0 && selectedEventCode === '') {
+    if (eventsInfo.length > 0 && selectedEventCode === '') {
       const initialEventCode = eventsInfo[0].eventCode;
-      if(!selectedEventCode) {
+      if (!selectedEventCode) {
         setSelectedEventCode(initialEventCode);
         const filteredAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === initialEventCode);
         const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
@@ -81,6 +96,9 @@ const AllResults: React.FC = () => {
     }
   }, [eventsInfo]);
 
+  /**
+   * Downloads the results of all events as a CSV file.
+   */
   const downloadCSV = () => {
     // Prepare the headers for the CSV
     const athleteHeaders = Object.keys(athletes[0] || {}).join(',');
@@ -107,6 +125,9 @@ const AllResults: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  /**
+   * Downloads the results of a single event as a CSV file.
+   */
   const downloadSingleCSV = () => {
     // Filter eventInfo and athletes based on selectedEventCode
     const selectedEvent = eventsInfo.find(event => event.eventCode === selectedEventCode);
@@ -153,7 +174,11 @@ const AllResults: React.FC = () => {
     URL.revokeObjectURL(url);
   };
   
-  // Handle event selection from dropdown
+  /**
+   * Handles the event selection from the dropdown menu.
+   * 
+   * @param {string} value - The selected event code.
+   */
   const handleEventSelect = (value: string) => {
     setSelectedEventCode(value);
     if (value === '') {
@@ -163,22 +188,36 @@ const AllResults: React.FC = () => {
       const filteredAthletes = athletes.filter((event: { eventCode: any; }) => event.eventCode === value);
       const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
       setFilteredAthletesInfo(sortedAthletesInfo);
-      //setError(sortedAthletesInfo.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
     }
   };
 
+  /**
+   * Handles the column visibility toggle.
+   * 
+   * @param {string} column - The column name.
+   * @param {boolean} isChecked - Whether the column is visible or not.
+   */
   const handleColumnVisibilityChange = (column: string, isChecked: boolean) => {
     setColumnVisibility(prev => ({ ...prev, [column]: isChecked }));
   };
 
+  /**
+   * Shows the modal for column visibility selection.
+   */
   const showModal = () => {
     setIsModalVisible(true);
   };
 
+  /**
+   * Closes the column visibility selection modal.
+   */
   const handleCancel = () => {
     setIsModalVisible(false);
   };
 
+  /**
+   * Handles navigation to the next event.
+   */
   const handleNextEvent = () => {
     if (!selectedEventCode || eventsInfo.length === 0) return;
   
@@ -193,6 +232,9 @@ const AllResults: React.FC = () => {
     handleEventSelect(eventsInfo[nextIndex].eventCode);
   };
 
+  /**
+   * Handles navigation to the previous event.
+   */
   const handlePrevEvent = () => {
     if (!selectedEventCode || eventsInfo.length === 0) return;
   
@@ -205,8 +247,13 @@ const AllResults: React.FC = () => {
     // Update the selected event code with the previous event code
     setSelectedEventCode(eventsInfo[prevIndex].eventCode);
     handleEventSelect(eventsInfo[prevIndex].eventCode);
-};
+  };
 
+  /**
+   * Renders the event results table and controls.
+   * 
+   * @returns {JSX.Element} The rendered table and controls.
+   */
   const renderEvents = () => {
     const eventOptions = getUniqueEventOptions(eventsInfo);
     const renderStartTimes = () => {
@@ -232,8 +279,8 @@ const AllResults: React.FC = () => {
       <div >
         <div className="container">
           <div className="select-container">
-          <Button onClick={handlePrevEvent} style={{ marginRight: '20px', marginBottom: '10px' }} className='button-next' type="primary">Prev</Button>
-          <Select
+            <Button onClick={handlePrevEvent} style={{ marginRight: '20px', marginBottom: '10px' }} className='button-next' type="primary">Prev</Button>
+            <Select
               placeholder="Select an event"
               className="select"
               value={selectedEventCode}
@@ -253,7 +300,7 @@ const AllResults: React.FC = () => {
           </div>
 
           <div className="button-container">
-          <Switch
+            <Switch
               checkedChildren="Color"
               unCheckedChildren="Default"
               checked={isColorMode}
@@ -388,7 +435,12 @@ const AllResults: React.FC = () => {
   );
 };
 
-// Utility function to get unique event codes
+/**
+ * Utility function to get unique event codes and names from a list of events.
+ * 
+ * @param {EventInfo[]} events - List of events to extract unique codes and names from.
+ * @returns {Array} Array of objects containing unique event codes and names.
+ */
 const getUniqueEventOptions = (events: EventInfo[]): { eventCode: string; eventName: string }[] => {
   const uniqueOptions = new Map<string, string>();
   

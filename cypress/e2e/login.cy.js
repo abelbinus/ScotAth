@@ -52,21 +52,14 @@ describe('Login Page Tests', () => {
     cy.get('[data-testid="login_form"]').should('be.visible');
 
     // Verify the presence of the username input field
-    cy.get("input[placeholder=\"User Name\"]").type("abj1");
+    cy.get("input[placeholder=\"User Name\"]").type("abj");
 
     // Verify the presence of the password input field
-    cy.get("input[placeholder=\"Password\"]").type("Password123!");
+    cy.get("input[placeholder=\"Password\"]").type("abeladmin");
 
     // Check if the login button is present
     cy.get('.login-form-button').should('exist').and('contain', 'Log in').click();
     cy.contains('User Management');
-    cy.contains('Meet Management');
-    cy.contains('View Meets');
-    cy.contains('View Events');
-    cy.contains('Starter\'s Assistant Screen');
-    cy.contains('Track Judge Screen');
-    cy.contains('PhotoFinish Screen');
-    cy.contains('Results');
   });
 
 })

@@ -1,22 +1,27 @@
 /* eslint-disable jsx-a11y/img-redundant-alt */
+/**
+ * @file Photofinish.tsx
+ * @description PhotoFinish Screen component for displaying event and athlete information with photo finish results.
+ *              This component allows users to filter events, toggle between color modes, and view photo finish data from FinishLynx.
+ * @module Photofinish
+ */
+
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Checkbox, Col, Divider, Input, Modal, Row, Select, Switch, Table, Typography, message } from 'antd';
-import { getEventPhoto, getAthletebyEventId, getEventbyMeetId, getMeetByIdAPI, postPFEventbyEventId, updateEventAPI } from '../apis/api';
+import { Button, Card, Checkbox, Col, Modal, Row, Select, Switch, Table, Typography, message } from 'antd';
+import { getEventPhoto, getAthletebyEventId, getEventbyMeetId, getMeetByIdAPI, postPFEventbyEventId } from '../apis/api';
 import { Axios, AxiosError } from 'axios';
 import { useEvents } from '../Provider/EventProvider';
 import { formatEventCode, sortBasedonRank } from './Eventutils';
-
-const { Search } = Input;
 const { Option } = Select;
 
 const Photofinish: React.FC = () => {
   const {athletes, eventsInfo, setAthleteinfo, setEventsInfo, fetchEvents, setError, setLoading, loading, error } = useEvents();
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [selectedEventCode, setSelectedEventCode] = useState<string>(''); // State to hold selected event code
-  let meetid = sessionStorage.getItem('lastSelectedMeetId');
   const [photos, setPhotos] = useState<string[]>([]);
   const [isColorMode, setIsColorMode] = useState(false); // State for color mode
-  const { Title, Text } = Typography;
+  const { Title } = Typography;
+  let meetid = sessionStorage.getItem('lastSelectedMeetId');
 
   type ColumnVisibility = {
     [key: string]: boolean;
@@ -50,6 +55,10 @@ const Photofinish: React.FC = () => {
   });
   const [isModalVisible, setIsModalVisible] = useState(false);
 
+  /**
+   * @function updateEvents
+   * @description Fetches meet and event data, updates athlete information with photo finish results, and handles errors.
+   */
   useEffect(() => {
     const updateEvents = async () => {
       try {
@@ -156,6 +165,10 @@ const Photofinish: React.FC = () => {
     }
   }, [eventsInfo]);
 
+  /**
+   * @function fetchPhotos
+   * @description Fetches and sets photos for the selected event.
+   */
   const fetchPhotos = async () => {
     try {
         if (!meetid) {
@@ -195,7 +208,11 @@ const Photofinish: React.FC = () => {
     fetchPhotos();
   }, [selectedEventCode]);
 
-  // Handle event selection from dropdown
+  /**
+   * @function handleEventSelect
+   * @description Handles event selection from the dropdown.
+   * @param {string} value - The selected event code.
+   */
   const handleEventSelect = (value: string) => {
     setSelectedEventCode(value);
     if (value === '') {
@@ -206,9 +223,13 @@ const Photofinish: React.FC = () => {
       const filteredAthletes = athletes.filter(event => event.eventCode === value);
       const sortedAthletesInfo = sortBasedonRank(filteredAthletes);
       setFilteredAthletesInfo(sortedAthletesInfo);
-      //setError(filteredEvents.length === 0 ? 'Event not present in this meet' : null); // Set error if no events are found
     }
   };
+
+  /**
+   * @function handleNextEvent
+   * @description Handles navigation to the next event.
+   */
   const handleNextEvent = () => {
     if (!selectedEventCode || eventsInfo.length === 0) return;
   
@@ -223,136 +244,167 @@ const Photofinish: React.FC = () => {
     handleEventSelect(eventsInfo[nextIndex].eventCode);
   };
 
-  // Utility function to generate lifFilename from eventCode
-const generateFilename = (eventCode: string): string => {
-  if (eventCode.length < 7) {
-    throw new Error('Event code is too short to generate a lif filename');
-  }
-  return `${eventCode.substring(0, 5)}-${eventCode.substring(5, 7)}`;
-};
-const updateAllPF = async () => {
-  try {
-    //setLoading(true);
-    if (!meetid) {
-      setError('Please select a Meet');
-      setLoading(false);
-      return;
+  /**
+   * @function generateFilename
+   * @description Generates filename from the event code for reading files from other meet manager softwares.
+   * @param {string} eventCode - The event code.
+   * @returns {string} The generated filename.
+   */
+  const generateFilename = (eventCode: string): string => {
+    if (eventCode.length < 7) {
+      throw new Error('Event code is too short to generate a lif filename');
     }
-    // Fetch meet details including pfFolder and pfOutput
-    const response = await getMeetByIdAPI(meetid);
+    return `${eventCode.substring(0, 5)}-${eventCode.substring(5, 7)}`;
+  };
 
-    // Function to process each event
-    const processEvent = async (event: { eventCode: any; }) => {
-      const folderParams = {
-        pfFolder: response.data.meet.pfFolder,
-        pfOutput: response.data.meet.pfOutput,
-        meetId: meetid,
-        eventCode: event.eventCode,
+  /**
+   * @function updateAllPF
+   * @description Updates all photo finish data for the events.
+   */
+  const updateAllPF = async () => {
+    try {
+      if (!meetid) {
+        setError('Please select a Meet');
+        setLoading(false);
+        return;
+      }
+      // Fetch meet details including pfFolder and pfOutput
+      const response = await getMeetByIdAPI(meetid);
+
+      // Function to process each event
+      const processEvent = async (event: { eventCode: any; }) => {
+        const folderParams = {
+          pfFolder: response.data.meet.pfFolder,
+          pfOutput: response.data.meet.pfOutput,
+          meetId: meetid,
+          eventCode: event.eventCode,
+        };
+
+        try {
+          const result = await postPFEventbyEventId(folderParams);
+          return { ...event, pfData: result.status }; // Include pfData in event object
+        } catch (error) {
+          let errorMessage = 'An unexpected error occurred';
+          if (error instanceof Error) {
+            errorMessage = error.message;
+            console.error(`Error fetching PF event data for event ${event.eventCode}:`, errorMessage);
+          } else {
+            console.error(`An unexpected error occurred for event ${event.eventCode}`);
+          }
+          return { ...event, pfError: errorMessage };
+        }
       };
 
-      try {
-        const result = await postPFEventbyEventId(folderParams);
-        return { ...event, pfData: result.status }; // Include pfData in event object
-      } catch (error) {
-        let errorMessage = 'An unexpected error occurred';
-        if (error instanceof Error) {
-          errorMessage = error.message;
-          console.error(`Error fetching PF event data for event ${event.eventCode}:`, errorMessage);
-        } else {
-          // Handle cases where error is not an instance of Error
-          console.error(`An unexpected error occurred for event ${event.eventCode}`);
+      // Create promises to fetch PF event data for each event
+      const pfEventPromises = athletes.map(processEvent);
+
+      // Wait for all promises to settle
+      const results = await Promise.allSettled(pfEventPromises);
+
+      // Extract unique fulfilled eventCodes
+      const fulfilledEventCodes = results.reduce<string[]>((acc, result) => {
+        if (result.status === 'fulfilled') {
+          const eventCode = result.value.eventCode;
+          if (!acc.includes(eventCode)) {
+            acc.push(eventCode);
+          }
         }
-        return { ...event, pfError: errorMessage };
+        return acc;
+      }, []);
+
+      // Count the number of unique fulfilled eventCodes
+      const uniqueFulfilledCount = fulfilledEventCodes.length;
+
+      // Check if the count matches eventsInfo.length
+      const isAllFulfilled = eventsInfo.length - uniqueFulfilledCount;
+      if(isAllFulfilled == 0) {
+        message.success('All events updated successfully');
       }
-    };
-
-    // Create promises to fetch PF event data for each event
-    const pfEventPromises = athletes.map(processEvent);
-
-    // Wait for all promises to settle
-    const results = await Promise.allSettled(pfEventPromises);
-
-    // Extract unique fulfilled eventCodes
-    const fulfilledEventCodes = results.reduce<string[]>((acc, result) => {
-      if (result.status === 'fulfilled') {
-        const eventCode = result.value.eventCode; // Assuming result.value contains eventCode
-        if (!acc.includes(eventCode)) {
-          acc.push(eventCode);
-        }
+      else {
+        message.error(`${isAllFulfilled} events failed to update`);
       }
-      return acc;
-    }, []);
+      const responseEvents = await getEventbyMeetId(meetid);
+      const athleteInfo = responseEvents.data.athleteInfo;
+      const eventInfo = responseEvents.data.eventInfo;
 
-    // Count the number of unique fulfilled eventCodes
-    const uniqueFulfilledCount = fulfilledEventCodes.length;
+      // Order events based on eventCode
+      eventInfo.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
 
-    // Check if the count matches eventsInfo.length
-    const isAllFulfilled = eventsInfo.length - uniqueFulfilledCount;
-    if(isAllFulfilled == 0) {
-      message.success('All events updated successfully');
+      const sortedAthletesInfo = sortBasedonRank(athleteInfo);
+
+      if (eventInfo === null || eventInfo.length == 0) {
+          setError('No events found');
+          setLoading(false);
+          return;
+      }
+
+      if (sortedAthletesInfo === null || sortedAthletesInfo.length == 0) {
+          setError('No athletes found');
+          setLoading(false);
+          return;
+      }
+
+      setAthleteinfo(sortedAthletesInfo);
+      setEventsInfo(eventInfo);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching PF details:', error);
+      setError('Error fetching PF details');
+      setLoading(false);
     }
-    else {
-      message.error(`${isAllFulfilled} events failed to update`);
-    }
-    const responseEvents = await getEventbyMeetId(meetid);
-    const athleteInfo = responseEvents.data.athleteInfo;
-    const eventInfo = responseEvents.data.eventInfo;
+  };
 
-    // Order events based on eventCode
-    eventInfo.sort((event1: { eventCode: string; }, event2: { eventCode: any; }) => event1.eventCode.localeCompare(event2.eventCode));
+  /**
+   * @function handlePrevEvent
+   * @description Handles navigation to the previous event.
+   */
+  const handlePrevEvent = () => {
+    if (!selectedEventCode || eventsInfo.length === 0) return;
 
-    const sortedAthletesInfo = sortBasedonRank(athleteInfo);
+    // Find the index of the current selected event code
+    const currentIndex = eventsInfo.findIndex(event => event.eventCode === selectedEventCode);
 
-    if (eventInfo === null || eventInfo.length == 0) {
-        setError('No events found');
-        setLoading(false);
-        return; // Exit early if meetId is null or undefined
-    }
+    // Calculate the index of the previous event code
+    const prevIndex = currentIndex === -1 ? eventsInfo.length - 1 : (currentIndex - 1 + eventsInfo.length) % eventsInfo.length;
 
-    if (sortedAthletesInfo === null || sortedAthletesInfo.length == 0) {
-        setError('No athletes found');
-        setLoading(false);
-        return; // Exit early if meetId is null or undefined
-    }
+    // Update the selected event code with the previous event code
+    setSelectedEventCode(eventsInfo[prevIndex].eventCode);
+    handleEventSelect(eventsInfo[prevIndex].eventCode);
+  };
 
-    setAthleteinfo(sortedAthletesInfo);
-    setEventsInfo(eventInfo);
-    setLoading(false);
-  } catch (error) {
-    console.error('Error fetching PF details:', error);
-    setError('Error fetching PF details');
-    setLoading(false);
-  }
-};
+  /**
+   * @function handleColumnVisibilityChange
+   * @description Handles changes in column visibility.
+   * @param {string} column - The column key.
+   * @param {boolean} isChecked - Whether the column is visible.
+   */
+  const handleColumnVisibilityChange = (column: string, isChecked: boolean) => {
+    setColumnVisibility(prev => ({ ...prev, [column]: isChecked }));
+  };
 
-const handlePrevEvent = () => {
-  if (!selectedEventCode || eventsInfo.length === 0) return;
+  /**
+   * @function showModal
+   * @description Displays the column filter modal.
+   */
+  const showModal = () => {
+    setIsModalVisible(true);
+  };
 
-  // Find the index of the current selected event code
-  const currentIndex = eventsInfo.findIndex(event => event.eventCode === selectedEventCode);
-
-  // Calculate the index of the previous event code
-  const prevIndex = currentIndex === -1 ? eventsInfo.length - 1 : (currentIndex - 1 + eventsInfo.length) % eventsInfo.length;
-
-  // Update the selected event code with the previous event code
-  setSelectedEventCode(eventsInfo[prevIndex].eventCode);
-  handleEventSelect(eventsInfo[prevIndex].eventCode);
-};
-
-const handleColumnVisibilityChange = (column: string, isChecked: boolean) => {
-  setColumnVisibility(prev => ({ ...prev, [column]: isChecked }));
-};
-
-const showModal = () => {
-  setIsModalVisible(true);
-};
-
-const handleCancel = () => {
-  setIsModalVisible(false);
-};
+  /**
+   * @function handleCancel
+   * @description Closes the filter modal .
+   */
+  const handleCancel = () => {
+    setIsModalVisible(false);
+  };
 
 
-  const renderEvents = () => {
+  /**
+   * @function renderEvents
+   * @description Renders the event selection and athlete table.
+   * @returns {JSX.Element} The rendered events component.
+   */
+  const renderEvents = (): JSX.Element => {
     const eventOptions = getUniqueEventOptions(eventsInfo);
     const renderStartTimes = () => {
       const event = eventsInfo.find(event => event.eventCode === selectedEventCode && event.meetId == meetid);
@@ -507,7 +559,12 @@ const handleCancel = () => {
   );
 };
 
-// Utility function to get unique event codes
+/**
+ * @function getUniqueEventOptions
+ * @description Utility function to get unique event options for dropdown.
+ * @param {EventInfo[]} events - Array of event information.
+ * @returns {Object[]} Array of unique event options with event code and name.
+ */
 const getUniqueEventOptions = (events: EventInfo[]): { eventCode: string; eventName: string }[] => {
   const uniqueOptions = new Map<string, string>();
   

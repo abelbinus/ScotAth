@@ -8,8 +8,14 @@ const { Panel } = Collapse;
 const { Search } = Input;
 const { Option } = Select;
 
+/**
+ * EventsList component displays a list of events for a selected meet.
+ * It allows users to search, filter, and sort events, and displays detailed athlete information for each event.
+ * 
+ * @component
+ */
 const EventsList: React.FC = () => {
-  const {athletes, eventsInfo, fetchEvents, loading, error } = useEvents();
+  const { athletes, eventsInfo, fetchEvents, loading, error } = useEvents();
   const [filteredEventsInfo, setFilteredEventsInfo] = useState<EventInfo[]>([]);
   const [filteredAthletesInfo, setFilteredAthletesInfo] = useState<AthleteInfo[]>([]);
   const [sortBy, setSortBy] = useState<'eventCode' | 'eventName' | 'eventDate'>('eventCode');
@@ -18,6 +24,9 @@ const EventsList: React.FC = () => {
   const meetid = sessionStorage.getItem("lastSelectedMeetId");
   const { Title, Text } = Typography;
 
+  /**
+   * Fetches event data when the component mounts.
+   */
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -26,17 +35,30 @@ const EventsList: React.FC = () => {
         console.error("Failed to fetch events:", error);
       }
     };
-  
     fetchData();
   }, [meetid]);
 
+  /**
+   * Updates filtered athletes info when athletes data changes.
+   */
   useEffect(() => {
     setFilteredAthletesInfo(athletes);
   }, [athletes]);
-  useEffect(() => { 
+
+  /**
+   * Updates filtered events info when eventsInfo data changes.
+   */
+  useEffect(() => {
     setFilteredEventsInfo(eventsInfo);
   }, [eventsInfo]);
 
+  /**
+   * Parses date and time strings and returns a Date object.
+   * 
+   * @param {string} date - The date string.
+   * @param {string} time - The time string.
+   * @returns {Date} A Date object representing the parsed date and time.
+   */
   const parseDateTime = (date: string, time: string) => {
     let separator = '.';
     if (date.includes(',')) {
@@ -44,15 +66,15 @@ const EventsList: React.FC = () => {
     } else if (date.includes('-')) {
       separator = '-';
     }
-  
+
     const dateParts = date.split(separator);
     const day = dateParts[0];
     const month = dateParts[1];
     const year = dateParts[2];
-  
+
     let hours = 0;
     let minutes = 0;
-    
+
     if (time.includes(':')) {
       // Check for 12-hour format (AM/PM)
       if (time.includes('AM') || time.includes('PM')) {
@@ -60,7 +82,7 @@ const EventsList: React.FC = () => {
         const hourPart = timeParts[0];
         const minutePart = timeParts[1].substring(0, 2); // Ensure to only take first two characters of minutes part
         const modifier = timeParts[1].substring(2).trim(); // Grab AM/PM part
-  
+
         hours = parseInt(hourPart, 10);
         minutes = parseInt(minutePart, 10);
         if (modifier === 'PM' && hours < 12) {
@@ -74,10 +96,15 @@ const EventsList: React.FC = () => {
         hours = parseInt(timeParts[0], 10);
         minutes = parseInt(timeParts[1], 10);
       }
-    }  
+    }
     return new Date(`${year}-${month}-${day}T${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`);
   };
 
+  /**
+   * Returns sorted and filtered event information based on search text, sort field, and sort order.
+   * 
+   * @returns {EventInfo[]} Sorted and filtered event information.
+   */
   const sortedAndFilteredEventsInfo = useMemo(() => {
     let sortedEvents = [...filteredEventsInfo];
     if (sortBy === 'eventCode') {
@@ -98,16 +125,28 @@ const EventsList: React.FC = () => {
     );
   }, [filteredEventsInfo, searchText, sortBy, sortOrder]);
 
+  /**
+   * Handles sorting by the specified field.
+   * 
+   * @param {('eventCode' | 'eventName' | 'eventDate')} sortBy - The field to sort by.
+   */
   const handleSort = (sortBy: 'eventCode' | 'eventName' | 'eventDate') => {
     setSortBy(sortBy);
-    // Default to ascending order when changing sortBy
-    setSortOrder('asc');
+    setSortOrder('asc'); // Default to ascending order when changing sortBy
   };
 
+  /**
+   * Toggles the sort order between ascending and descending.
+   */
   const handleSortOrder = () => {
     setSortOrder(prevOrder => (prevOrder === 'asc' ? 'desc' : 'asc'));
   };
 
+  /**
+   * Filters events based on the provided search value.
+   * 
+   * @param {string} value - The search value.
+   */
   const handleFilter = (value: string) => {
     setSearchText(value);
     if (value.trim() === '') {
@@ -126,6 +165,11 @@ const EventsList: React.FC = () => {
     }
   };
 
+  /**
+   * Renders the events in a collapsible list format.
+   * 
+   * @returns {JSX.Element} The rendered list of events.
+   */
   const renderEvents = () => {
     const eventGroups: { [key: string]: AthleteInfo[] } = {};
 
@@ -173,10 +217,10 @@ const EventsList: React.FC = () => {
 
   if (loading) return <div>Loading...</div>;
   if (error && !meetid) return <div>{error}</div>;
-  if (eventsInfo.length === 0 ) return <div>No events found</div>;
+  if (eventsInfo.length === 0) return <div>No events found</div>;
 
   return (
-      <div style={{ padding: '24px' }}>
+    <div style={{ padding: '24px' }}>
       <Card bordered={false} style={{ marginBottom: '30px', background: '#f0f2f5', padding: '20px' }}>
         <Row gutter={[16, 16]} style={{textAlign: 'center'}}>
           <Col span={24}>

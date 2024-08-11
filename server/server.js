@@ -40,7 +40,6 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-
 // Connect to SQLite database
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
@@ -50,6 +49,11 @@ const db = new sqlite3.Database(dbPath, (err) => {
     }
 });
 
+/**
+ * Endpoint to retrieve environment variables (IP and port).
+ * @route GET /env
+ * @returns {Object} JSON containing the IP and PORT values.
+ */
 app.get('/env', (req, res) => {
   res.json({ IP: IP, PORT: port });
 });
@@ -59,7 +63,11 @@ app.listen(port, () => {
   logger.info(`Server is running on http://${IP}:${port}`);
 });
 
-// API endpoint to fetch all users
+/**
+ * API endpoint to fetch all users.
+ * @route GET /api/rainbow/user
+ * @returns {Array} List of users.
+ */
 app.get('/api/rainbow/user', (req, res) => {
     const query = 'SELECT * FROM tblusers';
     db.all(query, [], (err, rows) => {
@@ -71,7 +79,12 @@ app.get('/api/rainbow/user', (req, res) => {
     });
 });
 
-// API endpoint to fetch a specific user based on userId
+/**
+ * API endpoint to fetch a specific user based on userId.
+ * @route GET /api/rainbow/users/:userId
+ * @param {string} userId - The ID of the user to retrieve.
+ * @returns {Object} The user information.
+ */
 app.get('/api/rainbow/users/:userId', (req, res) => {
     const query = 'SELECT * FROM tblusers WHERE userId = ?';
     db.get(query, [userId], (err, rows) => {
@@ -83,7 +96,12 @@ app.get('/api/rainbow/users/:userId', (req, res) => {
     });
   });
 
-// Endpoint to add a user
+/**
+ * Endpoint to add a user.
+ * @route POST /api/rainbow/user
+ * @param {Object} req.body - The user object containing user details.
+ * @returns {Object} A message indicating the result of the operation.
+ */
 app.post('/api/rainbow/user', async (req, res) => {
     const user = req.body;
 
@@ -124,22 +142,27 @@ app.post('/api/rainbow/user', async (req, res) => {
     });
 });
 
-// Endpoint to update a user
+/**
+ * Endpoint to update a user.
+ * @route PUT /api/rainbow/user
+ * @param {Object} req.body - The user object containing updated user details.
+ * @returns {Object} A message indicating the result of the operation.
+ */
 app.put('/api/rainbow/user', async (req, res) => {
     const user = req.body;
   
-    // // Check if the password needs to be hashed
-    // let hashedPassword = user.userPass;
-    // if (user.userPass) {
-    //   try {
-    //     const salt = await bcrypt.genSalt(10);
-    //     hashedPassword = await bcrypt.hash(user.userPass, salt);
-    //   } catch (err) {
-    //     console.error('Error hashing password:', err);
-    //     return res.status(500).json({ error: 'Failed to hash password' });
-    //   }
-    // }
-  
+    // Check if the password needs to be hashed
+    let hashedPassword = user.userPass;
+    if (user.userPass) {
+      try {
+        const salt = await bcrypt.genSalt(10);
+        hashedPassword = await bcrypt.hash(user.userPass, salt);
+      } catch (err) {
+        console.error('Error hashing password:', err);
+        return res.status(500).json({ error: 'Failed to hash password' });
+      }
+    }
+
     // Update user in the database
     let sql;
     let values;
@@ -200,9 +223,11 @@ app.put('/api/rainbow/user', async (req, res) => {
     });
   });
 
-  
-
-// API endpoint to fetch all meets
+/**
+ * API endpoint to fetch all meets.
+ * @route GET /api/rainbow/meet
+ * @returns {Array} List of meets.
+ */
 app.get('/api/rainbow/meet', (req, res) => {
     const query = 'SELECT * FROM tblmeets';
     db.all(query, [], (err, rows) => {
@@ -214,7 +239,12 @@ app.get('/api/rainbow/meet', (req, res) => {
     });
 });
 
-// New endpoint to fetch a specific meet by meetId
+/**
+ * API endpoint to fetch a specific meet by meetId.
+ * @route GET /api/rainbow/meet/:meetId
+ * @param {string} meetId - The ID of the meet to retrieve.
+ * @returns {Object} The meet information.
+ */
 app.get('/api/rainbow/meet/:meetId', (req, res) => {
     const { meetId } = req.params;
     const query = 'SELECT * FROM tblmeets WHERE meetId = ?';
@@ -232,7 +262,13 @@ app.get('/api/rainbow/meet/:meetId', (req, res) => {
     });
 });
 
-// New endpoint to fetch a specific event by meetId and eventCode
+/**
+ * API endpoint to fetch a specific event by meetId and eventCode.
+ * @route GET /api/rainbow/event/:meetId/:eventCode
+ * @param {string} meetId - The ID of the meet.
+ * @param {string} eventCode - The code of the event.
+ * @returns {Array} List of events.
+ */
 app.get('/api/rainbow/event/:meetId/:eventCode', (req, res) => {
     const { meetId, eventCode } = req.params;
     const query = 'SELECT * FROM tblevents WHERE meetId = ? AND eventCode = ?';
@@ -250,7 +286,12 @@ app.get('/api/rainbow/event/:meetId/:eventCode', (req, res) => {
     });
 });
 
-// POST endpoint to add a new meet
+/**
+ * Endpoint to add a new meet.
+ * @route POST /api/rainbow/meet
+ * @param {Object} req.body - The meet object containing meet details.
+ * @returns {Object} A message indicating the result of the operation.
+ */
 app.post('/api/rainbow/meet', (req, res) => {
     const { meetId, meetName, meetDesc, pfFolder, pfOutput, eventList, intFolder, edit } = req.body;
 
@@ -282,7 +323,12 @@ app.post('/api/rainbow/meet', (req, res) => {
     });
 });
 
-// API endpoint to update a meet based on meetId
+/**
+ * API endpoint to update a meet based on meetId.
+ * @route PUT /api/rainbow/meet
+ * @param {Object} req.body - The meet object containing updated meet details.
+ * @returns {Object} A message indicating the result of the operation.
+ */
 app.put('/api/rainbow/meet', (req, res) => {
     const { meetId, meetName, meetDesc, pfFolder, pfOutput, eventList, intFolder, edit } = req.body;
   
@@ -308,8 +354,12 @@ app.put('/api/rainbow/meet', (req, res) => {
     });
   });
 
-
-// Endpoint to delete a user
+/**
+ * Endpoint to delete a user.
+ * @route DELETE /api/rainbow/user/:userId
+ * @param {string} userId - The ID of the user to delete.
+ * @returns {Object} A message indicating the result of the operation.
+ */
 app.delete('/api/rainbow/user/:userId', (req, res) => {
     const userId = req.params.userId;
 
@@ -330,7 +380,12 @@ app.delete('/api/rainbow/user/:userId', (req, res) => {
     });
 });
 
-// DELETE endpoint to delete a meet by meetId
+/**
+ * DELETE endpoint to delete a meet by meetId.
+ * @route DELETE /api/rainbow/meet/:meetId
+ * @param {string} meetId - The ID of the meet to delete.
+ * @returns {Object} A message indicating the result of the operation.
+ */
 app.delete('/api/rainbow/meet/:meetId', (req, res) => {
     const { meetId } = req.params;
 
@@ -359,8 +414,12 @@ app.delete('/api/rainbow/meet/:meetId', (req, res) => {
     });
 }); 
 
-
-// Login API endpoint
+/**
+ * Login API endpoint.
+ * @route POST /api/login
+ * @param {Object} req.body - The login credentials (username and password).
+ * @returns {Object} The user information or an error message.
+ */
 app.post('/api/login', (req, res) => {
     const { userName, userPass } = req.body;
     const query = 'SELECT * FROM tblusers WHERE userName = ?';
@@ -380,6 +439,12 @@ app.post('/api/login', (req, res) => {
     });
 });
 
+/**
+ * API endpoint to change a user's password.
+ * @route POST /api/rainbow/user/changePassword
+ * @param {Object} req.body - The password details (old password, new password, userId).
+ * @returns {Object} A message indicating the result of the operation.
+ */
 app.post('/api/rainbow/user/changePassword', async (req, res) => {
   const { oldPass, newPass, userId } = req.body;
   const query = 'SELECT userPass FROM tblusers WHERE userId = ?';
@@ -410,6 +475,12 @@ app.post('/api/rainbow/user/changePassword', async (req, res) => {
   });
 });
 
+/**
+ * API endpoint to add events.
+ * @route POST /api/rainbow/event
+ * @param {Object} req.body - The event details (pfFolder, intFolder, eventList, meetId).
+ * @returns {Object} A message indicating the result of the operation.
+ */
 app.post('/api/rainbow/event', async (req, res) => {
     const { pfFolder, intFolder, eventList, meetId } = req.body;
 
@@ -437,6 +508,12 @@ app.post('/api/rainbow/event', async (req, res) => {
     }
 });
 
+/**
+ * API endpoint to add PF events.
+ * @route POST /api/rainbow/pfevent
+ * @param {Object} req.body - The event details (pfFolder, pfOutput, meetId, eventCode).
+ * @returns {Object} A message indicating the result of the operation.
+ */
 app.post('/api/rainbow/pfevent', async (req, res) => {
     const { pfFolder, pfOutput, meetId, eventCode } = req.body;
     if (!pfFolder) {
@@ -458,8 +535,13 @@ app.post('/api/rainbow/pfevent', async (req, res) => {
     }
 });
 
-  // New endpoint to fetch eventinfo and events based on meetId
-  app.get('/api/rainbow/eventinfo/:meetId', (req, res) => {
+/**
+ * API endpoint to fetch event info and related athlete info based on meetId.
+ * @route GET /api/rainbow/eventinfo/:meetId
+ * @param {string} meetId - The ID of the meet.
+ * @returns {Object} An object containing eventInfo and athleteInfo arrays.
+ */
+app.get('/api/rainbow/eventinfo/:meetId', (req, res) => {
     const { meetId } = req.params;
   
     // Query to get event information based on meetId
@@ -492,7 +574,12 @@ app.post('/api/rainbow/pfevent', async (req, res) => {
     });
   });
 
-  // Update tblevents API
+/**
+ * API endpoint to update athlete information in the tblevents table.
+ * @route POST /api/rainbow/updateAthleteAPI
+ * @param {Array} req.body - An array of athlete objects containing the updated details.
+ * @returns {Object} A message indicating the result of the operation.
+ */
 app.post('/api/rainbow/updateAthleteAPI', (req, res) => {
     const athletes = req.body;
     const updateQuery = `
@@ -521,7 +608,12 @@ app.post('/api/rainbow/updateAthleteAPI', (req, res) => {
     });
   });
 
-    // Update tbleventsinfo API
+/**
+ * API endpoint to update event information in the tbleventinfo table.
+ * @route POST /api/rainbow/updateEventAPI/
+ * @param {Array} req.body - An array of event objects containing the updated details.
+ * @returns {Object} A message indicating the result of the operation.
+ */
 app.post('/api/rainbow/updateEventAPI/', (req, res) => {
     const events = req.body;
     const updateQuery = `
@@ -550,7 +642,12 @@ app.post('/api/rainbow/updateEventAPI/', (req, res) => {
     });
   });
 
-  // Endpoint to get photos
+/**
+ * API endpoint to retrieve event photos from a specified folder.
+ * @route POST /api/rainbow/getEventPhotoAPI/
+ * @param {Object} req.body - The event photo details (pfFolder, filename).
+ * @returns {Object} An object containing an array of base64-encoded image data.
+ */
 app.post('/api/rainbow/getEventPhotoAPI/', (req, res) => {
     const { pfFolder, filename } = req.body;
     if (!pfFolder || !filename) {
@@ -571,7 +668,7 @@ app.post('/api/rainbow/getEventPhotoAPI/', (req, res) => {
             return res.status(404).json({ error: 'No matching photos found' });
         }
 
-        // Construct URLs or base64 data for each image
+        // base64 data for each image
         /**
          * Array of base64-encoded image data.
          * @type {Array<string>}
@@ -590,3 +687,4 @@ app.post('/api/rainbow/getEventPhotoAPI/', (req, res) => {
 app.get('*', (req, res) => {
     res.sendFile(path.join(clientPath + '/' + 'client', 'rainbow', 'build', 'index.html'));
 });
+

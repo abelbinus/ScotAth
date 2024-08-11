@@ -8,10 +8,10 @@ describe('User Management Tests', () => {
     cy.get('[data-testid="login_form"]').should('be.visible');
 
     // Verify the presence of the username input field
-    cy.get("input[placeholder=\"User Name\"]").type("abj1");
+    cy.get("input[placeholder=\"User Name\"]").type("abj");
 
     // Verify the presence of the password input field
-    cy.get("input[placeholder=\"Password\"]").type("Password123!");
+    cy.get("input[placeholder=\"Password\"]").type("abeladmin");
 
     // Check if the login button is present
     cy.get('.login-form-button').should('exist').and('contain', 'Log in').click();
@@ -30,7 +30,8 @@ describe('User Management Tests', () => {
     cy.contains('Admin').should('be.visible').click();
 
     // Locate the first "Edit" link and click it
-    cy.get('a').contains('Edit').first().click({ force: true });
+    cy.get('button').contains('Edit').first().click({ force: true });
+
 
     // Alternatively, you could be more specific:
     // cy.get('table .ant-table-row a').contains('Edit').first().click();

@@ -2,17 +2,14 @@ const path = require('path');
 const fs = require('fs');
 const logger = require('./logger');
 
-// async function fileExists(filePath) {
-//     try {
-//         await fs.access(filePath);
-//         return true;
-//     } catch (error) {
-//         return false;
-//     }
-// }
-
+/**
+ * Recursively searches for the 'client' directory starting from the current directory.
+ * If the directory is found, returns the path; otherwise, continues searching in parent directories.
+ * @param {string} currentDir - The current directory path from which the search begins.
+ * @returns {string} The path of the directory containing the 'client' folder.
+ * @throws Will throw an error if the 'client' directory is not found.
+ */
 function findScotathClientDir(currentDir) {
-    // Check if both 'sqlite' and 'client' directories exist in currentDir
     const clientExists = fs.existsSync(path.join(currentDir, 'client'));
 
     if (clientExists) {
@@ -27,8 +24,14 @@ function findScotathClientDir(currentDir) {
     return findScotathClientDir(parentDir);
 }
 
+/**
+ * Recursively searches for the 'sqlite' directory starting from the current directory.
+ * If the directory is found, returns the path; otherwise, continues searching in parent directories.
+ * @param {string} currentDir - The current directory path from which the search begins.
+ * @returns {string} The path of the directory containing the 'sqlite' folder.
+ * @throws Will throw an error if the 'sqlite' directory is not found.
+ */
 function findScotathDBDir(currentDir) {
-    // Check if both 'sqlite' and 'client' directories exist in currentDir
     const sqliteExists = fs.existsSync(path.join(currentDir, 'sqlite'));
 
     if (sqliteExists) {
@@ -43,51 +46,69 @@ function findScotathDBDir(currentDir) {
     return findScotathDBDir(parentDir);
 }
 
-// Inside your route handler for updating start lists
-
+/**
+ * Deletes existing events from the 'tblevents' table based on the provided meetID.
+ * @param {string} meetID - The ID of the meet for which events should be deleted.
+ * @param {object} db - The SQLite database instance.
+ * @returns {Promise<void>} A promise that resolves when the events are deleted, or rejects with an error.
+ */
 function deleteExistingEvents(meetID, db) {
     return new Promise((resolve, reject) => {
-        // Delete existing records from tblEvent
-        let sqlDeleteEvent = `DELETE FROM tblevents WHERE MeetID = ?`;
+        const sqlDeleteEvent = `DELETE FROM tblevents WHERE MeetID = ?`;
         db.run(sqlDeleteEvent, [meetID], function(err) {
             if (err) {
-            console.error('Error deleting records from tblevents:', err.message);
-            return reject({ error: 'Failed to delete records from tblevents' });
+                console.error('Error deleting records from tblevents:', err.message);
+                return reject({ error: 'Failed to delete records from tblevents' });
             }
             resolve();
         });
     });
 }
 
+/**
+ * Deletes existing event information from the 'tbleventinfo' table based on the provided meetID.
+ * @param {string} meetID - The ID of the meet for which event information should be deleted.
+ * @param {object} db - The SQLite database instance.
+ * @returns {Promise<void>} A promise that resolves when the event information is deleted, or rejects with an error.
+ */
 function deleteEventInfo(meetID, db) {
     return new Promise((resolve, reject) => {
-        // Delete existing records from tblEvent
-        let sqlDeleteEvent = `DELETE FROM tbleventinfo WHERE MeetID = ?`;
+        const sqlDeleteEvent = `DELETE FROM tbleventinfo WHERE MeetID = ?`;
         db.run(sqlDeleteEvent, [meetID], function(err) {
             if (err) {
-            console.error('Error deleting records from tbleventinfo:', err.message);
-            return reject({ error: 'Failed to delete records from tbleventinfo' });
+                console.error('Error deleting records from tbleventinfo:', err.message);
+                return reject({ error: 'Failed to delete records from tbleventinfo' });
             }
             resolve();
         });
     });
 }
 
+/**
+ * Generates an event number in the format '###-X##' where the first part is padded to 3 digits, and the heat number is padded to 2 digits.
+ * @param {number|string} event - The event number.
+ * @param {string} round - The round number/identifier.
+ * @param {number|string} heat - The heat number.
+ * @returns {string} The formatted event number.
+ */
 function makeEventNum(event, round, heat) {
     const firstbit = String(event).padStart(3, '0');
     const lastbit = String(heat).padStart(2, '0');
     return `${firstbit}-${round}${lastbit}`;
 }
 
+/**
+ * Reads the content of a file from the specified folder.
+ * @param {string} folderPath - The path to the folder containing the file.
+ * @param {string} fileName - The name of the file to read.
+ * @returns {Promise<string>} A promise that resolves with the file content or rejects with an error.
+ * @throws Will throw an error if the file cannot be read.
+ */
 async function readFile(folderPath, fileName) {
     const filePath = path.join(folderPath, fileName);
 
     try {
         const content = await fs.promises.readFile(filePath, 'utf-8');
-        // Remove UTF-8 BOM if present
-        // if (content.charCodeAt(0) === 0xFEFF) {
-        //     content = content.slice(1);
-        // }
         logger.info(`Text file ${fileName} successfully processed.`);
         return content;
     } catch (error) {
@@ -96,6 +117,13 @@ async function readFile(folderPath, fileName) {
     }
 }
 
+/**
+ * Copies a file from the source folder to the destination folder.
+ * @param {string} srcFolder - The source folder path.
+ * @param {string} destFolder - The destination folder path.
+ * @param {string} fileName - The name of the file to copy.
+ * @returns {Promise<boolean>} A promise that resolves to true if the file was successfully copied, or false if an error occurred.
+ */
 async function copyFile(srcFolder, destFolder, fileName) {
     const srcFilePath = path.join(srcFolder, fileName);
     const destFilePath = path.join(destFolder, fileName);
@@ -110,7 +138,17 @@ async function copyFile(srcFolder, destFolder, fileName) {
     }
 }
 
-async function readEventListFiles (folderPath, intFolder, eventList, meetId, db, res) {
+/**
+ * Reads event list files and inserts data into the database.
+ * Handles files in both 'FL' and 'OMEGA' or 'HYTEK OMEGA' formats.
+ * @param {string} folderPath - The path to the folder containing the event list files.
+ * @param {string} intFolder - The path to the interface folder for HYTEK OMEGA files.
+ * @param {string} eventList - The event list type (either 'FL' or 'OMEGA').
+ * @param {string} meetId - The meet ID associated with the event list.
+ * @param {object} db - The SQLite database instance.
+ * @param {object} res - The response object for sending responses to the client.
+ */
+async function readEventListFiles(folderPath, intFolder, eventList, meetId, db, res) {
     let evtContents = [];
     let pplContents = [];
     let copyError = null;
@@ -189,17 +227,32 @@ async function readEventListFiles (folderPath, intFolder, eventList, meetId, db,
     }
 }
 
+/**
+ * Reformat an event code by adding a hyphen before the last two digits.
+ * Example: '123-456' becomes '123-4-56'.
+ * @param {string} eventCode - The event code to be reformatted.
+ * @returns {string} The reformatted event code.
+ * @throws Will throw an error if the event code format is invalid.
+ */
 function reformatEventCode(eventCode) {
-    // Match the pattern to capture groups: first part, second part without last 2 digits, and last 2 digits
     const match = eventCode.match(/(\d+)-(\d)(\d{2})/);
     if (match) {
-      // Construct the new format with an additional hyphen before the last 2 digits
-      return `${match[1]}-${match[2]}-${match[3]}`;
+        return `${match[1]}-${match[2]}-${match[3]}`;
     } else {
-      throw new Error('Invalid event code format');
+        throw new Error('Invalid event code format');
     }
-  }
+}
 
+/**
+ * Reads and processes photofinish files (.lif or .cl) and inserts the results into the database.
+ * @param {string} folderPath - The path to the folder containing the photofinish files.
+ * @param {string} pfOutput - The output type ('lif' or 'cl').
+ * @param {string} meetId - The meet ID associated with the photofinish files.
+ * @param {string} eventCode - The event code associated with the photofinish files.
+ * @param {object} db - The SQLite database instance.
+ * @param {object} res - The response object for sending responses to the client.
+ * @throws Will throw an error if the file cannot be processed.
+ */
 async function readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res) {
     let extension;
     if (pfOutput === 'lif') {
@@ -210,7 +263,6 @@ async function readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res) {
     } else {
         throw new Error('Invalid pfOutput value. Expected "lif" or "cl".');
     }
-    // Attempt to read file with lowercase and uppercase extension
     const lowerCaseFileName = `${eventCode}${extension.toLowerCase()}`;
     const upperCaseFileName = `${eventCode}${extension.toUpperCase()}`;
 
@@ -232,10 +284,9 @@ async function readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res) {
     try {
         let failedFlagEventInfo = 0;
         let failedFlagEvents = 0;
-        let totalFlagEventinfo = 0; // Total number of event info rows
-        let totalFlagEvents = 0; // Total number of event rows
+        let totalFlagEventinfo = 0;
+        let totalFlagEvents = 0;
         let dbError = null;
-        // Process the content as needed, e.g., insert into the database
         if (pfOutput === 'lif') {
             [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents] = await insertLifIntoDatabase(fileContent, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db);
         } else if (pfOutput === 'cl') {
@@ -253,7 +304,7 @@ async function readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res) {
             res.json({
                 error: {
                     eventCode: eventCode,
-                    message: `Failed to update phtofinish results for ${lowerCaseFileName}.`,
+                    message: `Failed to update photofinish results for ${lowerCaseFileName}.`,
                     dbError
                 },
                 status: 'failure'
@@ -273,6 +324,14 @@ async function readPFFiles(folderPath, pfOutput, meetId, eventCode, db, res) {
     }
 }
 
+/**
+ * Inserts data from the 'FL' file format into the database.
+ * @param {string} evtContents - The content of the .evt file.
+ * @param {string} pplContents - The content of the .ppl file.
+ * @param {string} meetId - The meet ID associated with the event list.
+ * @param {object} db - The SQLite database instance.
+ * @returns {Promise<Array<number>>} A promise that resolves to an array containing counts of failed and total rows inserted for event info and events.
+ */
 async function insertFLIntoDatabase(evtContents, pplContents, meetId, db) {
     const pplLines = pplContents.split('\n');
     const evtLines = evtContents.split('\n');
@@ -282,11 +341,10 @@ async function insertFLIntoDatabase(evtContents, pplContents, meetId, db) {
     let currentEvent = null;
     let failedFlagEventInfo = 0;
     let failedFlagEvents = 0;
-    let totalFlagEventinfo = 0; // Total number of event info rows
-    let totalFlagEvents = 0; // Total number of event rows
+    let totalFlagEventinfo = 0;
+    let totalFlagEvents = 0;
     let pplExists = false;
     for (const row of pplLines) {
-        // Trim the row and check if it is empty
         if (row.trim() === '') {
             continue;
         }
@@ -300,15 +358,13 @@ async function insertFLIntoDatabase(evtContents, pplContents, meetId, db) {
     pplExists = true;
 
     for (const row of evtLines) {
-
-        // Trim the row and check if it starts with a semicolon or is empty
         if (row.trim().startsWith(';') || row.trim() === '') {
             continue;
         }
         const columns = row.split(',').map(col => col.trim());
         let numColumns = columns.length;
 
-        if (columns[0] && columns[0].includes('Event')) { // New event header row
+        if (columns[0] && columns[0].includes('Event')) {
             currentEvent = columns;
         }
         else if (columns[0]) {
@@ -359,9 +415,13 @@ async function insertFLIntoDatabase(evtContents, pplContents, meetId, db) {
     return [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents];
 }
 
-// Function to detect the delimiter
+/**
+ * Detects the delimiter used in a CSV file by checking the first few lines.
+ * @param {string} data - The content of the CSV file.
+ * @returns {string} The detected delimiter, either ';' or ','.
+ */
 function detectDelimiter(data) {
-    const lines = data.split('\n').slice(0, 10); // Check the first 10 lines
+    const lines = data.split('\n').slice(0, 10);
     let semicolonCount = 0;
     let commaCount = 0;
 
@@ -373,7 +433,13 @@ function detectDelimiter(data) {
     return semicolonCount > commaCount ? ';' : ',';
 }
 
-// Function to insert content into SQLite database
+/**
+ * Inserts data from a CSV file into the database.
+ * @param {string} content - The content of the CSV file.
+ * @param {string} meetId - The meet ID associated with the CSV file.
+ * @param {object} db - The SQLite database instance.
+ * @returns {Promise<Array<number>>} A promise that resolves to an array containing counts of failed and total rows inserted for event info and events.
+ */
 async function insertCSVIntoDatabase(content, meetId, db) {
     const delimiter = detectDelimiter(content);
     const rows = content.split('\n');
@@ -381,26 +447,36 @@ async function insertCSVIntoDatabase(content, meetId, db) {
     let currentEvent = null;
     let failedFlagEventInfo = 0;
     let failedFlagEvents = 0;
-    let totalFlagEventinfo = 0; // Total number of event info rows
-    let totalFlagEvents = 0; // Total number of event rows
+    let totalFlagEventinfo = 0;
+    let totalFlagEvents = 0;
     for (const row of rows) {
         const columns = row.split(delimiter).map(col => col.trim());
-        if (columns[0] && columns[0].includes('Event')) { // New event header row
+        if (columns[0] && columns[0].includes('Event')) {
             currentEvent = columns;
         } 
         else if (columns[0]) {
             currentEvent = columns;
             totalFlagEventinfo, failedFlagEventInfo = await dbQueryTblEventInfo(currentEvent[0], currentEvent[1], currentEvent[2], currentEvent[8], currentEvent[9], currentEvent[10], currentEvent[11], totalFlagEventinfo, failedFlagEventInfo, meetId, db);
-        } else if (currentEvent && columns.length > 1) { // Athlete row
+        } else if (currentEvent && columns.length > 1) {
             totalFlagEvents, failedFlagEvents = await dbQueryTblEvents(currentEvent[0], columns[3], columns[4], columns[5], columns[6], columns[7], totalFlagEvents, failedFlagEvents, meetId, db);
-            
         }
     }
 
-    // Combine the flags into an array and return
     return [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents];
 }
 
+/**
+ * Inserts data from a CL file into the database and updates event info and events.
+ * @param {string} content - The content of the CL file.
+ * @param {number} failedFlagEventInfo - The count of failed event info rows.
+ * @param {number} failedFlagEvents - The count of failed event rows.
+ * @param {number} totalFlagEventinfo - The total number of event info rows.
+ * @param {number} totalFlagEvents - The total number of event rows.
+ * @param {string} meetId - The meet ID associated with the CL file.
+ * @param {object} db - The SQLite database instance.
+ * @param {string} eventCode - The event code associated with the CL file.
+ * @returns {Promise<Array<number>>} A promise that resolves to an array containing counts of failed and total rows inserted for event info and events.
+ */
 async function insertCLIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db, eventCode) {
     const data = content;
     const lines = data.split('\n');
@@ -413,9 +489,8 @@ async function insertCLIntoDatabase(content, failedFlagEventInfo, failedFlagEven
     let eventTime = '';
     
     lines.forEach(async (myLine, line_num) => {
-        // Trim the row and check if it is empty
         if (myLine.trim() === '') {
-            return; // Use return to exit the current iteration
+            return;
         }
         let athRank = '';
         let lane = '';
@@ -435,21 +510,21 @@ async function insertCLIntoDatabase(content, failedFlagEventInfo, failedFlagEven
                 }
                 const columns = myLine.split(":");
                 if (columns.length > 1) {
-                    raceLength = columns[1].trim(); // Trim leading/trailing spaces
+                    raceLength = columns[1].trim();
                 }
             }
             if (myLine.toLowerCase().includes('wind speed')) {
                 if (!myLine.toLowerCase().includes('no measurement')) {
                     const columns = myLine.split(":");
                     if (columns.length > 1) {
-                        windSpeed = columns[1].trim(); // Trim leading/trailing spaces
+                        windSpeed = columns[1].trim();
                     }
                 }
             }
             if (myLine.toLowerCase().includes('start :')) {
-                const columns = myLine.split(/:(.*)/); // Split only on the first colon
+                const columns = myLine.split(/:(.*)/);
                 if (columns.length > 1) {
-                    const dateTime = columns[1].trim().split(' '); // Trim leading/trailing spaces
+                    const dateTime = columns[1].trim().split(' ');
                     if(dateTime.length > 2) {
                         eventDate = dateTime[0];
                         eventTime = dateTime[2];
@@ -503,10 +578,20 @@ async function insertCLIntoDatabase(content, failedFlagEventInfo, failedFlagEven
         }
       });
     totalFlagEventinfo, failedFlagEventInfo = await updateDBQueryTblEventInfo(eventCode, eventName, eventTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db);
-    // Combine the flags into an array and return
     return [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents];
 }
 
+/**
+ * Inserts data from a LIF file into the database and updates event info and events.
+ * @param {string} content - The content of the LIF file.
+ * @param {number} failedFlagEventInfo - The count of failed event info rows.
+ * @param {number} failedFlagEvents - The count of failed event rows.
+ * @param {number} totalFlagEventinfo - The total number of event info rows.
+ * @param {number} totalFlagEvents - The total number of event rows.
+ * @param {string} meetId - The meet ID associated with the LIF file.
+ * @param {object} db - The SQLite database instance.
+ * @returns {Promise<Array<number>>} A promise that resolves to an array containing counts of failed and total rows inserted for event info and events.
+ */
 async function insertLifIntoDatabase(content, failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, meetId, db) {
     const data = content;
     const rows = data.split('\n');
@@ -517,7 +602,7 @@ async function insertLifIntoDatabase(content, failedFlagEventInfo, failedFlagEve
         const row = rows[i];
         const columns = row.split(',').map(col => col.trim());
         let numColumns = columns.length;
-        if (columns[0] && columns[0].includes('Event')) { // New event header row
+        if (columns[0] && columns[0].includes('Event')) {
             currentEvent = columns;
             titleRow = true;
         } 
@@ -532,16 +617,29 @@ async function insertLifIntoDatabase(content, failedFlagEventInfo, failedFlagEve
                 eventPFTime = currentEvent[10];
             }
             totalFlagEventinfo, failedFlagEventInfo = await updateDBQueryTblEventInfo(eventCode, eventPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db);
-        } else if (currentEvent && columns.length > 1) { // Athlete row
+        } else if (currentEvent && columns.length > 1) {
             const eventCode = makeEventNum(currentEvent[0], currentEvent[1], currentEvent[2]);
             totalFlagEvents, failedFlagEvents = await updateDBQueryTblEvents(eventCode, columns[0], columns[1], columns[6], totalFlagEvents, failedFlagEvents, meetId, db);
-            
         }
     }
-    // Combine the flags into an array and return
     return [failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents];
 }
 
+/**
+ * Inserts event information into the tbleventinfo table in the database.
+ * @param {string} eventCode - The event code.
+ * @param {string|null} eventDate - The event date.
+ * @param {string|null} eventTime - The event time.
+ * @param {string|null} eventLength - The event length.
+ * @param {string} eventName - The event name.
+ * @param {string|null} title2 - Additional title information (optional).
+ * @param {string|null} sponsor - Sponsor information (optional).
+ * @param {number} totalFlagEventinfo - The total number of event info rows processed.
+ * @param {number} failedFlagEventInfo - The total number of event info rows that failed to insert.
+ * @param {string} meetId - The meet ID.
+ * @param {object} db - The SQLite database instance.
+ * @returns {Promise<Array<number>>} A promise that resolves to an array containing counts of total and failed event info rows.
+ */
 async function dbQueryTblEventInfo(eventCode, eventDate, eventTime, eventLength, eventName, title2, sponsor, totalFlagEventinfo, failedFlagEventInfo, meetId, db) {
     const eventInfoSql = `
         INSERT INTO tbleventinfo (meetId, eventCode, eventDate, eventTime, eventLength, eventName, title2, sponsor)
@@ -561,6 +659,20 @@ async function dbQueryTblEventInfo(eventCode, eventDate, eventTime, eventLength,
     return [totalFlagEventinfo, failedFlagEventInfo];    
 }
 
+/**
+ * Inserts event data into the tblevents table in the database.
+ * @param {string} eventCode - The event code.
+ * @param {string} laneOrder - The lane order.
+ * @param {string} athleteNum - The athlete number.
+ * @param {string} lastName - The last name of the athlete.
+ * @param {string} firstName - The first name of the athlete.
+ * @param {string} athleteClub - The club of the athlete.
+ * @param {number} totalFlagEvents - The total number of event rows processed.
+ * @param {number} failedFlagEvents - The total number of event rows that failed to insert.
+ * @param {string} meetId - The meet ID.
+ * @param {object} db - The SQLite database instance.
+ * @returns {Promise<Array<number>>} A promise that resolves to an array containing counts of total and failed event rows.
+ */
 async function dbQueryTblEvents(eventCode, laneOrder, athleteNum, lastName, firstName, athleteClub, totalFlagEvents, failedFlagEvents, meetId, db) {
     const sql = `
         INSERT INTO tblevents (meetId, eventCode, laneOrder, athleteNum, lastName, firstName, athleteClub)
@@ -579,6 +691,16 @@ async function dbQueryTblEvents(eventCode, laneOrder, athleteNum, lastName, firs
     return [totalFlagEvents, failedFlagEvents];    
 }
 
+/**
+ * Updates event information in the tbleventinfo table in the database.
+ * @param {string} eventCode - The event code.
+ * @param {string|null} eventPFTime - The event photofinish time.
+ * @param {number} totalFlagEventinfo - The total number of event info rows processed.
+ * @param {number} failedFlagEventInfo - The total number of event info rows that failed to update.
+ * @param {string} meetId - The meet ID.
+ * @param {object} db - The SQLite database instance.
+ * @returns {Promise<Array<number>>} A promise that resolves to an array containing counts of total and failed event info rows.
+ */
 async function updateDBQueryTblEventInfo(eventCode, eventPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db) {
     const query = `
       UPDATE tbleventinfo
@@ -599,6 +721,18 @@ async function updateDBQueryTblEventInfo(eventCode, eventPFTime, totalFlagEventi
     return [totalFlagEventinfo, failedFlagEventInfo];
 }
 
+/**
+ * Updates event data in the tblevents table in the database.
+ * @param {string} eventCode - The event code.
+ * @param {string} finalPFPos - The final photofinish position.
+ * @param {string} athleteNum - The athlete number.
+ * @param {string|null} finalPFTime - The final photofinish time.
+ * @param {number} totalFlagEventinfo - The total number of event rows processed.
+ * @param {number} failedFlagEventInfo - The total number of event rows that failed to update.
+ * @param {string} meetId - The meet ID.
+ * @param {object} db - The SQLite database instance.
+ * @returns {Promise<Array<number>>} A promise that resolves to an array containing counts of total and failed event rows.
+ */
 async function updateDBQueryTblEvents(eventCode, finalPFPos, athleteNum, finalPFTime, totalFlagEventinfo, failedFlagEventInfo, meetId, db) {
     const query = `
       UPDATE tblevents
@@ -620,6 +754,16 @@ async function updateDBQueryTblEvents(eventCode, finalPFPos, athleteNum, finalPF
     return [totalFlagEventinfo, failedFlagEventInfo];
 }
 
+/**
+ * Sends a response after attempting to update the event list or photofinish results, indicating success or failure.
+ * @param {number} failedFlagEventInfo - The count of failed event info rows.
+ * @param {number} failedFlagEvents - The count of failed event rows.
+ * @param {number} totalFlagEventinfo - The total number of event info rows processed.
+ * @param {number} totalFlagEvents - The total number of event rows processed.
+ * @param {string|null} copyError - The error message related to file copying, if any.
+ * @param {string|null} dbError - The error message related to database insertion, if any.
+ * @param {object} res - The response object for sending the response to the client.
+ */
 function postEventsResponse(failedFlagEventInfo, failedFlagEvents, totalFlagEventinfo, totalFlagEvents, copyError, dbError, res) {
     if (failedFlagEventInfo > 0 && failedFlagEvents > 0) {
         dbError = `Database error inserting event info and events: ${failedFlagEventInfo} eventinfo errors out of ${totalFlagEventinfo} rows and ${failedFlagEvents} event errors out of ${totalFlagEvents} rows`;

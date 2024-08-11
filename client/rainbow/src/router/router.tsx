@@ -13,15 +13,22 @@ import ViewEvent from "../views/ViewEvent";
 import Results from "../views/Results";
 
 // Constants
-const INACTIVITY_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 24 hours in milliseconds
 
-// Utility to check if a user is authenticated
+/**
+ * Utility function to check if a user is authenticated.
+ * @returns {boolean} Returns `true` if user data exists in session storage, otherwise `false`.
+ */
 const isAuthenticated = (): boolean => {
   const userJSON = sessionStorage.getItem("user");
   return !!userJSON; // Check if user data exists in session storage
 };
 
-// Declare Router component first
+/**
+ * Router component that handles user authentication and session timeout.
+ * Renders the Home component if authenticated, otherwise redirects to the login page.
+ * Also includes an inactivity timeout that logs the user out after a specified period of inactivity.
+ */
 const Router: React.FC = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true); // Added loading state
@@ -29,6 +36,9 @@ const Router: React.FC = () => {
   useEffect(() => {
     let inactivityTimer: NodeJS.Timeout;
 
+    /**
+     * Resets the inactivity timer to log out the user after a period of inactivity.
+     */
     const resetInactivityTimer = () => {
       clearTimeout(inactivityTimer);
       inactivityTimer = setTimeout(() => {
@@ -36,12 +46,18 @@ const Router: React.FC = () => {
       }, INACTIVITY_TIMEOUT);
     };
 
+    /**
+     * Handles user logout by clearing session data and redirecting to the login page.
+     */
     const handleLogout = () => {
       setAuthenticated(false);
       sessionStorage.removeItem("user"); // Remove user data if session is invalid
       window.location.href = "/login"; // Redirect to login
     };
 
+    /**
+     * Checks if the user is authenticated and sets the corresponding state.
+     */
     const checkAuthentication = () => {
       if (isAuthenticated()) {
         setAuthenticated(true);
@@ -55,7 +71,7 @@ const Router: React.FC = () => {
     // Initial check on component mount
     checkAuthentication();
 
-    // Set up event listeners for user activity
+    // Set up event listeners for user activity to reset inactivity timer
     window.addEventListener("mousemove", resetInactivityTimer);
     window.addEventListener("keydown", resetInactivityTimer);
     window.addEventListener("click", resetInactivityTimer);

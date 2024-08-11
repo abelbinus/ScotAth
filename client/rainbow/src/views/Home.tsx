@@ -4,12 +4,21 @@ import { UserOutlined, LogoutOutlined, ReadOutlined, MenuOutlined, EditOutlined 
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { UserContext } from "../App";
 import useProtectedRoute from "../router/ProtectedRoute";
-import { useVisibility } from "../Provider/VisibilityProvider";
+
 const { Header, Content, Sider } = Layout;
 const { useBreakpoint } = Grid;
 
+/**
+ * The `Home` component serves as the main layout and navigation container for the application.
+ * It provides a responsive design that adjusts based on the screen size and user role.
+ * The component includes a header, sidebar, and content area, and it manages the state related
+ * to menu navigation, drawer visibility, and user information.
+ *
+ * @component
+ */
 const Home: React.FC = () => {
   useProtectedRoute();
+
   const [selectedMeetId, setSelectedMeetId] = useState<string | null>(() => {
     const storedMeetId = sessionStorage.getItem("lastSelectedMeetId");
     return storedMeetId || null;
@@ -22,11 +31,17 @@ const Home: React.FC = () => {
   const { user } = useContext(UserContext);
   const screens = useBreakpoint();
   const [selectedKeys, setSelectedKeys] = useState<string[]>(['/']); // State to track selected menu item
-  const { showLabels } = useVisibility();
+
+  /**
+   * Effect to update the selected menu keys based on the current location pathname.
+   */
   useEffect(() => {
-    // Update selectedKeys based on location pathname
     setSelectedKeys([location.pathname]);
   }, [location.pathname]);
+
+  /**
+   * Effect to update the selected meet ID from session storage when the location state changes.
+   */
   useEffect(() => {
     if (sessionStorage.getItem("lastSelectedMeetId")) {
       const currentMeetId = sessionStorage.getItem("lastSelectedMeetId") || '';
@@ -34,6 +49,11 @@ const Home: React.FC = () => {
     }
   }, [location.state]);
 
+  /**
+   * Handles menu item click and navigation. It also updates the selected meet ID in session storage.
+   *
+   * @param route The selected menu route object.
+   */
   const onMenuClick = (route: any) => {
     const path = route.key;
     navigate(path);
@@ -51,6 +71,11 @@ const Home: React.FC = () => {
     }
   };
 
+  /**
+   * Generates the menu items based on the user's role (admin or volunteer).
+   *
+   * @returns An array of menu items to be displayed.
+   */
   const getMenuItems = () => {
     const baseItems = [];
 
@@ -59,30 +84,36 @@ const Home: React.FC = () => {
         { label: "User Management", icon: <UserOutlined />, key: "/admin-dashboard", "data-testid": "menu-item-admin" },
         { label: "Meet Management", icon: <UserOutlined />, key: "/meet-management", "data-testid": "menu-item-meet-management" },
         { label: "View Meets", icon: <ReadOutlined />, key: "/view-meet", "data-testid": "menu-item-view-meet" },
-          { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
-          { label: "Starter's Assistant Screen", icon: <EditOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
-          { label: "Track Judge Screen", icon: <EditOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
-          { label: "PhotoFinish Screen", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
-          { label: "Results", icon: <ReadOutlined />, key: "/results", "data-testid": "menu-item-all-results"}
+        { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
+        { label: "Starter's Assistant Screen", icon: <EditOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
+        { label: "Track Judge Screen", icon: <EditOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
+        { label: "PhotoFinish Screen", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
+        { label: "Results", icon: <ReadOutlined />, key: "/results", "data-testid": "menu-item-all-results"}
       );
     } else if (user?.userRole === "volunteer") {
       baseItems.push(
         { label: "View Meets", icon: <ReadOutlined />, key: "/view-meet", "data-testid": "menu-item-view-meet" },
-          { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
-          { label: "Starter's Assistant Screen", icon: <EditOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
-          { label: "Track Judge Screen", icon: <EditOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
-          { label: "PhotoFinish Screen", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
-          { label: "Results", icon: <ReadOutlined />, key: "/results", "data-testid": "menu-item-results"}
+        { label: "View Events", icon: <ReadOutlined />, key: "/view-event", "data-testid": "menu-item-start-list", meetId: selectedMeetId },
+        { label: "Starter's Assistant Screen", icon: <EditOutlined />, key: "/checkin", "data-testid": "menu-item-start-list" },
+        { label: "Track Judge Screen", icon: <EditOutlined />, key: "/trackjudge", "data-testid": "menu-item-track-judge"},
+        { label: "PhotoFinish Screen", icon: <ReadOutlined />, key: "/photofinish", "data-testid": "menu-item-event-management" },
+        { label: "Results", icon: <ReadOutlined />, key: "/results", "data-testid": "menu-item-results"}
       );
     }
 
     return baseItems;
   };
 
+  /**
+   * Handles click on the user info, navigating to the profile page.
+   */
   const handleUserInfoClick = () => {
     navigate("/profile");
   };
 
+  /**
+   * Handles user logout by clearing session data and redirecting to the login page.
+   */
   const handleLogoutClick = async () => {
     try {
       if (user) {
@@ -98,14 +129,23 @@ const Home: React.FC = () => {
     }
   };
 
+  /**
+   * Toggles the visibility of the mobile drawer menu.
+   */
   const toggleDrawer = () => {
     setDrawerVisible(!drawerVisible);
   };
 
+  /**
+   * Closes the mobile drawer menu.
+   */
   const closeDrawer = () => {
     setDrawerVisible(false);
   };
 
+  /**
+   * Handles click on the logo, redirecting the user to the appropriate dashboard based on their role.
+   */
   const onLogoClick = () => {
     if (user?.userRole === "admin") {
       navigate("/admin-dashboard");
