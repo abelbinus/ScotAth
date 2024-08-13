@@ -130,6 +130,11 @@ const ProfilePage = () => {
       const responseMessage = response?.data?.message;
       if (responseMessage) {
           message.success(responseMessage);
+          const updatedUser = {
+            ...userContext!.user!, // Spread existing user data
+            userPass: values.newPassword, // Update password
+          };
+          setUser(updatedUser);
           setIsChangePasswordModalVisible(false);
       } else {
           message.error(response.data.error || 'Failed to change password');
